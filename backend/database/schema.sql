@@ -23,6 +23,8 @@ CREATE TABLE users (
     points INT DEFAULT 0,
     is_verified TINYINT(1) DEFAULT 0,
     role ENUM('user', 'admin') DEFAULT 'user',
+    otp VARCHAR(6),
+    otp_expiry DATETIME,
     session_version INT DEFAULT 0,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
@@ -50,6 +52,7 @@ CREATE TABLE redemptions (
     reward_id INT UNSIGNED NOT NULL,
     status ENUM('pending', 'processing', 'shipped', 'delivered', 'completed') DEFAULT 'pending',
     shipping_details JSON,
+    pdf_path VARCHAR(255),
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (user_id) REFERENCES users(id),
     FOREIGN KEY (reward_id) REFERENCES rewards(id)
