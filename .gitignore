@@ -41,3 +41,6 @@ backend/generated_pdfs/*
 
 # Archive files
 *.zip
+
+# SSH credentials
+.ssh-config
