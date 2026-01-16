@@ -1,0 +1,124 @@
+www/takis.qrewards.com.mx/public_html/api/:
+total 40
+drwxr-xr-x 7 u6-pu9mvhpmgwh1 u6-pu9mvhpmgwh1 4096 Jan 16 03:33 .
+drwxr-xr-x 5 u6-pu9mvhpmgwh1 u6-pu9mvhpmgwh1 4096 Jan 16 03:20 ..
+-rw-r--r-- 1 u6-pu9mvhpmgwh1 u6-pu9mvhpmgwh1  910 Jan 16 03:33 .env
+-rw-r--r-- 1 u6-pu9mvhpmgwh1 u6-pu9mvhpmgwh1  251 Jan 16 00:05 .htaccess
+drwxr-xr-x 6 u6-pu9mvhpmgwh1 u6-pu9mvhpmgwh1 4096 Jan 16 00:05 app
+drwxr-xr-x 2 u6-pu9mvhpmgwh1 u6-pu9mvhpmgwh1 4096 Jan 16 03:27 database
+-rw-r--r-- 1 u6-pu9mvhpmgwh1 u6-pu9mvhpmgwh1   12 Jan 16 00:18 db_pass_local.txt增加增加增加增加增加增加增加增加增加增加增加增加增加增加增加增加增加增加增加增加增加增加增加增加增加增加增加增加增加增加
+drwxr-xr-x 2 u6-pu9mvhpmgwh1 u6-pu9mvhpmgwh1 4096 Jan 16 03:27 public
+drwxr-xr-x 4 u6-pu9mvhpmgwh1 u6-pu9mvhpmgwh1 4096 Jan 16 00:34 uploads
+drwxr-xr-x 3 u6-pu9mvhpmgwh1 u6-pu9mvhpmgwh1 4096 Jan 16 00:29 writable
+
+www/takis.qrewards.com.mx/public_html/api/app:
+total 24
+drwxr-xr-x 6 u6-pu9mvhpmgwh1 u6-pu9mvhpmgwh1 4096 Jan 16 00:05 .
+drwxr-xr-x 7 u6-pu9mvhpmgwh1 u6-pu9mvhpmgwh1 4096 Jan 16 03:33 ..
+drwxr-xr-x 2 u6-pu9mvhpmgwh1 u6-pu9mvhpmgwh1 4096 Jan 16 03:27 Config
+drwxr-xr-x 2 u6-pu9mvhpmgwh1 u6-pu9mvhpmgwh1 4096 Jan 16 03:27 Controllers
+drwxr-xr-x 2 u6-pu9mvhpmgwh1 u6-pu9mvhpmgwh1 4096 Jan 16 03:27 Filters
+drwxr-xr-x 2 u6-pu9mvhpmgwh1 u6-pu9mvhpmgwh1 4096 Jan 16 03:27 Models
+
+www/takis.qrewards.com.mx/public_html/api/app/Config:
+total 12
+drwxr-xr-x 2 u6-pu9mvhpmgwh1 u6-pu9mvhpmgwh1 4096 Jan 16 03:27 .
+drwxr-xr-x 6 u6-pu9mvhpmgwh1 u6-pu9mvhpmgwh1 4096 Jan 16 00:05 ..
+-rw-r--r-- 1 u6-pu9mvhpmgwh1 u6-pu9mvhpmgwh1 1754 Jan 16 03:07 Routes.php
+
+www/takis.qrewards.com.mx/public_html/api/app/Controllers:
+total 52
+drwxr-xr-x 2 u6-pu9mvhpmgwh1 u6-pu9mvhpmgwh1 4096 Jan 16 03:27 .
+drwxr-xr-x 6 u6-pu9mvhpmgwh1 u6-pu9mvhpmgwh1 4096 Jan 16 00:05 ..
+-rw-r--r-- 1 u6-pu9mvhpmgwh1 u6-pu9mvhpmgwh1 1850 Jan 16 03:07 AdminAuthController.php
+-rw-r--r-- 1 u6-pu9mvhpmgwh1 u6-pu9mvhpmgwh1 1271 Jan 15 23:00 AdminStatsController.php
+-rw-r--r-- 1 u6-pu9mvhpmgwh1 u6-pu9mvhpmgwh1 4410 Jan 15 23:23 AuthController.php
+-rw-r--r-- 1 u6-pu9mvhpmgwh1 u6-pu9mvhpmgwh1 6705 Jan 15 23:00 OrdersController.php
+-rw-r--r-- 1 u6-pu9mvhpmgwh1 u6-pu9mvhpmgwh1 1390 Jan 15 22:42 ProfileController.php
+-rw-r--r-- 1 u6-pu9mvhpmgwh1 u6-pu9mvhpmgwh1 3901 Jan 16 00:34 RedemptionController.php
+-rw-r--r-- 1 u6-pu9mvhpmgwh1 u6-pu9mvhpmgwh1 1818 Jan 16 00:34 RewardAdminController.php
+-rw-r--r-- 1 u6-pu9mvhpmgwh1 u6-pu9mvhpmgwh1 1999 Jan 15 22:17 SupportController.php
+-rw-r--r-- 1 u6-pu9mvhpmgwh1 u6-pu9mvhpmgwh1 1197 Jan 16 00:30 UploadController.php
+
+www/takis.qrewards.com.mx/public_html/api/app/Filters:
+total 12
+drwxr-xr-x 2 u6-pu9mvhpmgwh1 u6-pu9mvhpmgwh1 4096 Jan 16 03:27 .
+drwxr-xr-x 6 u6-pu9mvhpmgwh1 u6-pu9mvhpmgwh1 4096 Jan 16 00:05 ..
+-rw-r--r-- 1 u6-pu9mvhpmgwh1 u6-pu9mvhpmgwh1 2559 Jan 16 03:07 AuthFilter.php
+
+www/takis.qrewards.com.mx/public_html/api/app/Models:
+total 40
+drwxr-xr-x 2 u6-pu9mvhpmgwh1 u6-pu9mvhpmgwh1 4096 Jan 16 03:27 .
+drwxr-xr-x 6 u6-pu9mvhpmgwh1 u6-pu9mvhpmgwh1 4096 Jan 16 00:05 ..
+-rw-r--r-- 1 u6-pu9mvhpmgwh1 u6-pu9mvhpmgwh1 1399 Jan 16 03:07 AdminUserModel.php
+-rw-r--r-- 1 u6-pu9mvhpmgwh1 u6-pu9mvhpmgwh1  287 Jan 16 00:26 PromoCodeModel.php
+-rw-r--r-- 1 u6-pu9mvhpmgwh1 u6-pu9mvhpmgwh1  340 Jan 15 22:45 RedemptionModel.php
+-rw-r--r-- 1 u6-pu9mvhpmgwh1 u6-pu9mvhpmgwh1  269 Jan 15 22:42 RewardCodeModel.php
+-rw-r--r-- 1 u6-pu9mvhpmgwh1 u6-pu9mvhpmgwh1  412 Jan 15 22:51 RewardModel.php
+-rw-r--r-- 1 u6-pu9mvhpmgwh1 u6-pu9mvhpmgwh1  248 Jan 15 21:37 SecurityLogModel.php
+-rw-r--r-- 1 u6-pu9mvhpmgwh1 u6-pu9mvhpmgwh1  287 Jan 15 22:17 SupportModel.php
+-rw-r--r-- 1 u6-pu9mvhpmgwh1 u6-pu9mvhpmgwh1  466 Jan 15 23:22 UserModel.php
+
+www/takis.qrewards.com.mx/public_html/api/database:
+total 12
+drwxr-xr-x 2 u6-pu9mvhpmgwh1 u6-pu9mvhpmgwh1 4096 Jan 16 03:27 .
+drwxr-xr-x 7 u6-pu9mvhpmgwh1 u6-pu9mvhpmgwh1 4096 Jan 16 03:33 ..
+-rw-r--r-- 1 u6-pu9mvhpmgwh1 u6-pu9mvhpmgwh1 3743 Jan 16 03:07 schema.sql
+
+www/takis.qrewards.com.mx/public_html/api/public:
+total 12
+drwxr-xr-x 2 u6-pu9mvhpmgwh1 u6-pu9mvhpmgwh1 4096 Jan 16 03:27 .
+drwxr-xr-x 7 u6-pu9mvhpmgwh1 u6-pu9mvhpmgwh1 4096 Jan 16 03:33 ..
+-rw-r--r-- 1 u6-pu9mvhpmgwh1 u6-pu9mvhpmgwh1 1390 Jan 16 03:13 update_db.php
+
+www/takis.qrewards.com.mx/public_html/api/uploads:
+total 16
+drwxr-xr-x 4 u6-pu9mvhpmgwh1 u6-pu9mvhpmgwh1 4096 Jan 16 00:34 .
+drwxr-xr-x 7 u6-pu9mvhpmgwh1 u6-pu9mvhpmgwh1 4096 Jan 16 03:33 ..
+drwxr-xr-x 2 u6-pu9mvhpmgwh1 u6-pu9mvhpmgwh1 4096 Jan 16 00:40 logo
+drwxr-xr-x 2 u6-pu9mvhpmgwh1 u6-pu9mvhpmgwh1 4096 Jan 16 00:34 rewards
+
+www/takis.qrewards.com.mx/public_html/api/uploads/logo:
+total 8
+drwxr-xr-x 2 u6-pu9mvhpmgwh1 u6-pu9mvhpmgwh1 4096 Jan 16 00:40 .
+drwxr-xr-x 4 u6-pu9mvhpmgwh1 u6-pu9mvhpmgwh1 4096 Jan 16 00:34 ..
+
+www/takis.qrewards.com.mx/public_html/api/uploads/rewards:
+total 8
+drwxr-xr-x 2 u6-pu9mvhpmgwh1 u6-pu9mvhpmgwh1 4096 Jan 16 00:34 .
+drwxr-xr-x 4 u6-pu9mvhpmgwh1 u6-pu9mvhpmgwh1 4096 Jan 16 00:34 ..
+
+www/takis.qrewards.com.mx/public_html/api/writable:
+total 12
+drwxr-xr-x 3 u6-pu9mvhpmgwh1 u6-pu9mvhpmgwh1 4096 Jan 16 00:29 .
+drwxr-xr-x 7 u6-pu9mvhpmgwh1 u6-pu9mvhpmgwh1 4096 Jan 16 03:33 ..
+drwxr-xr-x 6 u6-pu9mvhpmgwh1 u6-pu9mvhpmgwh1 4096 Jan 16 00:29 uploads
+
+www/takis.qrewards.com.mx/public_html/api/writable/uploads:
+total 24
+drwxr-xr-x 6 u6-pu9mvhpmgwh1 u6-pu9mvhpmgwh1 4096 Jan 16 00:29 .
+drwxr-xr-x 3 u6-pu9mvhpmgwh1 u6-pu9mvhpmgwh1 4096 Jan 16 00:29 ..
+drwxr-xr-x 2 u6-pu9mvhpmgwh1 u6-pu9mvhpmgwh1 4096 Jan 16 00:34 logo
+drwxr-xr-x 2 u6-pu9mvhpmgwh1 u6-pu9mvhpmgwh1 4096 Jan 16 00:29 redeemed
+drwxr-xr-x 2 u6-pu9mvhpmgwh1 u6-pu9mvhpmgwh1 4096 Jan 16 00:29 rewards
+drwxr-xr-x 2 u6-pu9mvhpmgwh1 u6-pu9mvhpmgwh1 4096 Jan 16 00:29 templates
+
+www/takis.qrewards.com.mx/public_html/api/writable/uploads/logo:
+total 8
+drwxr-xr-x 2 u6-pu9mvhpmgwh1 u6-pu9mvhpmgwh1 4096 Jan 16 00:34 .
+drwxr-xr-x 6 u6-pu9mvhpmgwh1 u6-pu9mvhpmgwh1 4096 Jan 16 00:29 ..
+
+www/takis.qrewards.com.mx/public_html/api/writable/uploads/redeemed:
+total 8
+drwxr-xr-x 2 u6-pu9mvhpmgwh1 u6-pu9mvhpmgwh1 4096 Jan 16 00:29 .
+drwxr-xr-x 6 u6-pu9mvhpmgwh1 u6-pu9mvhpmgwh1 4096 Jan 16 00:29 ..
+
+www/takis.qrewards.com.mx/public_html/api/writable/uploads/rewards:
+total 8
+drwxr-xr-x 2 u6-pu9mvhpmgwh1 u6-pu9mvhpmgwh1 4096 Jan 16 00:29 .
+drwxr-xr-x 6 u6-pu9mvhpmgwh1 u6-pu9mvhpmgwh1 4096 Jan 16 00:29 ..
+
+www/takis.qrewards.com.mx/public_html/api/writable/uploads/templates:
+total 8
+drwxr-xr-x 2 u6-pu9mvhpmgwh1 u6-pu9mvhpmgwh1 4096 Jan 16 00:29 .
+drwxr-xr-x 6 u6-pu9mvhpmgwh1 u6-pu9mvhpmgwh1 4096 Jan 16 00:29 ..
