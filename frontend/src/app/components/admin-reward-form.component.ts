@@ -289,6 +289,7 @@ interface CodeArea {
       padding: 5rem 2rem 2rem 2rem; 
       margin-left: 260px;
       min-height: 100vh;
+      background: #0D0221;
       color: white; 
       transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     }

@@ -148,7 +148,7 @@ Chart.register(...registerables);
     .dashboard-page { 
       padding: 5rem 2rem 2rem 2rem; 
       margin-left: 260px;
-      background: transparent; 
+      background: #0D0221; 
       min-height: 100vh; 
       color: white; 
       transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
