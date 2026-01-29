@@ -6,6 +6,9 @@ yarn-error.log*
 
 # Environment variables
 .env
+.env.current
+.env.production
+.env.development
 .env.local
 .env.*.local
 
@@ -41,6 +44,23 @@ backend/generated_pdfs/*
 
 # Archive files
 *.zip
+*.tar
+*.gz
+*.rar
 
 # SSH credentials
 .ssh-config
+
+# --- ROOT LEVEL ISOLATION ---
+# Ignore everything in the root by default
+/*
+
+# Explicitly allow the main project folders
+!/backend/
+!/frontend/
+
+# Explicitly allow configuration and documentation files in root
+!.gitignore
+!README.md
+!DEPLOYMENT.md
+!DEPLOYMENT_GUIDE.md
