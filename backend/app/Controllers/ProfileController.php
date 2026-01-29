@@ -9,41 +9,76 @@ class ProfileController extends ResourceController
 {
     public function getProfile()
     {
-        $userId    = $this->request->user->id;
-        $userModel = new UserModel();
-        $user      = $userModel->find($userId);
+        try {
+            $userId = $this->request->user->id ?? $this->request->user->uid ?? null;
+            if (!$userId)
+                return $this->respond(['status' => 'error', 'message' => 'Token inválido'], 401);
 
-        if (!$user) {
-            return $this->failNotFound('Usuario no encontrado');
+            $userModel = new UserModel();
+            $user      = $userModel->find($userId);
+            if (!$user)
+                return $this->respond(['status' => 'error', 'message' => 'Usuario no encontrado'], 404);
+
+            unset($user["password_hash"], $user["otp"], $user["otp_expiry"]);
+            return $this->respond($user);
+        } catch (\Exception $e) {
+            return $this->respond(['status' => 'error', 'message' => $e->getMessage()], 500);
         }
+    }
 
-        // Remove sensitive data
-        unset($user['password_hash']);
-
-        return $this->respond($user);
+    public function getPoints($id = null)
+    {
+        $userModel = new UserModel();
+        $user      = $userModel->find($id);
+        if (!$user) {
+            return $this->respond(['points' => 0]);
+        }
+        return $this->respond(['points' => intval($user['points'] ?? 0)]);
     }
 
     public function updateProfile()
     {
-        $userId    = $this->request->user->id;
-        $userModel = new UserModel();
+        $rawInput = file_get_contents('php://input');
 
-        $data = [
-            'full_name' => $this->request->getVar('full_name'),
-            'address'   => $this->request->getVar('address'),
-            'city'      => $this->request->getVar('city'),
-            'state'     => $this->request->getVar('state'),
-            'zip_code'  => $this->request->getVar('zip_code'),
-            'phone'     => $this->request->getVar('phone')
-        ];
+        try {
+            $userId = $this->request->user->id ?? $this->request->user->uid ?? null;
+            if (!$userId) {
+                return $this->respond(['status' => 'error', 'message' => 'No autorizado'], 401);
+            }
 
-        // Clean null values
-        $data = array_filter($data, fn($value) => !is_null($value));
+            $input = json_decode($rawInput, true);
+            if (!$input) {
+                $input = $this->request->getVar();
+            }
 
-        if ($userModel->update($userId, $data)) {
-            return $this->respond(['message' => 'Perfil actualizado correctamente']);
+            $userModel = new UserModel();
+
+            $data = [];
+            if (isset($input["full_name"]))
+                $data["full_name"] = $input["full_name"];
+            if (isset($input["phone"]))
+                $data["phone"] = $input["phone"];
+            if (isset($input["address"]))
+                $data["address"] = $input["address"];
+            if (isset($input["city"]))
+                $data["city"] = $input["city"];
+            if (isset($input["state"]))
+                $data["state"] = $input["state"];
+            if (isset($input["zip_code"]))
+                $data["zip_code"] = $input["zip_code"];
+
+            if (empty($data)) {
+                return $this->respond(['status' => 'error', 'message' => 'No se recibieron datos para actualizar'], 400);
+            }
+
+            if ($userModel->update($userId, $data)) {
+                return $this->respond(["status" => "success", "message" => "Perfil actualizado correctamente"]);
+            } else {
+                $errors = $userModel->errors();
+                return $this->respond(['status' => 'error', 'message' => $errors ? implode(', ', $errors) : "Error al actualizar base de datos"], 400);
+            }
+        } catch (\Exception $e) {
+            return $this->respond(['status' => 'error', 'message' => $e->getMessage()], 500);
         }
-
-        return $this->fail('No se pudo actualizar el perfil');
     }
 }

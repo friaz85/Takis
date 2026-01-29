@@ -45,7 +45,7 @@ class DashboardAdminController extends ResourceController
 
         // Recent Activity (Table)
         $recentActivity = $db->query("
-            SELECT re.id, u.name as user, r.title as reward, re.created_at, re.status 
+            SELECT re.id, u.full_name as user, r.title as reward, re.created_at, re.status 
             FROM redemptions re 
             JOIN users u ON u.id = re.user_id 
             JOIN rewards r ON r.id = re.reward_id 
@@ -53,11 +53,25 @@ class DashboardAdminController extends ResourceController
             LIMIT 10
         ")->getResultArray();
 
+        // Promo Codes Stats
+        $promoStats = $db->query("
+            SELECT 
+                COUNT(*) as total,
+                SUM(CASE WHEN is_used = 1 THEN 1 ELSE 0 END) as used,
+                SUM(CASE WHEN is_used = 0 THEN 1 ELSE 0 END) as available
+            FROM promo_codes
+        ")->getRowArray();
+
         return $this->respond([
             'cards'       => [
                 'users'       => $totalUsers,
                 'redemptions' => $totalRedemptions,
-                'points'      => $pointsRedeemed
+                'points'      => $pointsRedeemed,
+                'promo'       => [
+                    'total'     => $promoStats['total'] ?? 0,
+                    'used'      => $promoStats['used'] ?? 0,
+                    'available' => $promoStats['available'] ?? 0
+                ]
             ],
             'chart'       => $dailyActivity,
             'top_rewards' => $topRewards,

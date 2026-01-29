@@ -2,6 +2,7 @@ import { Component, signal, inject, OnInit } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { CommonModule } from '@angular/common';
 import { RouterLink } from '@angular/router';
+import { environment } from '../../environments/environment';
 
 @Component({
   selector: 'app-rewards-catalog',
@@ -26,7 +27,7 @@ import { RouterLink } from '@angular/router';
           <div class="reward-card">
             
             <div class="card-img-container">
-               <img [src]="item.image_url ? 'https://takis.qrewards.com.mx/api/uploads/rewards/' + item.image_url : 'assets/takis-piece.png'" alt="{{ item.title }}" class="reward-img">
+               <img [src]="item.image_url ? environment.uploadsUrl + '/rewards/' + item.image_url : 'assets/takis-piece.png'" alt="{{ item.title }}" class="reward-img">
             </div>
 
             <div class="points-badge">{{ item.cost | number }} PUNTOS</div>
@@ -85,9 +86,10 @@ export class RewardsCatalogComponent implements OnInit {
   rewards = signal<any[]>([]);
   loading = signal(true);
   private http = inject(HttpClient);
+  environment = environment;
 
   ngOnInit() {
-    this.http.get('https://takis.qrewards.com.mx/api/index.php/rewards').subscribe({
+    this.http.get(`${environment.apiUrl}/rewards`).subscribe({
       next: (res: any) => {
         this.rewards.set(res);
         this.loading.set(false);

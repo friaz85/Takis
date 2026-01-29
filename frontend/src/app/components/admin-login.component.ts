@@ -12,7 +12,7 @@ import { AuthService } from '../services/auth.service';
     <div class="admin-login-container">
       <div class="login-card">
         <div class="logo-section">
-          <img src="assets/takis-logo.png" alt="Takis" class="logo animate-pulse">
+          <img src="assets/logo-takis-v1.png" alt="Takis" class="logo animate-pulse">
           <h1>Admin Control</h1>
         </div>
         

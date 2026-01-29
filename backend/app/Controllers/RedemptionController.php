@@ -42,15 +42,17 @@ class RedemptionController extends ResourceController
             return $this->failNotFound('Código inválido o ya utilizado.');
         }
 
+
         $promoModel->update($promo['id'], ['is_used' => 1, 'used_by' => $userId, 'used_at' => date('Y-m-d H:i:s')]);
-        $user      = $userModel->find($userId);
-        $newPoints = ($user['points'] ?? 0) + 1;
+        $user        = $userModel->find($userId);
+        $pointsToAdd = $promo['points'] ?? 1; // Use points from promo code
+        $newPoints   = ($user['points'] ?? 0) + $pointsToAdd;
         $userModel->update($userId, ['points' => $newPoints]);
 
-        $logModel->save(['ip_address' => $ip, 'user_id' => $userId, 'action' => 'success_redeem', 'details' => "Code: $code"]);
+        $logModel->save(['ip_address' => $ip, 'user_id' => $userId, 'action' => 'success_redeem', 'details' => "Code: $code, Points: $pointsToAdd"]);
         $db->transComplete();
 
-        return $this->respond(['status' => 'success', 'message' => '¡Código Takis activado!', 'new_points' => $newPoints]);
+        return $this->respond(['status' => 'success', 'message' => "¡Código Takis activado! +$pointsToAdd puntos", 'points' => $pointsToAdd, 'new_points' => $newPoints]);
     }
 
     public function redeemReward()
@@ -78,16 +80,22 @@ class RedemptionController extends ResourceController
         $userModel->update($userId, ['points' => $user['points'] - $reward['cost']]);
         $rewardModel->update($rewardId, ['stock' => $reward['stock'] - 1]);
 
+        // Generar folio único ANTES de crear el registro
+        $tempId     = time() . rand(1000, 9999);
+        $uniqueCode = 'TKS-' . str_pad($tempId, 6, '0', STR_PAD_LEFT) . '-' . strtoupper(substr(md5($tempId), 0, 4));
+
         $redemptionData = [
-            'user_id'   => $userId,
-            'reward_id' => $rewardId,
-            'status'    => ($reward['type'] === 'digital') ? 'completed' : 'pending',
+            'user_id'      => $userId,
+            'reward_id'    => $rewardId,
+            'status'       => ($reward['type'] === 'digital') ? 'completed' : 'pending',
+            'digital_code' => $uniqueCode, // Guardar el código único
         ];
         $redemptionModel->save($redemptionData);
         $redemptionId = $redemptionModel->insertID();
 
-        // Generar folio único
-        $uniqueCode = 'TKS-' . str_pad($redemptionId, 6, '0', STR_PAD_LEFT) . '-' . strtoupper(substr(md5(time()), 0, 4));
+        // Actualizar con el ID real para el código
+        $uniqueCode = 'TKS-' . str_pad($redemptionId, 6, '0', STR_PAD_LEFT) . '-' . strtoupper(substr(md5($redemptionId . time()), 0, 4));
+        $redemptionModel->update($redemptionId, ['digital_code' => $uniqueCode]);
 
         $pdfUrl = null;
         if ($reward['type'] === 'digital') {
@@ -104,7 +112,8 @@ class RedemptionController extends ResourceController
             if (empty($reward['pdf_template']))
                 return null;
 
-            $templatePath = FCPATH . 'uploads/pdfs/' . $reward['pdf_template'];
+            // Correct path for templates
+            $templatePath = FCPATH . 'uploads/templates/' . $reward['pdf_template'];
 
             if (!file_exists($templatePath)) {
                 log_message('error', 'PDF Template not found: ' . $templatePath);
@@ -125,40 +134,78 @@ class RedemptionController extends ResourceController
             $pdf->AddPage($size['orientation'], [$size['width'], $size['height']]);
             $pdf->useTemplate($tplIdx);
 
-            $pdf->SetFont('Arial', 'B', 14);
-            $pdf->SetTextColor(0, 0, 0);
+            // Parse code_areas format: "x,y,width,height,fontSize;x,y,width,height,fontSize"
+            $codeAreas = $reward['code_areas'] ?? '';
 
-            $coords = json_decode($reward['coordinates'], true);
+            if (!empty($codeAreas)) {
+                $areas = explode(';', $codeAreas);
 
-            // Backwards compatibility for single coordinate object
-            if (isset($coords['x']) && !isset($coords[0])) {
-                $coords = [$coords];
-            }
-            if (!is_array($coords))
-                $coords = [];
+                foreach ($areas as $areaStr) {
+                    $areaStr = trim($areaStr);
+                    if (empty($areaStr))
+                        continue;
 
-            foreach ($coords as $box) {
-                // Default percentages if missing
-                $xPct = isset($box['x']) ? floatval($box['x']) : 50;
-                $yPct = isset($box['y']) ? floatval($box['y']) : 50;
-                $wPct = isset($box['w']) ? floatval($box['w']) : 0;
-                $hPct = isset($box['h']) ? floatval($box['h']) : 0;
+                    $parts = explode(',', $areaStr);
+                    if (count($parts) >= 4) {
+                        $xPct     = floatval($parts[0]);
+                        $yPct     = floatval($parts[1]);
+                        $wPct     = floatval($parts[2]);
+                        $hPct     = floatval($parts[3]);
+                        $fontSize = isset($parts[4]) ? intval($parts[4]) : 14;
 
-                // Convert % to mm
-                $x = ($xPct / 100) * $size['width'];
-                $y = ($yPct / 100) * $size['height'];
-                $w = ($wPct / 100) * $size['width'];
-                $h = ($hPct / 100) * $size['height'];
+                        // Convert percentages to template units
+                        $x = ($xPct / 100) * $size['width'];
+                        $y = ($yPct / 100) * $size['height'];
+                        $w = ($wPct / 100) * $size['width'];
+                        $h = ($hPct / 100) * $size['height'];
 
-                $pdf->SetXY($x, $y);
+                        // Set font with configured size
+                        $pdf->SetFont('Arial', 'B', $fontSize);
+                        $pdf->SetTextColor(0, 0, 0);
 
-                if ($w > 0 && $h > 0) {
-                    // Si tiene dimensiones definidas, centrar en la caja
-                    // Cell(w, h, txt, border, ln, align)
-                    $pdf->Cell($w, $h, $code, 0, 0, 'C');
-                } else {
-                    // Si no, escribir simplemente en la posición
-                    $pdf->Text($x, $y, $code);
+                        // Position and write code
+                        $pdf->SetXY($x, $y);
+
+                        if ($w > 0 && $h > 0) {
+                            // Use Cell for centered text in box
+                            $pdf->Cell($w, $h, $code, 0, 0, 'C');
+                        } else {
+                            // Use Text for simple positioning
+                            $pdf->Text($x, $y, $code);
+                        }
+                    }
+                }
+            } else {
+                // Fallback: try old coordinates format
+                $coords = json_decode($reward['coordinates'] ?? '[]', true);
+
+                if (isset($coords['x']) && !isset($coords[0])) {
+                    $coords = [$coords];
+                }
+                if (!is_array($coords))
+                    $coords = [];
+
+                $pdf->SetFont('Arial', 'B', 14);
+                $pdf->SetTextColor(0, 0, 0);
+
+                foreach ($coords as $box) {
+                    $xPct = isset($box['x']) ? floatval($box['x']) : 50;
+                    $yPct = isset($box['y']) ? floatval($box['y']) : 50;
+                    $wPct = isset($box['w']) ? floatval($box['w']) : 0;
+                    $hPct = isset($box['h']) ? floatval($box['h']) : 0;
+
+                    $x = ($xPct / 100) * $size['width'];
+                    $y = ($yPct / 100) * $size['height'];
+                    $w = ($wPct / 100) * $size['width'];
+                    $h = ($hPct / 100) * $size['height'];
+
+                    $pdf->SetXY($x, $y);
+
+                    if ($w > 0 && $h > 0) {
+                        $pdf->Cell($w, $h, $code, 0, 0, 'C');
+                    } else {
+                        $pdf->Text($x, $y, $code);
+                    }
                 }
             }
 
@@ -169,5 +216,41 @@ class RedemptionController extends ResourceController
             log_message('error', 'PDF Generation Error: ' . $e->getMessage());
             return null;
         }
+    }
+
+    public function history()
+    {
+        $userId          = $this->request->user->id ?? $this->request->user->uid ?? null;
+        $redemptionModel = new RedemptionModel();
+
+        $history = $redemptionModel->select('redemptions.*, rewards.title as reward_title, rewards.image_url')
+            ->join('rewards', 'rewards.id = redemptions.reward_id')
+            ->where('user_id', $userId)
+            ->orderBy('created_at', 'DESC')
+            ->findAll();
+
+        return $this->respond($history);
+    }
+
+    public function codesHistory($userId = null)
+    {
+        $promoModel = new \App\Models\PromoCodeModel();
+        $history    = $promoModel->where('used_by', $userId)
+            ->orderBy('used_at', 'DESC')
+            ->findAll();
+
+        return $this->respond($history);
+    }
+
+    public function rewardsHistory($userId = null)
+    {
+        $redemptionModel = new \App\Models\RedemptionModel();
+        $history         = $redemptionModel->select('redemptions.*, rewards.title, rewards.image_url, rewards.cost')
+            ->join('rewards', 'rewards.id = redemptions.reward_id')
+            ->where('user_id', $userId)
+            ->orderBy('redemptions.created_at', 'DESC')
+            ->findAll();
+
+        return $this->respond($history);
     }
 }

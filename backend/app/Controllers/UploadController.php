@@ -15,7 +15,7 @@ class UploadController extends ResourceController
         }
 
         $newName = $file->getRandomName();
-        $file->move(FCPATH . '../uploads/rewards', $newName);
+        $file->move(FCPATH . 'uploads/rewards', $newName);
 
         return $this->respond([
             'status'   => 'success',
@@ -37,7 +37,7 @@ class UploadController extends ResourceController
         }
 
         $newName = $file->getRandomName();
-        $file->move(WRITEPATH . 'uploads/templates', $newName);
+        $file->move(FCPATH . 'uploads/templates', $newName);
 
         return $this->respond([
             'status'   => 'success',

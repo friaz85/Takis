@@ -15,8 +15,7 @@ class Filters extends BaseConfig
      * Configures aliases for Filter classes to
      * make reading things nicer and simpler.
      *
-     * @var array<string, class-string|list<class-string>> [filter_name => classname]
-     *                                                     or [filter_name => [classname1, classname2, ...]]
+     * @var array<string, string>
      */
     public array $aliases = [
         'csrf'          => CSRF::class,
@@ -25,13 +24,14 @@ class Filters extends BaseConfig
         'invalidchars'  => InvalidChars::class,
         'secureheaders' => SecureHeaders::class,
         'auth'          => \App\Filters\AuthFilter::class,
+        'admin_auth'    => \App\Filters\AdminAuthFilter::class,
     ];
 
     /**
      * List of filter aliases that are always
      * applied before and after every request.
      *
-     * @var array<string, array<string, array<string, string>>>|array<string, list<string>>
+     * @var array<string, array<string, array<string, string>>>|array<string, array<string>>
      */
     public array $globals = [
         'before' => [
@@ -40,9 +40,8 @@ class Filters extends BaseConfig
             // 'invalidchars',
         ],
         'after'  => [
-            'toolbar',
+            'toolbar' => ['except' => ['auth/*', 'admin/*', 'api/*']],
             // 'honeypot',
-            // 'secureheaders',
         ],
     ];
 
@@ -55,20 +54,16 @@ class Filters extends BaseConfig
      *
      * If you use this, you should disable auto-routing because auto-routing
      * permits any HTTP method to access a controller. Accessing the controller
-     * with a method you don't expect could bypass the filter.
-     *
-     * @var array<string, list<string>>
+     * with a method you don't expect could potentially create a security vulnerability.
      */
     public array $methods = [];
 
     /**
      * List of filter aliases that should run on any
-     * before or after URI patterns.
+     * before or after HTTP method (GET, POST, etc.).
      *
      * Example:
      * 'isLoggedIn' => ['before' => ['account/*', 'profiles/*']]
-     *
-     * @var array<string, array<string, list<string>>>
      */
     public array $filters = [];
 }

@@ -8,15 +8,26 @@ class EmailSender
     {
         $email = \Config\Services::email();
 
-        $config['protocol'] = 'mail';
+        // Use SMTP configuration from .env
+        $config['protocol']   = 'smtp';
+        $config['SMTPHost']   = env('EMAIL_HOST', 'mail.takis.qrewards.com.mx');
+        $config['SMTPUser']   = env('EMAIL_USERNAME', 'no-reply@takis.qrewards.com.mx');
+        $config['SMTPPass']   = env('EMAIL_PASSWORD', 'Takis2026!');
+        $config['SMTPPort']   = env('EMAIL_PORT', 465);
+        $config['SMTPCrypto'] = env('EMAIL_SMTP_CRYPTO', 'ssl');
+
         $config['mailType'] = 'html';
         $config['charset']  = 'utf-8';
         $config['wordWrap'] = true;
         $config['newline']  = "\r\n";
+        $config['CRLF']     = "\r\n";
 
         $email->initialize($config);
 
-        $email->setFrom('no-reply@takis.qrewards.com.mx', 'Takis Promo');
+        $fromEmail = env('EMAIL_FROM', 'no-reply@takis.qrewards.com.mx');
+        $fromName  = env('EMAIL_FROM_NAME', 'Takis Promo');
+
+        $email->setFrom($fromEmail, $fromName);
         $email->setTo($to);
         $email->setSubject($subject);
 
@@ -39,7 +50,9 @@ class EmailSender
         $accentColor  = '#F2E74B';
         $bgColor      = '#1A0B2E';
         $cardColor    = '#25163A';
-        $logoUrl      = 'https://takis.qrewards.com.mx/assets/takis-logo.png';
+
+        // Use the new Banderin logo
+        $logoUrl = 'https://dev.takisaficionintensa.com.mx/assets/img/Banderin-completo.png';
 
         $year = date('Y');
 

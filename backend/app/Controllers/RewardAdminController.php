@@ -8,23 +8,38 @@ use CodeIgniter\RESTful\ResourceController;
 
 class RewardAdminController extends ResourceController
 {
+    public function index()
+    {
+        $rewardModel = new RewardModel();
+        return $this->respond($rewardModel->findAll());
+    }
+
+    public function publicCatalog()
+    {
+        $rewardModel = new RewardModel();
+        return $this->respond($rewardModel->where('active', 1)->findAll());
+    }
+
     public function createReward()
     {
         $rewardModel = new RewardModel();
+        $data        = $this->request->getJSON(true) ?? $this->request->getVar();
 
-        $data = [
-            'title'        => $this->request->getVar('title'),
-            'description'  => $this->request->getVar('description'),
-            'type'         => $this->request->getVar('type'),
-            'cost'         => $this->request->getVar('cost'),
-            'stock'        => $this->request->getVar('stock'),
-            'image_url'    => $this->request->getVar('image_url'),
-            'pdf_template' => $this->request->getVar('pdf_template'),
-            'coordinates'  => $this->request->getVar('coordinates'),
-            'font_size'    => $this->request->getVar('font_size'),
+        $saveData = [
+            'title'        => $data['title'] ?? null,
+            'description'  => $data['description'] ?? null,
+            'type'         => $data['type'] ?? 'physical',
+            'cost'         => $data['cost'] ?? 0,
+            'stock'        => $data['stock'] ?? 0,
+            'active'       => $data['active'] ?? 1,
+            'image_url'    => $data['image_url'] ?? null,
+            'pdf_template' => $data['pdf_template'] ?? null,
+            'coordinates'  => $data['coordinates'] ?? null,
+            'code_areas'   => $data['code_areas'] ?? $data['coordinates'] ?? null,
+            'font_size'    => $data['font_size'] ?? 12,
         ];
 
-        if ($rewardModel->save($data)) {
+        if ($rewardModel->insert($saveData)) {
             $rewardId = $rewardModel->insertID();
             return $this->respondCreated(['message' => 'Recompensa creada', 'id' => $rewardId]);
         }
@@ -36,6 +51,11 @@ class RewardAdminController extends ResourceController
     {
         $rewardModel = new RewardModel();
         $data        = $this->request->getJSON(true) ?? $this->request->getVar();
+
+        // Ensure some fields are handled if they come in coordinates vs code_areas
+        if (isset($data['coordinates']) && !isset($data['code_areas'])) {
+            $data['code_areas'] = $data['coordinates'];
+        }
 
         if ($rewardModel->update($id, $data)) {
             return $this->respond(['message' => 'Recompensa actualizada']);

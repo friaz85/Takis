@@ -2,21 +2,53 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&display=swap');
 
 :root {
-  --takis-purple: #1A0B2E;
-  --takis-accent: #F2E74B;
+  --takis-purple: #5d1f87;
+  --takis-dark-purple: #1A0B2E;
+  --takis-yellow: #f2e74b;
+  --takis-accent: #f2e74b;
   --takis-border: #6C1DDA;
+}
+
+@font-face {
+  font-family: 'TakisVeneer';
+  src: url('assets/fonts/Veneer.otf') format('opentype');
+  font-weight: normal;
+  font-style: normal;
 }
 
 body {
   margin: 0;
   padding: 0;
-  background: var(--takis-purple);
+  background-image: url('assets/img/BG_takis.jpg');
+  background-size: cover;
+  background-position: center;
+  background-attachment: fixed;
+  background-color: var(--takis-dark-purple);
   color: white;
-  font-family: 'Inter', sans-serif;
+  font-family: 'TakisVeneer', 'Inter', sans-serif;
   overflow-x: hidden;
+  min-height: 100vh;
 }
 
-* { box-sizing: border-box; }
+.takis-title {
+  font-family: 'TakisVeneer', sans-serif;
+  font-size: 3.5rem;
+  font-weight: 900;
+  color: white;
+  margin: 0 0 1rem 0;
+  text-shadow: 4px 4px 0 #6C1DDA, 8px 8px 15px rgba(0, 0, 0, 0.5);
+  line-height: 1.1;
+  text-align: center;
+  text-transform: uppercase;
+}
+
+.highlight {
+  color: #F2E74B;
+}
+
+* {
+  box-sizing: border-box;
+}
 
 .animate__animated {
   animation-duration: 0.8s;
@@ -24,8 +56,17 @@ body {
 }
 
 @keyframes fadeInUp {
-  from { opacity: 0; transform: translateY(20px); }
-  to { opacity: 1; transform: translateY(0); }
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
-.animate__fadeInUp { animation-name: fadeInUp; }
+.animate__fadeInUp {
+  animation-name: fadeInUp;
+}

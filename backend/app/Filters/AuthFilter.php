@@ -5,66 +5,66 @@ namespace App\Filters;
 use CodeIgniter\Filters\FilterInterface;
 use CodeIgniter\HTTP\RequestInterface;
 use CodeIgniter\HTTP\ResponseInterface;
-use Firebase\JWT\JWT;
-use Firebase\JWT\Key;
 use Config\Services;
 
 class AuthFilter implements FilterInterface
 {
     public function before(RequestInterface $request, $arguments = null)
     {
-        $key    = env('JWT_SECRET', 'takis_ultra_secret_key_2024');
-        $header = $request->getServer('HTTP_AUTHORIZATION');
+        $key        = 'kYiFLGycgRRp31CIOcwRASFw5e5JOqu6D/LKt+AaYlWMGAKlK/gYq9SlB1j9m2Bl/lqBs6l6fQaJat5riEtEPA==';
+        $authHeader = $request->getServer('HTTP_AUTHORIZATION') ?? $request->getServer('REDIRECT_HTTP_AUTHORIZATION');
 
-        if (!$header) {
-            return Services::response()
-                ->setJSON(['message' => 'Token required'])
-                ->setStatusCode(ResponseInterface::HTTP_UNAUTHORIZED);
+        if (!$authHeader && function_exists('apache_request_headers')) {
+            $headers    = apache_request_headers();
+            $authHeader = $headers['Authorization'] ?? $headers['authorization'] ?? null;
         }
 
-        $token = explode(' ', $header)[1] ?? '';
+        if (!$authHeader) {
+            return Services::response()->setJSON(['message' => 'Token required'])->setStatusCode(401);
+        }
+
+        $token = preg_match('/Bearer\s(\S+)/', $authHeader, $matches) ? $matches[1] : $authHeader;
 
         try {
-            $decoded = JWT::decode($token, new Key($key, 'HS256'));
+            // MANUAL BASE64 DECODE FOR COMPATIBILITY (If library fails)
+            $parts = explode('.', $token);
+            if (count($parts) !== 3)
+                throw new \Exception("Invalid token format");
 
-            if (isset($decoded->role) && $decoded->role === 'system_admin') {
-                $adminModel = new \App\Models\AdminUserModel();
-                $user       = $adminModel->find($decoded->id);
-                if (!$user) {
-                    return Services::response()
-                        ->setJSON(['message' => 'Admin no encontrado'])
-                        ->setStatusCode(ResponseInterface::HTTP_UNAUTHORIZED);
-                }
-            } else {
-                // Session Concurrency Check for regular users
+            $payload = json_decode(base64_decode(str_replace(['-', '_'], ['+', '/'], $parts[1])));
+            if (!$payload)
+                throw new \Exception("Invalid payload");
+
+            // Verify signature using standard hash_hmac to bypass library issues
+            $header    = $parts[0];
+            $data      = "$parts[0].$parts[1]";
+            $signature = base64_decode(str_replace(['-', '_'], ['+', '/'], $parts[2]));
+
+            $expectedSignature = hash_hmac('sha256', $data, $key, true);
+
+            if (!hash_equals($signature, $expectedSignature)) {
+                throw new \Exception("Invalid signature");
+            }
+
+            if (isset($payload->exp) && $payload->exp < time()) {
+                throw new \Exception("Token expired");
+            }
+
+            $request->user = $payload;
+
+            if (!isset($payload->role) || $payload->role !== 'system_admin') {
                 $userModel = new \App\Models\UserModel();
-                $user      = $userModel->find($decoded->id);
-
-                if (!$user || (isset($decoded->v) && $decoded->v != $user['session_version'])) {
-                    return Services::response()
-                        ->setJSON(['message' => 'Sesión expirada o iniciada en otro dispositivo'])
-                        ->setStatusCode(ResponseInterface::HTTP_UNAUTHORIZED);
+                if (!$userModel->find($payload->id ?? $payload->uid ?? 0)) {
+                    return Services::response()->setJSON(['message' => 'User not found'])->setStatusCode(401);
                 }
             }
 
-            // Check role if arguments passed
-            if ($arguments && !in_array($decoded->role, $arguments)) {
-                return Services::response()
-                    ->setJSON(['message' => 'Forbidden'])
-                    ->setStatusCode(ResponseInterface::HTTP_FORBIDDEN);
-            }
-
-            // Pass user data to request
-            $request->user = $decoded;
         } catch (\Exception $e) {
-            return Services::response()
-                ->setJSON(['message' => 'Invalid token'])
-                ->setStatusCode(ResponseInterface::HTTP_UNAUTHORIZED);
+            return Services::response()->setJSON(['message' => 'Auth Error: ' . $e->getMessage()])->setStatusCode(401);
         }
     }
 
     public function after(RequestInterface $request, ResponseInterface $response, $arguments = null)
     {
-        // ...
     }
 }

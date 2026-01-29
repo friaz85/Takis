@@ -14,9 +14,11 @@ class RewardModel extends Model
         'type',
         'cost',
         'stock',
+        'active',
         'image_url',
         'pdf_template',
         'coordinates',
+        'code_areas',
         'font_size'
     ];
     protected $useTimestamps = true;

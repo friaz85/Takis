@@ -8,19 +8,7 @@ import { CommonModule } from '@angular/common';
   template: `
     <div class="bg-container">
       <div class="gradient-overlay"></div>
-      <div class="takis-particles">
-        <div *ngFor="let piece of pieces" 
-             class="takis-wrapper" 
-             [style.left.%]="piece.x" 
-             [style.top.%]="piece.y"
-             [style.transform]="'rotate(' + piece.rotation + 'deg) scale(' + piece.scale + ')'">
-            <div class="takis-float" 
-                 [style.animation-duration.s]="piece.duration"
-                 [style.animation-delay.s]="piece.delay">
-              <img src="assets/takis-piece.png" alt="Takis">
-            </div>
-        </div>
-      </div>
+
     </div>
   `,
   styles: [`
@@ -31,15 +19,15 @@ import { CommonModule } from '@angular/common';
       width: 100vw;
       height: 100vh;
       z-index: -1;
-      background: #1A0B2E;
+      background: transparent;
       overflow: hidden;
     }
 
     .gradient-overlay {
       position: absolute;
       inset: 0;
-      background: radial-gradient(circle at 50% 50%, rgba(255, 0, 0, 0.05) 0%, transparent 70%),
-                  linear-gradient(180deg, rgba(26, 11, 46, 0.8) 0%, #1A0B2E 100%);
+      background: radial-gradient(circle at 50% 50%, rgba(255, 0, 0, 0.03) 0%, transparent 70%),
+                  linear-gradient(180deg, rgba(26, 11, 46, 0.4) 0%, rgba(26, 11, 46, 0.6) 100%);
     }
 
     .takis-wrapper {

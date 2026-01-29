@@ -1,15 +1,15 @@
 # Guía de Deployment Manual - Takis
 
 ## Información del Servidor
-- **Dominio**: takis.qrewards.com.mx
-- **Directorio**: /takis.qrewards.com.mx/public_html
+- **Dominio**: dev.takisaficionintensa.com.mx
+- **Directorio**: /dev.takisaficionintensa.com.mx/public_html
 - **Base de datos**: dbx7kmb408ygd7
 - **Usuario DB**: ubayhneffxygo
 
 ## Estructura de Directorios
 
 ```
-/takis.qrewards.com.mx/public_html/
+/dev.takisaficionintensa.com.mx/public_html/
 ├── api/                    # Backend (CodeIgniter)
 │   ├── app/
 │   ├── public/
@@ -57,42 +57,42 @@ cd ../../..
 
 ```bash
 # Usando SCP (reemplaza USUARIO con tu usuario SSH)
-scp backend_deploy.zip USUARIO@takis.qrewards.com.mx:~/
-scp frontend_deploy.zip USUARIO@takis.qrewards.com.mx:~/
-scp deploy/api.htaccess USUARIO@takis.qrewards.com.mx:~/
-scp deploy/frontend.htaccess USUARIO@takis.qrewards.com.mx:~/
+scp backend_deploy.zip USUARIO@dev.takisaficionintensa.com.mx:~/
+scp frontend_deploy.zip USUARIO@dev.takisaficionintensa.com.mx:~/
+scp deploy/api.htaccess USUARIO@dev.takisaficionintensa.com.mx:~/
+scp deploy/frontend.htaccess USUARIO@dev.takisaficionintensa.com.mx:~/
 ```
 
 ### 4. Conectar por SSH y desplegar
 
 ```bash
-ssh USUARIO@takis.qrewards.com.mx
+ssh USUARIO@dev.takisaficionintensa.com.mx
 
 # Descomprimir backend
-cd /takis.qrewards.com.mx/public_html/api
+cd /dev.takisaficionintensa.com.mx/public_html/api
 unzip ~/backend_deploy.zip
 composer install --no-dev --optimize-autoloader
 
 # Descomprimir frontend
-cd /takis.qrewards.com.mx/public_html
+cd /dev.takisaficionintensa.com.mx/public_html
 unzip ~/frontend_deploy.zip
 
 # Configurar .htaccess
-cp ~/api.htaccess /takis.qrewards.com.mx/public_html/api/.htaccess
-cp ~/frontend.htaccess /takis.qrewards.com.mx/public_html/.htaccess
+cp ~/api.htaccess /dev.takisaficionintensa.com.mx/public_html/api/.htaccess
+cp ~/frontend.htaccess /dev.takisaficionintensa.com.mx/public_html/.htaccess
 
 # Crear directorios necesarios
-mkdir -p /takis.qrewards.com.mx/public_html/api/uploads/logo
-mkdir -p /takis.qrewards.com.mx/public_html/api/uploads/rewards
-mkdir -p /takis.qrewards.com.mx/public_html/api/uploads/templates
-mkdir -p /takis.qrewards.com.mx/public_html/api/generated_pdfs
-mkdir -p /takis.qrewards.com.mx/public_html/api/writable/logs
-mkdir -p /takis.qrewards.com.mx/public_html/api/writable/cache
+mkdir -p /dev.takisaficionintensa.com.mx/public_html/api/uploads/logo
+mkdir -p /dev.takisaficionintensa.com.mx/public_html/api/uploads/rewards
+mkdir -p /dev.takisaficionintensa.com.mx/public_html/api/uploads/templates
+mkdir -p /dev.takisaficionintensa.com.mx/public_html/api/generated_pdfs
+mkdir -p /dev.takisaficionintensa.com.mx/public_html/api/writable/logs
+mkdir -p /dev.takisaficionintensa.com.mx/public_html/api/writable/cache
 
 # Configurar permisos
-chmod -R 755 /takis.qrewards.com.mx/public_html/api/writable
-chmod -R 755 /takis.qrewards.com.mx/public_html/api/uploads
-chmod -R 755 /takis.qrewards.com.mx/public_html/api/generated_pdfs
+chmod -R 755 /dev.takisaficionintensa.com.mx/public_html/api/writable
+chmod -R 755 /dev.takisaficionintensa.com.mx/public_html/api/uploads
+chmod -R 755 /dev.takisaficionintensa.com.mx/public_html/api/generated_pdfs
 
 # Limpiar
 rm ~/backend_deploy.zip ~/frontend_deploy.zip ~/api.htaccess ~/frontend.htaccess
@@ -101,7 +101,7 @@ rm ~/backend_deploy.zip ~/frontend_deploy.zip ~/api.htaccess ~/frontend.htaccess
 ### 5. Configurar .env en el servidor
 
 ```bash
-nano /takis.qrewards.com.mx/public_html/api/.env
+nano /dev.takisaficionintensa.com.mx/public_html/api/.env
 ```
 
 Copiar el contenido de `deploy/production.env` y actualizar:
@@ -112,7 +112,7 @@ Copiar el contenido de `deploy/production.env` y actualizar:
 
 ```bash
 # Opción 1: Via SSH
-mysql -u ubayhneffxygo -p dbx7kmb408ygd7 < /takis.qrewards.com.mx/public_html/api/database/schema.sql
+mysql -u ubayhneffxygo -p dbx7kmb408ygd7 < /dev.takisaficionintensa.com.mx/public_html/api/database/schema.sql
 
 # Opción 2: Via phpMyAdmin
 # Ir a phpMyAdmin y ejecutar el schema.sql
@@ -120,23 +120,23 @@ mysql -u ubayhneffxygo -p dbx7kmb408ygd7 < /takis.qrewards.com.mx/public_html/ap
 
 ### 7. Verificar
 
-- Frontend: https://takis.qrewards.com.mx
-- API: https://takis.qrewards.com.mx/api/
-- Test endpoint: https://takis.qrewards.com.mx/api/rewards/public
+- Frontend: https://dev.takisaficionintensa.com.mx
+- API: https://dev.takisaficionintensa.com.mx/api/
+- Test endpoint: https://dev.takisaficionintensa.com.mx/api/rewards/public
 
 ## Deployment Rápido (Script Automatizado)
 
 Si tienes acceso SSH configurado:
 
 ```bash
-./deploy.sh USUARIO@takis.qrewards.com.mx /takis.qrewards.com.mx/public_html
+./deploy.sh USUARIO@dev.takisaficionintensa.com.mx /dev.takisaficionintensa.com.mx/public_html
 ```
 
 ## Troubleshooting
 
 ### Error 500
 - Verificar permisos de writable/
-- Revisar logs: `/takis.qrewards.com.mx/public_html/api/writable/logs/`
+- Revisar logs: `/dev.takisaficionintensa.com.mx/public_html/api/writable/logs/`
 
 ### Base de datos no conecta
 - Verificar credenciales en .env
@@ -150,11 +150,11 @@ Si tienes acceso SSH configurado:
 
 ```bash
 # Ver logs en tiempo real
-tail -f /takis.qrewards.com.mx/public_html/api/writable/logs/log-*.log
+tail -f /dev.takisaficionintensa.com.mx/public_html/api/writable/logs/log-*.log
 
 # Limpiar cache
-rm -rf /takis.qrewards.com.mx/public_html/api/writable/cache/*
+rm -rf /dev.takisaficionintensa.com.mx/public_html/api/writable/cache/*
 
 # Ver espacio en disco
-du -sh /takis.qrewards.com.mx/public_html/*
+du -sh /dev.takisaficionintensa.com.mx/public_html/*
 ```

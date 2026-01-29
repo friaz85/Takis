@@ -1,479 +1,944 @@
-import { Component, signal, inject, OnInit } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
+import { Component, inject, OnInit, signal, computed, ViewChild, ElementRef, AfterViewInit, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { HttpClient } from '@angular/common/http';
 import { FormsModule } from '@angular/forms';
 import { AdminNavbarComponent } from './admin-navbar.component';
-import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
+import { AdminLayoutService } from '../services/admin-layout.service';
 import { ToastService } from '../services/toast.service';
+import { environment } from '../../environments/environment';
+
+interface CodeArea {
+  id: number;
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+  fontSize: number;
+}
 
 @Component({
-  selector: 'app-admin-reward-form',
+  selector: 'app-admin-rewards',
   standalone: true,
   imports: [CommonModule, FormsModule, AdminNavbarComponent],
   template: `
     <app-admin-navbar></app-admin-navbar>
-    <div class="rewards-page">
+    <div class="admin-page" [class.sidebar-closed]="!layoutService.isSidebarOpen()">
       <div class="header-row">
         <div>
-          <h2 class="title">GESTIÓN DE RECOMPENSAS</h2>
-          <p class="subtitle">Administra el catálogo de recompensas físicas y digitales</p>
+           <h2 class="title">GESTIÓN DE RECOMPENSAS</h2>
+           <p class="subtitle">Agrega y edita los premios disponibles</p>
         </div>
-        <button class="add-btn" (click)="openModal()">
-          <span class="icon">+</span> NUEVA RECOMPENSA
-        </button>
+        <div class="header-actions">
+           <button class="export-btn secondary" (click)="exportToCSV()">
+             <span class="icon">📥</span> <span class="btn-text">Exportar CSV</span>
+           </button>
+            <button class="export-btn create-reward-btn" (click)="openCreateModal()">
+              <span class="icon">➕</span> <span class="btn-text">Nueva Recompensa</span>
+            </button>
+        </div>
       </div>
 
-      <div class="table-card">
-        <table class="data-table">
-          <thead>
-            <tr>
-              <th width="80">IMAGEN</th>
-              <th>TÍTULO</th>
-              <th>TIPO</th>
-              <th>COSTO (PTS)</th>
-              <th>STOCK</th>
-              <th>PLANTILLA</th>
-              <th width="150" class="text-right">ACCIONES</th>
-            </tr>
-          </thead>
-          <tbody>
-            @for (reward of rewards(); track reward.id) {
+      <div class="table-container">
+        <div class="table-header">
+           <div class="search-box">
+             <input 
+               type="text" 
+               [ngModel]="searchTerm()" 
+               (ngModelChange)="searchTerm.set($event); currentPage = 1"
+               placeholder="Buscar recompensa..."
+             >
+           </div>
+        </div>
+
+        <div class="table-wrapper">
+          <table class="admin-table">
+            <thead>
               <tr>
+                <th>Imagen</th>
+                <th>Nombre</th>
+                <th class="hide-mobile">Puntos</th>
+                <th class="hide-mobile">Stock</th>
+                <th class="hide-mobile">Tipo</th>
+                <th class="text-right">Acciones</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let reward of paginatedRewards()">
                 <td>
-                  <div class="img-thumb">
-                    <img [src]="reward.image_url ? 'https://takis.qrewards.com.mx/api/uploads/rewards/' + reward.image_url : 'assets/takis-piece.png'" alt="Img">
-                  </div>
+                  <img [src]="reward.image_url ? environment.uploadsUrl + '/rewards/' + reward.image_url : 'assets/takis-piece.png'" class="reward-thumb" alt="Premio">
                 </td>
-                <td class="font-bold">{{ reward.title }}</td>
                 <td>
-                  <span class="badge" [class]="reward.type">{{ reward.type === 'physical' ? 'FÍSICO' : 'DIGITAL' }}</span>
+                  <span class="font-bold">{{ reward.title }}</span>
+                  <small class="block text-gray hide-mobile">{{ reward.type === 'physical' ? 'FÍSICO' : 'DIGITAL' }}</small>
                 </td>
-                <td class="text-gold">{{ reward.cost | number }}</td>
-                <td>{{ reward.stock }}</td>
-                <td>
-                  <span *ngIf="reward.type === 'digital'" class="text-xs text-gray">
-                    {{ reward.pdf_template ? 'PDF Cargado' : 'Sin PDF' }}
-                  </span>
-                  <span *ngIf="reward.type !== 'digital'">-</span>
+                <td class="hide-mobile font-bold text-gold">{{ (reward.cost || 0) | number }} pts</td>
+                <td class="hide-mobile">
+                   <span class="stock-badge" [class.low]="reward.stock <= 5">{{ reward.stock }}</span>
+                </td>
+                <td class="hide-mobile">
+                   <span class="type-badge" [class.digital]="reward.type === 'digital'">
+                      {{ reward.type === 'physical' ? '📦 Físico' : '💾 Digital' }}
+                   </span>
                 </td>
                 <td class="text-right">
-                  <div class="action-buttons">
-                    <button class="icon-btn edit" (click)="openModal(reward)" title="Editar">✏️</button>
-                    <button class="icon-btn delete" (click)="deleteReward(reward)" title="Eliminar">🗑️</button>
-                  </div>
+                   <div class="action-group">
+                     <button class="icon-btn edit" (click)="editReward(reward)" title="Editar">✏️</button>
+                     <button class="icon-btn delete" (click)="deleteReward(reward.id)" title="Eliminar">🗑️</button>
+                   </div>
                 </td>
               </tr>
-            }
-            @if (rewards().length === 0) {
-              <tr>
-                <td colspan="7" class="empty-cell">No hay recompensas registradas.</td>
+              <tr *ngIf="filteredRewards().length === 0">
+                 <td colspan="6" class="text-center py-8 text-gray">No se encontraron recompensas</td>
               </tr>
-            }
-          </tbody>
-        </table>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="pagination" *ngIf="filteredRewards().length > 0">
+          <div class="page-info">
+             {{ (currentPage - 1) * pageSize + 1 }} - {{ Math.min(currentPage * pageSize, filteredRewards().length) }} de {{ filteredRewards().length }}
+          </div>
+          <div class="page-controls">
+            <button [disabled]="currentPage === 1" (click)="currentPage = currentPage - 1">«</button>
+            <span class="current-page">{{ currentPage }}</span>
+            <button [disabled]="currentPage >= totalPages()" (click)="currentPage = currentPage + 1">»</button>
+          </div>
+        </div>
       </div>
-    </div>
 
-    <!-- MODAL -->
-    <div class="modal-overlay" *ngIf="isModalOpen" (click)="closeModal()">
-      <div class="modal-panel" (click)="$event.stopPropagation()">
-        <div class="modal-header">
-          <h3>{{ editingReward ? 'EDITAR' : 'NUEVA' }} RECOMPENSA</h3>
-          <button class="close-btn" (click)="closeModal()">✕</button>
-        </div>
-
-        <div class="modal-body">
-          <!-- Columna Izquierda: Formulario -->
-          <div class="form-column">
-            
-            <div class="field-group">
-              <label>Título de la Recompensa</label>
-              <input type="text" [(ngModel)]="currentReward.title" placeholder="Ej: Takis Fuego 200g">
-            </div>
-
-            <div class="field-group">
-              <label>Imagen de la Recompensa</label>
-              <input type="file" (change)="onImageSelected($event)" accept="image/*" class="file-input">
-              <small *ngIf="currentReward.image_url" class="file-info">Actual: {{ currentReward.image_url }}</small>
-            </div>
-
-            <div class="field-group">
-              <label>Descripción</label>
-              <textarea [(ngModel)]="currentReward.description" rows="3" placeholder="Detalles de la recompensa..."></textarea>
-            </div>
-            
-            <div class="row">
-              <div class="field-group">
-                <label>Costo (Puntos)</label>
-                <input type="number" [(ngModel)]="currentReward.cost">
-              </div>
-              <div class="field-group">
-                <label>Stock Inicial</label>
-                <input type="number" [(ngModel)]="currentReward.stock">
-              </div>
-            </div>
-
-            <div class="field-group">
-              <label>Tipo de Recompensa</label>
-              <div class="type-selector">
-                <button [class.active]="currentReward.type === 'physical'" (click)="setRewardType('physical')">📦 FÍSICO</button>
-                <button [class.active]="currentReward.type === 'digital'" (click)="setRewardType('digital')">📄 DIGITAL (PDF)</button>
-              </div>
-            </div>
-
-            <div class="field-group" *ngIf="currentReward.type === 'digital'">
-               <div class="alert-box">
-                  <label class="required">Plantilla PDF</label>
-                  <input type="file" (change)="onPdfSelected($event)" accept=".pdf,application/pdf" class="file-input">
-                  <small class="hint">Sube el PDF base y configura la zona de impresión a la derecha.</small>
-               </div>
-            </div>
-
-          </div>
-
-          <!-- Columna Derecha: Preview PDF (Solo Digital) -->
-          <div class="preview-column" *ngIf="currentReward.type === 'digital'">
-            <div class="preview-header">
-                <label>Zona de Previsualización</label>
-                <div class="controls">
-                   <button class="btn-add-code" (click)="addCodeBox()">+ Agregar Caja</button>
+      <!-- Advanced Create/Edit Modal -->
+      <div class="modal-overlay" *ngIf="showCreateModal || editingReward" (click)="closeModal($event)">
+        <div class="reward-editor-modal" (click)="$event.stopPropagation()">
+           <div class="modal-header">
+             <h3>{{ (editingReward && editingReward.id) ? 'Editar' : 'Nueva' }} Recompensa</h3>
+             <button class="close-btn" (click)="closeModal($event)">✕</button>
+           </div>
+           
+           <div class="editor-container" *ngIf="editingReward">
+              <!-- LEFT PANEL: Form Fields -->
+              <div class="editor-left">
+                <div class="form-group">
+                  <label>Título de la Recompensa</label>
+                  <input type="text" [(ngModel)]="editingReward.title" placeholder="Ej: Audífonos Bluetooth Pro">
                 </div>
-            </div>
-            
-            <div class="pdf-wrapper">
-               <div class="pdf-container" #pdfContainer>
-                  <object *ngIf="pdfPreviewUrl" [data]="pdfPreviewUrl" type="application/pdf" class="pdf-object">
-                      <p>Tu navegador no soporta visualización de PDF.</p>
-                  </object>
-                  <div *ngIf="!pdfPreviewUrl" class="no-pdf">
-                    <span>Sube un PDF para configurar las coordenadas</span>
+
+                <div class="form-group">
+                  <label>Imagen del Producto (800x800px recomendado)</label>
+                  <input type="file" (change)="onImageSelected($event)" accept="image/*" class="file-input">
+                  <small class="help-text">Formato cuadrado para mejor visualización</small>
+                </div>
+
+                <div class="form-group">
+                  <label>Descripción</label>
+                  <textarea [(ngModel)]="editingReward.description" placeholder="Describe la recompensa..." rows="3"></textarea>
+                </div>
+
+                <div class="form-group">
+                  <label>Tipo de Recompensa</label>
+                  <div class="type-selector">
+                    <button 
+                      class="type-btn" 
+                      [class.active]="editingReward.type === 'physical'"
+                      (click)="editingReward.type = 'physical'"
+                    >
+                      📦 Físico
+                    </button>
+                    <button 
+                      class="type-btn" 
+                      [class.active]="editingReward.type === 'digital'"
+                      (click)="editingReward.type = 'digital'"
+                    >
+                      💾 Digital
+                    </button>
+                  </div>
+                </div>
+
+                <div class="form-row">
+                  <div class="form-group">
+                    <label>Costo (Puntos)</label>
+                    <input type="number" [(ngModel)]="editingReward.cost" placeholder="5000">
+                  </div>
+                  <div class="form-group">
+                    <label>Stock Disponible</label>
+                    <input type="number" [(ngModel)]="editingReward.stock" placeholder="100">
+                  </div>
+                </div>
+
+                <!-- Digital PDF Section -->
+                <div class="digital-section" *ngIf="editingReward.type === 'digital'">
+                  <div class="section-header">
+                    <h4>⚙️ Configuración de Certificado Digital</h4>
+                  </div>
+                  
+                  <div class="form-group">
+                    <label>Plantilla PDF</label>
+                    <input type="file" (change)="onPDFSelected($event)" accept="application/pdf" class="file-input">
+                    <small class="help-text" *ngIf="editingReward.pdf_template">Actual: {{ editingReward.pdf_template }}</small>
                   </div>
 
-                  <!-- Overlay -->
-                  <div class="drag-overlay" 
-                       (mousemove)="onDrag($event)" 
-                       (mouseup)="stopInteraction()" 
-                       (mouseleave)="stopInteraction()">
-                      
-                      @if (codeBoxes.length === 0 && pdfPreviewUrl) {
-                        <div class="empty-boxes-hint">
-                           <span class="hint-icon">👆</span>
-                           <h4 class="hint-title">Configura tu plantilla</h4>
-                           <p class="hint-desc">Usa el botón <strong>"+ Agregar Caja"</strong> para definir dónde imprimir el código</p>
+                  <div class="code-areas-manager" *ngIf="pdfLoaded()">
+                    <div class="areas-header">
+                      <div>
+                        <label>📍 Áreas de Código</label>
+                        <small class="help-text">Define dónde se imprimirá el código en el certificado</small>
+                      </div>
+                      <button class="btn-add-area" (click)="addCodeArea()">
+                        ➕ Agregar Área
+                      </button>
+                    </div>
+                    <div class="areas-list">
+                      <div class="area-item" *ngFor="let area of codeAreas(); let i = index">
+                        <div class="area-info">
+                          <span class="area-number">Área {{i + 1}}</span>
+                          <span class="area-coords">📐 {{area.x}}, {{area.y}}</span>
                         </div>
-                      }
-
-                      @for (box of codeBoxes; track $index) {
-                          <div class="code-box" 
-                             [class.dragging]="activeDragIndex === $index"
-                             [class.resizing]="activeResizeIndex === $index"
-                             (mousedown)="startDrag($event, $index)"
-                             [style.left.%]="box.x" 
-                             [style.top.%]="box.y"
-                             [style.width.%]="box.w || 20"
-                             [style.height.%]="box.h || 5">
-                            
-                            <span class="code-label">CODE</span>
-                            <span class="code-remove" (mousedown)="removeBox($index, $event)" title="Eliminar">×</span>
-                            <div class="resize-handle" (mousedown)="startResize($event, $index)"></div>
+                        <div class="area-controls">
+                          <div class="font-control">
+                            <label>Tamaño:</label>
+                            <input type="number" [(ngModel)]="area.fontSize" min="8" max="72" placeholder="14">
+                            <span class="unit">pt</span>
                           </div>
-                      }
+                          <button class="btn-remove" (click)="removeCodeArea(i)" title="Eliminar área">🗑️</button>
+                        </div>
+                      </div>
+                      <div class="areas-empty" *ngIf="codeAreas().length === 0">
+                        <p>👆 Haz clic en "Agregar Área" para definir dónde se imprimirá el código</p>
+                      </div>
+                    </div>
                   </div>
-               </div>
-            </div>
-          </div>
-        </div>
+                </div>
 
-        <div class="modal-footer">
-          <button (click)="closeModal()" class="btn-cancel">Cancelar</button>
-          <button (click)="save()" class="btn-save" [disabled]="saving">
-            {{ saving ? 'Guardando...' : 'Guardar Recompensa' }}
-          </button>
+                <div class="form-group">
+                  <label>Estado</label>
+                  <div class="type-selector">
+                    <button 
+                      class="type-btn small" 
+                      [class.active]="editingReward.active === 1"
+                      (click)="editingReward.active = 1"
+                    >
+                      ✅ Activo
+                    </button>
+                    <button 
+                      class="type-btn small" 
+                      [class.active]="editingReward.active === 0"
+                      (click)="editingReward.active = 0"
+                    >
+                      ⛔ Inactivo
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              <!-- RIGHT PANEL: Preview -->
+              <div class="editor-right">
+                <div class="preview-container">
+                  <h4>Vista Previa</h4>
+                  
+                  <!-- Image Preview (ONLY for physical rewards) -->
+                  <div class="image-preview" *ngIf="editingReward.type === 'physical' && (selectedImagePreview || editingReward.image_url)">
+                    <img [src]="selectedImagePreview || environment.uploadsUrl + '/rewards/' + editingReward.image_url" alt="Preview">
+                  </div>
+
+                  <!-- PDF Preview with Draggable Areas (ONLY for digital rewards) -->
+                  <div class="pdf-preview-wrapper" *ngIf="editingReward.type === 'digital'">
+                    <div class="pdf-canvas-container" #pdfContainer>
+                      <canvas #pdfCanvas [style.display]="pdfLoaded() ? 'block' : 'none'"></canvas>
+                      
+                      <!-- Loading indicator -->
+                      <div class="pdf-loading" *ngIf="!pdfLoaded() && (selectedPDF || editingReward.pdf_template)">
+                        <p>⏳ Cargando PDF...</p>
+                      </div>
+                      
+                      <!-- Draggable/Resizable Code Areas -->
+                      <div 
+                        *ngFor="let area of codeAreas(); let i = index"
+                        class="code-area-box"
+                        [style.left.px]="area.x"
+                        [style.top.px]="area.y"
+                        [style.width.px]="area.width"
+                        [style.height.px]="area.height"
+                        [style.display]="pdfLoaded() ? 'block' : 'none'"
+                        (mousedown)="startDrag($event, i)"
+                      >
+                        <div class="area-label">Área {{i + 1}} ({{area.fontSize}}pt)</div>
+                        <div class="demo-text" [style.font-size.pt]="area.fontSize">Código demo {{i + 1}}</div>
+                        <div class="resize-handle" (mousedown)="startResize($event, i)"></div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div class="preview-placeholder" *ngIf="(editingReward.type === 'physical' && !selectedImagePreview && !editingReward.image_url) || (editingReward.type === 'digital' && !selectedPDF && !editingReward.pdf_template)">
+                    <p>{{ editingReward.type === 'digital' ? '📄 Sube un PDF para ver la vista previa' : '📸 Sube una imagen para ver la vista previa' }}</p>
+                  </div>
+                </div>
+              </div>
+           </div>
+
+           <div class="modal-footer">
+             <button class="btn-cancel" (click)="closeModal($event)">Cancelar</button>
+             <button class="btn-save" (click)="saveReward()" [disabled]="saving()">
+                {{ saving() ? '💾 Guardando...' : '💾 Guardar Recompensa' }}
+             </button>
+           </div>
         </div>
       </div>
     </div>
   `,
   styles: [`
-    .rewards-page { padding: 3rem 3rem 3rem calc(260px + 3rem); background: transparent; min-height: 100vh; color: #E0E0E0; font-family: 'Inter', sans-serif; }
-    .header-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem; }
-    .title { font-weight: 800; font-size: 2rem; margin: 0; color: white; letter-spacing: -1px; }
-    .subtitle { color: #aaa; margin: 0.5rem 0 0 0; font-size: 0.9rem; }
-    .add-btn { background: #F2E74B; color: #1A0B2E; border: none; padding: 0.8rem 1.5rem; border-radius: 0.5rem; font-weight: 700; cursor: pointer; display: flex; align-items: center; gap: 0.5rem; }
-    
-    .table-card { background: #1A0B2E; border-radius: 1rem; border: 1px solid rgba(255,255,255,0.05); overflow: hidden; }
-    .data-table { width: 100%; border-collapse: collapse; text-align: left; }
-    .data-table th { background: #23113a; padding: 1.2rem; font-size: 0.75rem; color: #888; text-transform: uppercase; font-weight: 600; border-bottom: 2px solid rgba(255,255,255,0.05); }
-    .data-table td { padding: 1rem 1.2rem; border-bottom: 1px solid rgba(255,255,255,0.05); vertical-align: middle; }
-    .img-thumb { width: 40px; height: 40px; border-radius: 6px; overflow: hidden; background: white; }
-    .img-thumb img { width: 100%; height: 100%; object-fit: cover; }
-    .badge { padding: 4px 8px; border-radius: 4px; font-size: 0.7rem; font-weight: bold; text-transform: uppercase; }
-    .badge.physical { background: rgba(50, 255, 100, 0.1); color: #4eff88; }
-    .badge.digital { background: rgba(100, 200, 255, 0.1); color: #64b5f6; }
-    .icon-btn { background: transparent; border: none; cursor: pointer; font-size: 1.2rem; padding: 5px; opacity: 0.7; }
-    
-    .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.8); z-index: 200; display: flex; align-items: center; justify-content: center; backdrop-filter: blur(5px); }
-    .modal-panel { background: #150a25; width: 95%; max-width: 1400px; height: 95vh; border-radius: 1rem; border: 1px solid #6C1DDA; display: flex; flex-direction: column; overflow: hidden; box-shadow: 0 0 50px rgba(0,0,0,0.5); }
-    .modal-header { padding: 1rem 1.5rem; background: #1A0B2E; border-bottom: 1px solid rgba(255,255,255,0.1); display: flex; justify-content: space-between; align-items: center; }
-    .modal-header h3 { margin: 0; color: white; }
-    .close-btn { background: transparent; border: none; color: #aaa; font-size: 1.5rem; cursor: pointer; }
-    .modal-body { flex: 1; display: flex; overflow: hidden; }
-    .form-column { width: 350px; padding: 1.5rem; border-right: 1px solid rgba(255,255,255,0.1); overflow-y: auto; background: #120820; flex-shrink: 0; }
-    .preview-column { flex: 1; padding: 0; background: #000; display: flex; flex-direction: column; overflow: hidden; position: relative; }
-    .preview-header { padding: 1rem; background: rgba(26, 11, 46, 0.9); display: flex; justify-content: space-between; align-items: center; position: absolute; top: 0; left: 0; right: 0; z-index: 50; border-bottom: 1px solid rgba(255,255,255,0.1); }
-    .btn-add-code { background: #F2E74B; color: #1A0B2E; border: none; padding: 0.5rem 1rem; border-radius: 4px; font-weight: bold; cursor: pointer; font-size: 0.8rem; }
-    .pdf-wrapper { flex: 1; overflow: hidden; display: flex; justify-content: center; align-items: center; padding-top: 60px; }
-    .pdf-container { position: relative; width: 100%; height: 100%; display: flex; justify-content: center; background: #333; }
-    .pdf-object { width: 100%; height: 100%; display: block; border: none; }
-    .drag-overlay { position: absolute; inset: 0; z-index: 10; width: 100%; height: 100%; pointer-events: auto; }
-    
-    .type-selector { display: flex; gap: 0.5rem; background: rgba(255,255,255,0.05); padding: 5px; border-radius: 0.5rem; margin-top: 0.5rem; }
-    .type-selector button { flex: 1; background: transparent; border: none; color: #aaa; padding: 0.8rem; border-radius: 0.4rem; cursor: pointer; font-weight: 700; font-size: 0.9rem; transition: all 0.2s; text-transform: uppercase; letter-spacing: 0.5px; }
-    .type-selector button.active { background: #6C1DDA; color: white; box-shadow: 0 4px 10px rgba(108, 29, 218, 0.3); }
-    
-    .code-box { position: absolute; background: rgba(242, 231, 75, 0.3); border: 2px dashed #F2E74B; color: #FFF; display: flex; align-items: center; justify-content: center; cursor: move; font-size: 0.7rem; font-weight: bold; text-shadow: 0 1px 2px black; user-select: none; box-sizing: border-box; }
-    .code-box:hover { background: rgba(242, 231, 75, 0.5); }
-    .code-box.dragging { border-style: solid; box-shadow: 0 0 15px rgba(242, 231, 75, 0.5); z-index: 100; }
-    .code-box.resizing { cursor: nwse-resize; }
-    .code-label { pointer-events: none; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
-    .code-remove { position: absolute; top: -10px; right: -10px; width: 20px; height: 20px; background: #ff4444; color: white; border-radius: 50%; font-size: 14px; display: flex; align-items: center; justify-content: center; cursor: pointer; border: 2px solid white; z-index: 101; }
-    .resize-handle { position: absolute; bottom: 0; right: 0; width: 15px; height: 15px; background: rgba(255,255,255,0.5); cursor: nwse-resize; clip-path: polygon(100% 0, 100% 100%, 0 100%); }
-    
-    .empty-boxes-hint { 
-      position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); 
+    .admin-page { 
+      padding: 5rem 2rem 2rem 2rem; 
+      margin-left: 260px;
+      min-height: 100vh;
       color: white; 
-      display: flex; flex-direction: column; align-items: center; gap: 1rem;
-      background: rgba(26, 11, 46, 0.85); 
-      padding: 2.5rem; border-radius: 1.5rem; 
-      border: 1px solid rgba(242, 231, 75, 0.3);
-      backdrop-filter: blur(8px);
-      box-shadow: 0 10px 30px rgba(0,0,0,0.5);
-      pointer-events: none; text-align: center;
-      max-width: 80%;
-      animation: floatHint 3s ease-in-out infinite;
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     }
-    .hint-icon { font-size: 3rem; margin-bottom: 0.5rem; filter: drop-shadow(0 0 10px rgba(242, 231, 75, 0.5)); }
-    .hint-title { font-size: 1.2rem; font-weight: 800; color: #F2E74B; margin: 0; text-transform: uppercase; letter-spacing: 1px; }
-    .hint-desc { font-size: 0.9rem; color: #ddd; margin: 0; line-height: 1.5; }
-    
-    @keyframes floatHint {
-      0%, 100% { transform: translate(-50%, -50%); }
-      50% { transform: translate(-50%, -55%); }
+    .admin-page.sidebar-closed { margin-left: 0; padding-top: 5rem; }
+
+    .header-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem; gap: 1rem; flex-wrap: wrap; }
+    .title { font-weight: 900; font-size: 2rem; color: #F2E74B; margin: 0; }
+    .subtitle { color: #ccc; margin: 0.5rem 0 0 0; }
+    .header-actions { display: flex; gap: 1rem; }
+
+    .export-btn { 
+      background: #6C1DDA; border: none; color: white; padding: 0.75rem 1.5rem; 
+      border-radius: 0.5rem; cursor: pointer; display: flex; align-items: center; 
+      gap: 0.5rem; font-weight: bold; transition: 0.3s;
+    }
+    .export-btn.secondary { background: rgba(108, 29, 218, 0.3); }
+    .export-btn .icon { color: #fff; }
+    .export-btn:hover { background: #F2E74B; color: #1A0B2E; transform: translateY(-2px); }
+    .export-btn:hover .icon { color: inherit; }
+    .create-reward-btn .icon { filter: brightness(5); }
+
+    .table-container { background: rgba(255,255,255,0.05); border: 2px solid #6C1DDA; border-radius: 1.5rem; overflow: hidden; }
+    .table-header { padding: 1.5rem; border-bottom: 1px solid rgba(108, 29, 218, 0.2); }
+    .search-box input {
+      width: 100%; max-width: 400px; background: rgba(0,0,0,0.2); border: 1px solid #6C1DDA;
+      color: white; padding: 0.8rem 1.2rem; border-radius: 0.5rem; outline: none;
     }
 
-    .field-group { margin-bottom: 1.5rem; }
-    label { display: block; color: #888; font-size: 0.75rem; margin-bottom: 0.5rem; text-transform: uppercase; font-weight: 600; }
-    input, textarea { width: 100%; padding: 0.8rem; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 0.4rem; color: white; }
-    .alert-box { background: rgba(108, 29, 218, 0.2); padding: 1rem; border: 1px solid #6C1DDA; border-radius: 0.5rem; margin-top: 1rem; }
-    .modal-footer { padding: 1.5rem; background: #1A0B2E; display: flex; justify-content: flex-end; gap: 1rem; border-top: 1px solid rgba(255,255,255,0.05); }
-    .btn-save { background: #6C1DDA; color: white; border: none; padding: 0.8rem 2rem; border-radius: 0.4rem; font-weight: 700; cursor: pointer; }
-    .btn-cancel { background: transparent; border: 1px solid rgba(255,255,255,0.2); color: white; padding: 0.8rem 1.5rem; border-radius: 0.4rem; font-weight: 600; cursor: pointer; }
+    .table-wrapper { overflow-x: auto; }
+    .admin-table { width: 100%; border-collapse: collapse; }
+    .admin-table th { background: rgba(108, 29, 218, 0.2); color: #F2E74B; padding: 1.2rem; text-align: left; font-size: 0.85rem; text-transform: uppercase; font-weight: 900; }
+    .admin-table td { padding: 1.2rem; border-bottom: 1px solid rgba(108, 29, 218, 0.1); font-size: 0.9rem; }
+    .admin-table tr:hover { background: rgba(242, 231, 75, 0.05); }
+
+    .reward-thumb { width: 50px; height: 50px; border-radius: 0.5rem; object-fit: cover; border: 2px solid #6C1DDA; }
+    .stock-badge { background: #00cc66; color: white; padding: 0.2rem 0.6rem; border-radius: 0.3rem; font-size: 0.75rem; font-weight: bold; }
+    .stock-badge.low { background: #ff4444; }
+    .type-badge { background: rgba(108, 29, 218, 0.3); color: #F2E74B; padding: 0.3rem 0.8rem; border-radius: 0.5rem; font-size: 0.75rem; font-weight: bold; }
+    .type-badge.digital { background: rgba(242, 231, 75, 0.2); }
+
+    .action-group { display: flex; gap: 0.5rem; justify-content: flex-end; }
+    .icon-btn { background: transparent; border: 1px solid rgba(255,255,255,0.2); padding: 0.4rem 0.6rem; border-radius: 0.3rem; cursor: pointer; transition: 0.2s; }
+    .icon-btn:hover { background: rgba(108, 29, 218, 0.3); }
+
+    .pagination { padding: 1.5rem; display: flex; justify-content: space-between; align-items: center; }
+    .page-controls { display: flex; align-items: center; gap: 1rem; }
+    .page-controls button { background: #6C1DDA; border: none; color: white; width: 35px; height: 35px; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; font-weight: bold; }
+    .page-controls button:disabled { opacity: 0.3; cursor: not-allowed; }
+    .current-page { font-weight: 900; color: #F2E74B; }
+
+    /* ADVANCED MODAL */
+    .modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.9); display: flex; align-items: center; justify-content: center; z-index: 1000; padding: 1rem; }
+    .reward-editor-modal { background: #1A0B2E; border: 2px solid #6C1DDA; border-radius: 1.5rem; width: 95%; max-width: 1400px; max-height: 95vh; display: flex; flex-direction: column; overflow: hidden; }
+    
+    .modal-header { display: flex; justify-content: space-between; align-items: center; padding: 2rem; border-bottom: 1px solid rgba(108, 29, 218, 0.3); }
+    .modal-header h3 { margin: 0; color: #F2E74B; font-size: 1.5rem; }
+    .close-btn { background: transparent; border: none; color: white; font-size: 1.5rem; cursor: pointer; transition: 0.2s; }
+    .close-btn:hover { color: #F2E74B; transform: rotate(90deg); }
+
+    .editor-container { display: grid; grid-template-columns: 450px 1fr; gap: 2rem; padding: 2rem; overflow-y: auto; max-height: calc(95vh - 200px); }
+    
+    /* LEFT PANEL */
+    .editor-left { display: flex; flex-direction: column; gap: 1.5rem; }
+    .form-group { display: flex; flex-direction: column; gap: 0.5rem; }
+    .form-group label { color: #F2E74B; font-size: 0.75rem; font-weight: bold; text-transform: uppercase; letter-spacing: 1px; }
+    .form-group input[type="text"], .form-group input[type="number"], .form-group textarea { 
+      background: rgba(255,255,255,0.05); border: 1px solid rgba(108, 29, 218, 0.4); 
+      color: white; padding: 0.8rem 1rem; border-radius: 0.6rem; outline: none; transition: 0.3s;
+      font-family: inherit;
+    }
+    .form-group input:focus, .form-group textarea:focus { border-color: #F2E74B; background: rgba(108, 29, 218, 0.1); }
+    .form-group textarea { resize: vertical; min-height: 80px; }
+    .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+    .file-input { background: rgba(108, 29, 218, 0.2); border: 1px dashed #6C1DDA; padding: 0.8rem; border-radius: 0.6rem; color: white; cursor: pointer; }
+    .help-text { font-size: 0.7rem; color: #888; margin-top: 0.2rem; }
+
+    .type-selector { display: flex; gap: 0.5rem; }
+    .type-btn { flex: 1; background: rgba(255,255,255,0.05); border: 2px solid rgba(108, 29, 218, 0.3); color: #ccc; padding: 0.8rem 1rem; border-radius: 0.6rem; cursor: pointer; font-weight: bold; transition: 0.3s; }
+    .type-btn:hover { background: rgba(108, 29, 218, 0.2); }
+    .type-btn.active { background: #6C1DDA; border-color: #F2E74B; color: white; }
+    .type-btn.small { padding: 0.6rem 0.8rem; font-size: 0.85rem; }
+
+    .digital-section { background: rgba(108, 29, 218, 0.1); padding: 1.5rem; border-radius: 1rem; border: 1px solid rgba(108, 29, 218, 0.3); }
+    .section-header h4 { margin: 0 0 1rem 0; color: #F2E74B; font-size: 1rem; }
+
+    .code-areas-manager { margin-top: 1.5rem; }
+    .areas-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 1rem; gap: 1rem; }
+    .areas-header > div { flex: 1; }
+    .areas-header label { display: block; color: #F2E74B; font-size: 0.85rem; font-weight: bold; margin-bottom: 0.3rem; }
+    .btn-add-area { background: #F2E74B; border: none; color: #1A0B2E; padding: 0.6rem 1.2rem; border-radius: 0.5rem; font-weight: bold; cursor: pointer; transition: 0.3s; white-space: nowrap; font-size: 0.85rem; }
+    .btn-add-area:hover { background: #6C1DDA; color: white; transform: translateY(-2px); }
+    .areas-list { display: flex; flex-direction: column; gap: 0.75rem; }
+    .area-item { background: rgba(0,0,0,0.3); padding: 1rem; border-radius: 0.6rem; border: 1px solid rgba(108, 29, 218, 0.3); display: flex; justify-content: space-between; align-items: center; gap: 1rem; transition: 0.2s; }
+    .area-item:hover { border-color: #F2E74B; background: rgba(108, 29, 218, 0.15); }
+    .area-info { display: flex; flex-direction: column; gap: 0.3rem; flex: 1; }
+    .area-number { color: #F2E74B; font-weight: bold; font-size: 0.9rem; }
+    .area-coords { color: #888; font-size: 0.75rem; font-family: monospace; }
+    .area-controls { display: flex; align-items: center; gap: 0.75rem; }
+    .font-control { display: flex; align-items: center; gap: 0.5rem; background: rgba(255,255,255,0.05); padding: 0.4rem 0.8rem; border-radius: 0.4rem; border: 1px solid rgba(108, 29, 218, 0.3); }
+    .font-control label { color: #ccc; font-size: 0.75rem; margin: 0; }
+    .font-control input { width: 50px; background: rgba(0,0,0,0.3); border: 1px solid rgba(108, 29, 218, 0.3); color: white; padding: 0.3rem 0.5rem; border-radius: 0.3rem; text-align: center; }
+    .font-control .unit { color: #888; font-size: 0.75rem; }
+    .btn-remove { background: rgba(255,0,0,0.1); border: 1px solid rgba(255,0,0,0.3); color: #ff4444; padding: 0.4rem 0.6rem; border-radius: 0.3rem; cursor: pointer; transition: 0.2s; }
+    .btn-remove:hover { background: #ff4444; color: white; border-color: #ff4444; }
+    .areas-empty { text-align: center; padding: 2rem; color: #888; background: rgba(0,0,0,0.2); border-radius: 0.6rem; border: 1px dashed rgba(108, 29, 218, 0.3); }
+    .areas-empty p { margin: 0; font-size: 0.85rem; }
+
+    /* RIGHT PANEL */
+    .editor-right { display: flex; flex-direction: column; }
+    .preview-container { background: rgba(0,0,0,0.3); border: 2px solid rgba(108, 29, 218, 0.3); border-radius: 1rem; padding: 1.5rem; height: 100%; display: flex; flex-direction: column; }
+    .preview-container h4 { margin: 0 0 1rem 0; color: #F2E74B; }
+    
+    .image-preview { flex: 1; display: flex; align-items: center; justify-content: center; background: rgba(0,0,0,0.5); border-radius: 0.5rem; overflow: hidden; }
+    .image-preview img { max-width: 100%; max-height: 400px; object-fit: contain; }
+
+    .pdf-preview-wrapper { flex: 1; overflow: auto; }
+    .pdf-canvas-container { position: relative; display: inline-block; min-height: 200px; }
+    .pdf-canvas-container canvas { display: block; border: 1px solid rgba(108, 29, 218, 0.5); }
+    .pdf-loading { 
+      position: absolute; 
+      top: 50%; 
+      left: 50%; 
+      transform: translate(-50%, -50%); 
+      color: #F2E74B; 
+      font-size: 1.2rem; 
+      text-align: center;
+      animation: pulse 1.5s ease-in-out infinite;
+    }
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.5; }
+    }
+
+    .code-area-box { 
+      position: absolute; 
+      border: 2px solid #F2E74B; 
+      background: rgba(242, 231, 75, 0.2); 
+      cursor: move;
+      min-width: 50px;
+      min-height: 30px;
+    }
+    .area-label { 
+      position: absolute; 
+      top: -20px; 
+      left: 0; 
+      background: #F2E74B; 
+      color: #1A0B2E; 
+      padding: 0.2rem 0.5rem; 
+      font-size: 0.7rem; 
+      font-weight: bold; 
+      border-radius: 0.3rem;
+      white-space: nowrap;
+    }
+    .resize-handle { 
+      position: absolute; 
+      bottom: 0; 
+      right: 0; 
+      width: 15px; 
+      height: 15px; 
+      background: #F2E74B; 
+      cursor: nwse-resize;
+      border-radius: 0 0 0.3rem 0;
+    }
+    .demo-text {
+      width: 100%;
+      height: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #000;
+      font-weight: bold;
+      pointer-events: none;
+      overflow: hidden;
+      white-space: nowrap;
+    }
+
+    .preview-placeholder { flex: 1; display: flex; align-items: center; justify-content: center; color: #888; font-size: 1.2rem; text-align: center; }
+
+    .modal-footer { display: flex; justify-content: flex-end; gap: 1rem; padding: 1.5rem 2rem; border-top: 1px solid rgba(108, 29, 218, 0.3); }
+    .btn-cancel { background: transparent; border: 1px solid rgba(255,255,255,0.2); color: #ccc; padding: 0.75rem 1.5rem; border-radius: 0.5rem; cursor: pointer; font-weight: bold; }
+    .btn-save { background: #F2E74B; border: none; color: #1A0B2E; padding: 0.75rem 1.5rem; border-radius: 0.5rem; cursor: pointer; font-weight: bold; transition: 0.3s; }
+    .btn-save:hover { background: #6C1DDA; color: white; }
+    .btn-save:disabled { opacity: 0.5; cursor: not-allowed; }
+
+    @media (max-width: 1100px) {
+      .admin-page { margin-left: 0; padding: 5rem 1rem 2rem 1rem; }
+      .header-row { flex-direction: column; align-items: flex-start; }
+      .editor-container { grid-template-columns: 1fr; }
+      .hide-mobile { display: none; }
+      .btn-text { display: none; }
+      .export-btn { border-radius: 50%; width: 45px; height: 45px; padding: 0; justify-content: center; }
+    }
   `]
 })
-export class AdminRewardFormComponent implements OnInit {
+export class AdminRewardFormComponent implements OnInit, AfterViewInit {
+  @ViewChild('pdfCanvas') pdfCanvas!: ElementRef<HTMLCanvasElement>;
   rewards = signal<any[]>([]);
-  isModalOpen = false;
+  searchTerm = signal('');
+  currentPage = 1;
+  pageSize = 10;
+  Math = Math;
+  showCreateModal = false;
   editingReward: any = null;
-  saving = false;
-
-  currentReward: any = { type: 'physical', cost: 100, stock: 10, title: '', description: '' };
-  codeBoxes: { id: number, x: number, y: number, w: number, h: number }[] = [];
-
+  selectedImagePreview: string | null = null;
   selectedImage: File | null = null;
-  selectedPdf: File | null = null;
-  pdfPreviewUrl: SafeResourceUrl | null = null;
+  selectedPDF: File | null = null;
+  saving = signal(false);
+  pdfLoaded = signal(false);
+  codeAreas = signal<CodeArea[]>([]);
+  environment = environment;
 
-  activeDragIndex = -1;
-  activeResizeIndex = -1;
-  resizeStart = { x: 0, y: 0 };
+  // Drag state
+  draggingIndex: number | null = null;
+  resizingIndex: number | null = null;
+  dragStartX = 0;
+  dragStartY = 0;
+  dragStartAreaX = 0;
+  dragStartAreaY = 0;
+  dragStartWidth = 0;
+  dragStartHeight = 0;
 
   private http = inject(HttpClient);
-  private sanitizer = inject(DomSanitizer);
-  private toast = inject(ToastService);
+  public layoutService = inject(AdminLayoutService);
+  private toastService = inject(ToastService);
+  private cdr = inject(ChangeDetectorRef);
 
   ngOnInit() {
     this.loadRewards();
+
+    // Global mouse handlers for drag/resize
+    document.addEventListener('mousemove', this.onMouseMove.bind(this));
+    document.addEventListener('mouseup', this.onMouseUp.bind(this));
   }
 
   loadRewards() {
-    this.http.get('https://takis.qrewards.com.mx/api/index.php/admin/rewards').subscribe({
+    const mockData = [
+      { id: 1, title: 'Audífonos Bluetooth Pro', type: 'physical', cost: 5000, stock: 25, active: 1, image_url: '', pdf_template: '', coordinates: '' },
+      { id: 2, title: 'Mochila Takis Edición Especial', type: 'physical', cost: 3500, stock: 15, active: 1, image_url: '', pdf_template: '', coordinates: '' },
+      { id: 3, title: 'Certificado Digital $500', type: 'digital', cost: 10000, stock: 999, active: 1, image_url: '', pdf_template: 'cert_template.pdf', coordinates: '100,200' },
+      { id: 4, title: 'Sudadera Takis Limited', type: 'physical', cost: 7500, stock: 8, active: 1, image_url: '', pdf_template: '', coordinates: '' },
+      { id: 5, title: 'Gorra Takis Flare', type: 'physical', cost: 2000, stock: 50, active: 1, image_url: '', pdf_template: '', coordinates: '' }
+    ];
+
+    this.http.get(`${environment.apiUrl}/admin/rewards`).subscribe({
       next: (res: any) => {
-        const fixedRes = res.map((r: any) => {
-          if (typeof r.coordinates === 'string') {
-            try { r.coordinates = JSON.parse(r.coordinates); } catch (e) { r.coordinates = []; }
-          }
-          if (!Array.isArray(r.coordinates) && r.coordinates?.x) {
-            r.coordinates = [r.coordinates];
-          }
-          return r;
-        });
-        this.rewards.set(fixedRes);
+        if (Array.isArray(res) && res.length > 0) {
+          this.rewards.set(res);
+        } else {
+          this.rewards.set(mockData);
+        }
       },
-      error: () => this.toast.show('Error al cargar recompensas', 'error')
+      error: (e: any) => {
+        console.error('API rewards error, using mock data:', e);
+        this.rewards.set(mockData);
+      }
     });
   }
 
-  setRewardType(type: string) {
-    this.currentReward.type = type;
+  filteredRewards = computed(() => {
+    const term = this.searchTerm().toLowerCase();
+    return this.rewards().filter((r: any) =>
+      r.title?.toLowerCase().includes(term) ||
+      r.type?.toLowerCase().includes(term)
+    );
+  });
+
+  paginatedRewards = computed(() => {
+    const start = (this.currentPage - 1) * this.pageSize;
+    return this.filteredRewards().slice(start, start + this.pageSize);
+  });
+
+  totalPages = computed(() => Math.ceil(this.filteredRewards().length / this.pageSize));
+
+  ngAfterViewInit() {
+    // Canvas will be available after view init
   }
 
-  openModal(reward: any = null) {
-    this.editingReward = reward;
+  openCreateModal() {
+    this.editingReward = {
+      title: '',
+      type: 'physical',
+      cost: 0,
+      stock: 0,
+      active: 1,
+      image_url: '',
+      pdf_template: '',
+      coordinates: ''
+    };
+    this.selectedImagePreview = null;
     this.selectedImage = null;
-    this.selectedPdf = null;
-    this.pdfPreviewUrl = null;
-    this.codeBoxes = [];
+    this.selectedPDF = null;
+    this.pdfLoaded.set(false);
+    this.codeAreas.set([]);
+    this.showCreateModal = true;
+  }
 
-    if (reward) {
-      this.currentReward = { ...reward };
-      if (reward.pdf_template) {
-        const url = 'https://takis.qrewards.com.mx/api/uploads/pdfs/' + reward.pdf_template + '#toolbar=0&navpanes=0&view=Fit';
-        this.pdfPreviewUrl = this.sanitizer.bypassSecurityTrustResourceUrl(url);
-      }
+  editReward(reward: any) {
+    this.editingReward = { ...reward };
+    this.selectedImagePreview = null;
+    this.selectedImage = null;
+    this.selectedPDF = null;
+    this.pdfLoaded.set(false);
 
-      if (Array.isArray(reward.coordinates) && reward.coordinates.length > 0) {
-        this.codeBoxes = JSON.parse(JSON.stringify(reward.coordinates));
-      }
+    // Parse existing coordinates if available
+    if (reward.coordinates) {
+      const coordsArray = reward.coordinates.split(';').filter((c: string) => c);
+      this.codeAreas.set(coordsArray.map((coord: string, idx: number) => {
+        const [x, y, w, h, fs] = coord.split(',').map(Number);
+        return { id: idx, x: x || 100, y: y || 100, width: w || 150, height: h || 40, fontSize: fs || 14 };
+      }));
     } else {
-      this.currentReward = { type: 'physical', cost: 100, stock: 10, title: '', description: '' };
+      this.codeAreas.set([]);
     }
 
-    this.isModalOpen = true;
+    // Load PDF if exists
+    if (reward.pdf_template) {
+      this.loadExistingPDF(reward.pdf_template);
+    }
+
+    this.showCreateModal = true;
   }
 
-  closeModal() {
-    this.isModalOpen = false;
+  closeModal(event: Event) {
+    event.stopPropagation();
+    this.showCreateModal = false;
+    this.editingReward = null;
+    this.pdfLoaded.set(false);
   }
 
   onImageSelected(event: any) {
-    this.selectedImage = event.target.files[0];
-  }
-
-  onPdfSelected(event: any) {
     const file = event.target.files[0];
-    if (file && file.type === 'application/pdf') {
-      this.selectedPdf = file;
-      this.pdfPreviewUrl = this.sanitizer.bypassSecurityTrustResourceUrl(
-        URL.createObjectURL(file) + '#toolbar=0&navpanes=0&view=Fit'
-      );
-    } else {
-      this.toast.show('Solo se admiten archivos PDF.', 'error');
-      event.target.value = '';
+    if (file) {
+      this.selectedImage = file;
+      const reader = new FileReader();
+      reader.onload = (e: any) => {
+        this.selectedImagePreview = e.target.result;
+      };
+      reader.readAsDataURL(file);
     }
   }
 
-  addCodeBox() {
-    this.codeBoxes.push({ id: Date.now(), x: 40, y: 40, w: 20, h: 5 });
-  }
-
-  removeBox(index: number, e: Event) {
-    e.stopPropagation();
-    e.preventDefault();
-    this.codeBoxes.splice(index, 1);
-  }
-
-  startDrag(e: MouseEvent, index: number) {
-    if (this.currentReward.type !== 'digital') return;
-    e.preventDefault();
-    e.stopPropagation();
-    this.activeDragIndex = index;
-  }
-
-  startResize(e: MouseEvent, index: number) {
-    if (this.currentReward.type !== 'digital') return;
-    e.preventDefault();
-    e.stopPropagation();
-    this.activeResizeIndex = index;
-  }
-
-  onDrag(e: MouseEvent) {
-    if (this.activeDragIndex === -1 && this.activeResizeIndex === -1) return;
-
-    e.preventDefault();
-    const overlay = e.currentTarget as HTMLElement;
-    const rect = overlay.getBoundingClientRect();
-
-    if (this.activeDragIndex !== -1) {
-      let x = ((e.clientX - rect.left) / rect.width) * 100;
-      let y = ((e.clientY - rect.top) / rect.height) * 100;
-      x = Math.max(0, Math.min(100, x));
-      y = Math.max(0, Math.min(100, y));
-
-      this.codeBoxes[this.activeDragIndex].x = x;
-      this.codeBoxes[this.activeDragIndex].y = y;
-
-    } else if (this.activeResizeIndex !== -1) {
-      const box = this.codeBoxes[this.activeResizeIndex];
-      let mouseXPct = ((e.clientX - rect.left) / rect.width) * 100;
-      let mouseYPct = ((e.clientY - rect.top) / rect.height) * 100;
-
-      let newW = mouseXPct - box.x;
-      let newH = mouseYPct - box.y;
-
-      if (newW > 1) box.w = newW;
-      if (newH > 1) box.h = newH;
+  onPDFSelected(event: any) {
+    const file = event.target.files[0];
+    if (file) {
+      this.selectedPDF = file;
+      this.loadPDFPreview(file);
     }
   }
 
-  stopInteraction() {
-    this.activeDragIndex = -1;
-    this.activeResizeIndex = -1;
-  }
-
-  async save() {
-    this.saving = true;
+  async loadPDFPreview(file: File) {
     try {
-      if (this.selectedImage) {
-        const formData = new FormData();
-        formData.append('image', this.selectedImage);
-        const res: any = await this.http.post('https://takis.qrewards.com.mx/api/index.php/admin/upload-image', formData).toPromise();
-        this.currentReward.image_url = res.filename;
+      // Wait for PDF.js to be available
+      let attempts = 0;
+      while (!(window as any)['pdfjsLib'] && attempts < 10) {
+        await new Promise(resolve => setTimeout(resolve, 100));
+        attempts++;
       }
 
-      if (this.selectedPdf && this.currentReward.type === 'digital') {
-        const formData = new FormData();
-        formData.append('template', this.selectedPdf);
-        const res: any = await this.http.post('https://takis.qrewards.com.mx/api/index.php/admin/upload-pdf', formData).toPromise();
-        this.currentReward.pdf_template = res.filename;
+      const pdfjsLib = (window as any)['pdfjsLib'];
+      if (!pdfjsLib) {
+        console.error('PDF.js library not available after waiting');
+        this.toastService.show('Error: La librería PDF.js no está disponible. Por favor recarga la página.', 'error', 5000);
+        return;
       }
 
-      const dataToSend = { ...this.currentReward };
-      if (dataToSend.type === 'digital') {
-        dataToSend.coordinates = JSON.stringify(this.codeBoxes);
-      } else {
-        dataToSend.coordinates = JSON.stringify([]);
-      }
+      pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
 
-      const endpoint = this.editingReward
-        ? `https://takis.qrewards.com.mx/api/index.php/admin/rewards/${this.editingReward.id}/update`
-        : 'https://takis.qrewards.com.mx/api/index.php/admin/rewards';
+      const arrayBuffer = await file.arrayBuffer();
+      const loadingTask = pdfjsLib.getDocument({ data: arrayBuffer });
+      const pdf = await loadingTask.promise;
+      const page = await pdf.getPage(1);
 
-      this.http.post(endpoint, dataToSend).subscribe({
-        next: () => {
-          this.toast.show('¡Recompensa guardada!', 'success');
-          this.closeModal();
-          this.loadRewards();
-          this.saving = false;
-        },
-        error: () => {
-          this.toast.show('Error al guardar recompensa.', 'error');
-          this.saving = false;
+      // Force change detection and wait for canvas
+      this.cdr.detectChanges();
+
+      // Multiple attempts to find canvas
+      let canvasAttempts = 0;
+      const renderPDF = async () => {
+        const canvas = this.pdfCanvas?.nativeElement;
+
+        if (!canvas && canvasAttempts < 20) {
+          canvasAttempts++;
+          await new Promise(resolve => setTimeout(resolve, 100));
+          return renderPDF();
         }
-      });
-    } catch (e) {
-      this.toast.show('Error de conexión o archivo.', 'error');
-      this.saving = false;
+
+        if (!canvas) {
+          console.error('Canvas element not found after multiple attempts');
+          this.toastService.show('Error: No se pudo cargar el visor PDF. Intenta cerrar y abrir el modal nuevamente.', 'error', 5000);
+          return;
+        }
+
+        const viewport = page.getViewport({ scale: 1.5 });
+        canvas.width = viewport.width;
+        canvas.height = viewport.height;
+
+        const context = canvas.getContext('2d');
+        if (context) {
+          await page.render({ canvasContext: context, viewport: viewport }).promise;
+          this.pdfLoaded.set(true);
+          this.toastService.show('PDF cargado exitosamente', 'success');
+
+          // Convert stored percentages to pixels if editing
+          if (this.editingReward && this.editingReward.coordinates) {
+            this.convertPercentagesToPixels(canvas.width, canvas.height);
+          }
+        }
+      };
+
+      await renderPDF();
+    } catch (error) {
+      console.error('Error loading PDF:', error);
+      this.toastService.show('Error al cargar el PDF: ' + (error as Error).message, 'error', 5000);
     }
   }
 
-  deleteReward(reward: any) {
-    if (confirm('¿Estás seguro de eliminar esta recompensa?')) {
-      this.http.delete(`https://takis.qrewards.com.mx/api/index.php/admin/rewards/${reward.id}`).subscribe({
-        next: () => {
-          this.toast.show('Eliminado correctamente', 'success');
-          this.loadRewards();
-        },
-        error: () => this.toast.show('Error al eliminar', 'error')
+  async loadExistingPDF(filename: string) {
+    try {
+      const pdfjsLib = (window as any)['pdfjsLib'];
+      if (!pdfjsLib) {
+        this.toastService.show('PDF.js no está disponible', 'error');
+        return;
+      }
+
+      pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+
+      const pdfUrl = `${environment.uploadsUrl}/templates/${filename}`;
+      const loadingTask = pdfjsLib.getDocument({ url: pdfUrl, withCredentials: false });
+      const pdf = await loadingTask.promise;
+      const page = await pdf.getPage(1);
+
+      this.cdr.detectChanges();
+
+      // Multiple attempts to find canvas
+      let canvasAttempts = 0;
+      const renderPDF = async () => {
+        const canvas = this.pdfCanvas?.nativeElement;
+
+        if (!canvas && canvasAttempts < 20) {
+          canvasAttempts++;
+          await new Promise(resolve => setTimeout(resolve, 100));
+          return renderPDF();
+        }
+
+        if (!canvas) {
+          this.toastService.show('No se pudo cargar el visor PDF', 'error');
+          return;
+        }
+
+        const viewport = page.getViewport({ scale: 1.5 });
+        canvas.width = viewport.width;
+        canvas.height = viewport.height;
+
+        const context = canvas.getContext('2d');
+        if (context) {
+          await page.render({ canvasContext: context, viewport: viewport }).promise;
+          this.pdfLoaded.set(true);
+
+          // Convert stored percentages to pixels if editing
+          if (this.editingReward && this.editingReward.coordinates) {
+            this.convertPercentagesToPixels(canvas.width, canvas.height);
+          }
+        }
+      };
+
+      await renderPDF();
+    } catch (error) {
+      console.error('Error loading existing PDF:', error);
+      this.toastService.show('Error al cargar el PDF existente', 'error');
+    }
+  }
+
+  addCodeArea() {
+    const newArea: CodeArea = {
+      id: this.codeAreas().length,
+      x: 100,
+      y: 100,
+      width: 150,
+      height: 40,
+      fontSize: 14
+    };
+    this.codeAreas.update(areas => [...areas, newArea]);
+  }
+
+  removeCodeArea(index: number) {
+    this.codeAreas.update(areas => areas.filter((_, i) => i !== index));
+  }
+
+  startDrag(event: MouseEvent, index: number) {
+    event.preventDefault();
+    event.stopPropagation();
+    this.draggingIndex = index;
+    this.dragStartX = event.clientX;
+    this.dragStartY = event.clientY;
+    this.dragStartAreaX = this.codeAreas()[index].x;
+    this.dragStartAreaY = this.codeAreas()[index].y;
+  }
+
+  startResize(event: MouseEvent, index: number) {
+    event.preventDefault();
+    event.stopPropagation();
+    this.resizingIndex = index;
+    this.dragStartX = event.clientX;
+    this.dragStartY = event.clientY;
+    this.dragStartWidth = this.codeAreas()[index].width;
+    this.dragStartHeight = this.codeAreas()[index].height;
+  }
+
+  onMouseMove(event: MouseEvent) {
+    if (this.draggingIndex !== null) {
+      const deltaX = event.clientX - this.dragStartX;
+      const deltaY = event.clientY - this.dragStartY;
+
+      this.codeAreas.update(areas => {
+        const updated = [...areas];
+        updated[this.draggingIndex!].x = Math.max(0, this.dragStartAreaX + deltaX);
+        updated[this.draggingIndex!].y = Math.max(0, this.dragStartAreaY + deltaY);
+        return updated;
       });
     }
+
+    if (this.resizingIndex !== null) {
+      const deltaX = event.clientX - this.dragStartX;
+      const deltaY = event.clientY - this.dragStartY;
+
+      this.codeAreas.update(areas => {
+        const updated = [...areas];
+        updated[this.resizingIndex!].width = Math.max(50, this.dragStartWidth + deltaX);
+        updated[this.resizingIndex!].height = Math.max(30, this.dragStartHeight + deltaY);
+        return updated;
+      });
+    }
+  }
+
+  onMouseUp() {
+    this.draggingIndex = null;
+    this.resizingIndex = null;
+  }
+
+  private convertPercentagesToPixels(canvasWidth: number, canvasHeight: number) {
+    if (!this.editingReward.coordinates) return;
+
+    const coordsArray = this.editingReward.coordinates.split(';').filter((c: string) => c);
+    this.codeAreas.set(coordsArray.map((coord: string, idx: number) => {
+      const [xPct, yPct, wPct, hPct, fs] = coord.split(',').map(Number);
+      return {
+        id: idx,
+        x: (xPct / 100) * canvasWidth,
+        y: (yPct / 100) * canvasHeight,
+        width: (wPct / 100) * canvasWidth,
+        height: (hPct / 100) * canvasHeight,
+        fontSize: fs || 14
+      };
+    }));
+  }
+
+  async saveReward() {
+    this.saving.set(true);
+
+    try {
+      // Upload image if selected
+      if (this.selectedImage) {
+        const imageFormData = new FormData();
+        imageFormData.append('image', this.selectedImage);
+        const imageRes: any = await this.http.post(`${environment.apiUrl}/admin/upload/reward-image`, imageFormData).toPromise();
+        if (imageRes.filename) {
+          this.editingReward.image_url = imageRes.filename;
+        }
+      }
+
+      // Upload PDF if selected
+      if (this.selectedPDF) {
+        const pdfFormData = new FormData();
+        pdfFormData.append('template', this.selectedPDF);
+        const pdfRes: any = await this.http.post(`${environment.apiUrl}/admin/upload/template`, pdfFormData).toPromise();
+        if (pdfRes.filename) {
+          this.editingReward.pdf_template = pdfRes.filename;
+        }
+      }
+
+      // Serialize code areas as percentages
+      if (this.codeAreas().length > 0 && this.pdfCanvas) {
+        const canvas = this.pdfCanvas.nativeElement;
+        this.editingReward.code_areas = this.codeAreas()
+          .map(area => {
+            const xPct = (area.x / canvas.width) * 100;
+            const yPct = (area.y / canvas.height) * 100;
+            const wPct = (area.width / canvas.width) * 100;
+            const hPct = (area.height / canvas.height) * 100;
+            return `${xPct.toFixed(2)},${yPct.toFixed(2)},${wPct.toFixed(2)},${hPct.toFixed(2)},${area.fontSize}`;
+          })
+          .join(';');
+        this.editingReward.coordinates = this.editingReward.code_areas; // Keep both for safety
+      }
+
+      // Save or update reward
+      if (this.editingReward.id) {
+        await this.http.put(`${environment.apiUrl}/admin/rewards/update/${this.editingReward.id}`, this.editingReward).toPromise();
+        this.rewards.update(list => list.map(r => r.id === this.editingReward.id ? this.editingReward : r));
+        this.toastService.show('✅ Recompensa actualizada exitosamente', 'success');
+      } else {
+        const res: any = await this.http.post(`${environment.apiUrl}/admin/rewards/create`, this.editingReward).toPromise();
+        if (res.id) {
+          this.editingReward.id = res.id;
+          this.rewards.update(list => [...list, this.editingReward]);
+          this.toastService.show('✅ Recompensa creada exitosamente', 'success');
+        }
+      }
+
+      this.saving.set(false);
+      this.showCreateModal = false;
+      this.editingReward = null;
+      this.loadRewards(); // Reload to get fresh data from server
+    } catch (error) {
+      console.error('Error saving reward:', error);
+      this.toastService.show('❌ Error al guardar la recompensa. Por favor intenta de nuevo.', 'error');
+      this.saving.set(false);
+    }
+  }
+
+  deleteReward(id: number) {
+    if (!confirm('¿Estás seguro de eliminar esta recompensa?')) return;
+
+    this.http.delete(`${environment.apiUrl}/admin/rewards/${id}`).subscribe({
+      next: () => {
+        this.rewards.update(list => list.filter(r => r.id !== id));
+      },
+      error: (e: any) => console.error('Error deleting reward:', e)
+    });
+  }
+
+  exportToCSV() {
+    const headers = ['ID', 'Título', 'Tipo', 'Puntos', 'Stock', 'Estado'];
+    const rows = this.filteredRewards().map((r: any) => [
+      r.id,
+      `"${r.title}"`,
+      r.type,
+      r.cost,
+      r.stock,
+      r.active ? 'Activo' : 'Inactivo'
+    ]);
+
+    const csvContent = "\ufeff" + [headers.join(","), ...rows.map((e: any) => e.join(","))].join("\n");
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.setAttribute("href", url);
+    link.setAttribute("download", "recompensas_takis.csv");
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
   }
 }

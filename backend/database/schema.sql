@@ -40,8 +40,10 @@ CREATE TABLE rewards (
     image_url VARCHAR(255),
     type ENUM('physical', 'digital') DEFAULT 'physical',
     pdf_template VARCHAR(255),
-    coordinates JSON,
+    coordinates TEXT,
+    code_areas TEXT,
     font_size INT DEFAULT 12,
+    active TINYINT(1) DEFAULT 1,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP
 );
 

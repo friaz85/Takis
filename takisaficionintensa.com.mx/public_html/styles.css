@@ -1,0 +1,388 @@
+/* Veneer Font */
+@font-face {
+    font-family: 'Veneer';
+    src: url('fonts/Veneer.otf') format('opentype');
+    font-weight: normal;
+    font-style: normal;
+}
+
+/* Reset and Base Styles */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'Veneer', 'Bebas Neue', 'Outfit', 'Arial Black', sans-serif;
+    overflow-x: hidden;
+    min-height: 100vh;
+    min-height: 100dvh;
+    display: flex;
+    flex-direction: column;
+    background-color: #000;
+}
+
+/* Visibility classes for conditional text */
+.mobile-text {
+    display: none;
+}
+
+/* Takis Background Sections */
+.takis-bg {
+    width: 100%;
+    height: 15vh;
+    background-image: url('takis-texture.jpg');
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+    position: relative;
+    z-index: 1;
+}
+
+.takis-bg-top {
+    background-position: center top;
+}
+
+.takis-bg-bottom {
+    background-position: center bottom;
+}
+
+/* Main Content Section */
+.main-content {
+    flex: 1;
+    width: 100%;
+    background-image: url('bg-hero.jpg');
+    background-size: cover;
+    background-position: center;
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* Purple Overlay with PMS2597 Color (Approx) */
+.overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: #5d1f87;
+    opacity: 0.8;
+    z-index: 1;
+}
+
+/* Content Wrapper */
+.content-wrapper {
+    position: relative;
+    z-index: 2;
+    text-align: center;
+    padding: 2rem;
+    max-width: 1200px;
+    width: 100%;
+}
+
+/* Logo Container */
+.logo-container {
+    margin-bottom: 1rem;
+    animation: fadeInDown 1s ease-out;
+}
+
+.takis-logo {
+    width: 180px;
+    height: auto;
+    filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.3));
+    transition: transform 0.3s ease;
+}
+
+.takis-logo:hover {
+    transform: scale(1.05);
+}
+
+/* Próximamente Title */
+/* Próximamente Image Styles */
+.proximamente-container {
+    margin-bottom: clamp(1.5rem, 3vw, 2.5rem);
+    animation: fadeInUp 1s ease-out;
+    padding: 0 1rem;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.proximamente-img {
+    max-width: 100%;
+    height: auto;
+    width: clamp(280px, 70vw, 750px);
+    filter: drop-shadow(0 4px 15px rgba(0, 0, 0, 0.4));
+    transition: transform 0.3s ease;
+}
+
+.proximamente-img:hover {
+    transform: scale(1.02);
+}
+
+/* Countdown Container */
+.countdown {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: clamp(0.5rem, 2vw, 2rem);
+    flex-wrap: nowrap;
+    animation: fadeInUp 1.2s ease-out;
+    width: auto;
+    margin: 0 auto;
+    max-width: 900px;
+}
+
+/* Countdown Item */
+.countdown-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.8rem;
+    flex: 0 1 auto;
+    min-width: clamp(70px, 15vw, 150px);
+}
+
+/* Countdown Value */
+.countdown-value {
+    background: rgba(255, 255, 255, 0.15);
+    backdrop-filter: blur(12px);
+    border-radius: 15px;
+    padding: clamp(0.8rem, 3vw, 1.8rem) clamp(0.5rem, 2vw, 1.5rem);
+    font-size: clamp(1.8rem, 6vw, 3.8rem);
+    font-weight: 900;
+    color: #FFFFFF;
+    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+    width: 100%;
+    box-shadow:
+        0 8px 32px rgba(0, 0, 0, 0.3),
+        inset 0 1px 0 rgba(255, 255, 255, 0.2);
+    transition: all 0.3s ease;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.countdown-value:hover {
+    transform: translateY(-5px);
+    box-shadow:
+        0 8px 20px rgba(0, 0, 0, 0.3),
+        inset 0 1px 0 rgba(255, 255, 255, 0.3);
+}
+
+/* Countdown Label */
+.countdown-label {
+    font-size: clamp(0.9rem, 2.5vw, 1.3rem);
+    font-weight: 700;
+    color: #FFFFFF;
+    text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.6);
+    letter-spacing: 0.02em;
+    text-transform: uppercase;
+}
+
+/* Countdown Separator */
+.countdown-separator {
+    font-size: clamp(1.5rem, 4vw, 3.5rem);
+    font-weight: 900;
+    color: #FFFFFF;
+    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+    margin: 0 clamp(0.1rem, 0.5vw, 0.5rem);
+    flex-shrink: 0;
+}
+
+/* Animations */
+@keyframes fadeInDown {
+    from {
+        opacity: 0;
+        transform: translateY(-30px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(30px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    .takis-bg {
+        height: 12vh;
+    }
+
+    .content-wrapper {
+        padding: 1.5rem 1rem;
+    }
+
+    .desktop-text {
+        display: none;
+    }
+
+    .mobile-text {
+        display: inline-block;
+    }
+
+    .logo-container {
+        margin-bottom: 1rem;
+    }
+
+    .takis-logo {
+        width: 120px;
+    }
+
+    .proximamente-container {
+        margin-bottom: 1.5rem;
+    }
+
+    .proximamente-img {
+        width: clamp(250px, 85vw, 600px);
+    }
+
+    .countdown {
+        gap: 0.8rem;
+        width: auto;
+        max-width: 100%;
+    }
+
+    .countdown-item {
+        min-width: clamp(60px, 18vw, 120px);
+    }
+
+    .countdown-separator {
+        font-size: clamp(1.25rem, 3.5vw, 2.5rem);
+        margin: 0 clamp(0.1rem, 0.4vw, 0.4rem);
+    }
+
+    .countdown-value {
+        padding: 0.8rem 0.6rem;
+        font-size: clamp(1.4rem, 4vw, 2.5rem);
+        border-radius: 12px;
+    }
+
+    .countdown-label {
+        font-size: clamp(0.8rem, 2vw, 1.1rem);
+    }
+}
+
+@media (max-width: 480px) {
+    .takis-bg {
+        height: 10vh;
+    }
+
+    .content-wrapper {
+        padding: 1rem 0.75rem;
+    }
+
+    .takis-logo {
+        width: 90px;
+    }
+
+    .proximamente-container {
+        margin-bottom: 1.25rem;
+    }
+
+    .proximamente-img {
+        width: 90vw;
+    }
+
+    .countdown {
+        gap: 0.4rem;
+        width: auto;
+    }
+
+    .countdown-item {
+        min-width: 65px;
+    }
+
+    .countdown-separator {
+        font-size: 1.2rem;
+        margin: 0 0.1rem;
+    }
+
+    .countdown-value {
+        padding: 0.7rem 0.4rem;
+        font-size: 1.4rem;
+        border-radius: 10px;
+    }
+
+    .countdown-label {
+        font-size: 0.8rem;
+    }
+}
+
+/* Extra Small Devices */
+@media (max-width: 380px) {
+    .proximamente-container {
+        padding: 0 0.5rem;
+    }
+
+    .proximamente-img {
+        width: 95vw;
+    }
+
+    .takis-logo {
+        width: 80px;
+    }
+
+    .countdown {
+        gap: 0.2rem;
+    }
+
+    .countdown-item {
+        min-width: 55px;
+    }
+
+    .countdown-separator {
+        font-size: 1rem;
+        margin: 0;
+    }
+
+    .countdown-value {
+        padding: 0.6rem 0.3rem;
+        font-size: 1.2rem;
+        min-width: 50px;
+    }
+
+    .countdown-label {
+        font-size: 0.7rem;
+    }
+}
+
+/* Fix for short screens */
+@media (max-height: 650px) {
+    .takis-bg {
+        height: 8vh !important;
+    }
+
+    .content-wrapper {
+        padding: 0.5rem !important;
+    }
+
+    .logo-container {
+        margin-bottom: 0.5rem !important;
+    }
+
+    .proximamente-container {
+        margin-bottom: 0.8rem !important;
+    }
+}
+
+/* High Resolution Displays */
+@media (-webkit-min-device-pixel-ratio: 2),
+(min-resolution: 192dpi) {
+    .takis-logo {
+        image-rendering: -webkit-optimize-contrast;
+    }
+}

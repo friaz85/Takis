@@ -1,40 +1,63 @@
-import { Component, signal, inject, OnInit } from '@angular/core';
+import { Component, signal, inject, OnInit, computed } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { CommonModule } from '@angular/common';
-import { RouterLink } from '@angular/router'; // Kept for safety if needed in navbar, but not used in template directly.
 import { UserNavbarComponent } from './user-navbar.component';
 import { ToastService } from '../services/toast.service';
 import { AuthService } from '../services/auth.service';
+import { AnalyticsService } from '../services/analytics.service';
+import { environment } from '../../environments/environment';
 
 @Component({
-    selector: 'app-redeem-rewards',
-    standalone: true,
-    imports: [CommonModule, UserNavbarComponent], // Removed RouterLink if unused
-    template: `
-    <app-user-navbar></app-user-navbar>
+  selector: 'app-redeem-rewards',
+  standalone: true,
+  imports: [CommonModule, UserNavbarComponent],
+  template: `
+    <user-navbar></user-navbar>
     
     <div class="redeem-page">
       <div class="user-stats-bar">
-         <div class="stats-content">
-            <span class="label">TUS PUNTOS DISPONIBLES</span>
-            <span class="points-val">{{ userPoints() | number }}</span>
+         <div class="points-display">
+            <div class="points-icon">⭐</div>
+            <div class="points-info">
+              <span class="points-label">Tus puntos</span>
+              <span class="points-value">{{ userPoints() | number }}</span>
+            </div>
          </div>
       </div>
 
-      <div class="content-wrapper">
-        <header>
-            <h2 class="title">CANJEA TUS <span class="highlight">PREMIOS</span></h2>
+      <div class="glass-card main-card">
+        <header class="redeem-header">
+            <h2 class="takis-title">CANJEA TUS <span class="highlight">PREMIOS</span></h2>
+            <p class="subtitle">Usa tus puntos para obtener recompensas exclusivas</p>
         </header>
+
+        <!-- Tabs/Filters moved below title -->
+        <div class="tabs">
+          <button 
+            class="tab" 
+            [class.active]="activeFilter() === 'all'"
+            (click)="activeFilter.set('all')"
+          >
+            🔍 TODOS
+          </button>
+          <button 
+            class="tab" 
+            [class.active]="activeFilter() === 'redeemable'"
+            (click)="activeFilter.set('redeemable')"
+          >
+            🔥 CANJEABLES
+          </button>
+        </div>
 
         <div *ngIf="loading()" class="loading-state">
             <div class="spinner"></div>
         </div>
 
         <div class="grid" *ngIf="!loading()">
-            @for (item of rewards(); track item.id) {
-            <div class="reward-card" [class.disabled]="item.stock <= 0 || item.cost > userPoints()">
+            @for (item of filteredRewards(); track item.id) {
+            <div class="reward-card" [class.disabled]="item.stock <= 0">
                 <div class="card-img-container">
-                <img [src]="item.image_url ? 'https://takis.qrewards.com.mx/api/uploads/rewards/' + item.image_url : 'assets/takis-piece.png'" alt="{{ item.title }}" class="reward-img">
+                    <img [src]="item.image_url ? environment.uploadsUrl + '/rewards/' + item.image_url : 'assets/takis-piece.png'" alt="{{ item.title }}" class="reward-img">
                 </div>
 
                 <div class="card-content">
@@ -66,114 +89,265 @@ import { AuthService } from '../services/auth.service';
             </div>
             }
         </div>
+
+        <!-- Empty State -->
+        <div class="empty-state" *ngIf="filteredRewards().length === 0 && !loading()">
+          <div class="icon">🎁</div>
+          <h2>Sin resultados</h2>
+          <p>{{ activeFilter() === 'redeemable' ? 'Aún no tienes puntos suficientes para estos premios.' : 'No hay premios disponibles en este momento.' }}</p>
+        </div>
       </div>
     </div>
   `,
-    styles: [`
-    .redeem-page { padding-top: 80px; background: #1A0B2E; min-height: 100vh; color: white; }
+  styles: [`
+    .redeem-page { 
+      padding: 6rem 2rem 2rem 2rem;
+      background: transparent; 
+      min-height: 100vh; 
+      color: white; 
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: flex-start;
+    }
+
+    .glass-card { 
+      background: #1c03387d; 
+      backdrop-filter: blur(5px); 
+      padding: 3rem; 
+      border-radius: 2rem; 
+      width: 95%; 
+      max-width: 1200px;
+      border: 2px solid rgba(242, 231, 75, 0.2); 
+      box-shadow: 0 40px 100px rgba(0,0,0,0.5);
+      transition: 0.4s;
+    }
+    .glass-card:hover, .glass-card:focus-within, .glass-card:active { 
+      border-color: #F2E74B; 
+      transform: translateY(-10px); 
+      background: #57118cb5;
+      backdrop-filter: blur(5px);
+    }
+
+    .redeem-header { text-align: center; margin-bottom: 2rem; }
+
+    .subtitle { color: #aaa; text-align: center; margin-bottom: 2rem; font-size: 1.1rem; }
+    .highlight { color: #F2E74B; }
     
     .user-stats-bar { 
-       background: rgba(108, 29, 218, 0.2); border-bottom: 1px solid rgba(255,255,255,0.1); 
-       padding: 1.5rem; text-align: center; position: sticky; top: 71px; z-index: 90; backdrop-filter: blur(10px);
+       background: transparent; 
+       padding: 0; 
+       text-align: center; 
+       display: flex;
+       justify-content: center;
+       margin-bottom: 3rem;
     }
-    .stats-content { display: inline-flex; flex-direction: column; align-items: center; }
-    .label { font-size: 0.8rem; color: #aaa; letter-spacing: 2px; margin-bottom: 0.2rem; }
-    .points-val { font-size: 2.5rem; font-weight: 900; color: #F2E74B; text-shadow: 0 0 20px rgba(242, 231, 75, 0.5); line-height: 1; }
+    .points-display { 
+      display: flex; 
+      align-items: center; 
+      justify-content: center; 
+      gap: 1.5rem;
+      background: #1c03387d;
+      border: 2px solid rgba(242, 231, 75, 0.3);
+      border-radius: 1.5rem;
+      padding: 1.5rem 2.5rem;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+      transition: 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+      cursor: pointer;
+    }
+    .points-display:hover, .points-display:active { 
+      border-color: #F2E74B; 
+      transform: translateY(-10px); 
+      background: #57118cb5;
+      backdrop-filter: blur(5px);
+    }
+    .points-icon { 
+      font-size: 3rem;
+      animation: pulse 2s ease-in-out infinite;
+    }
+    @keyframes pulse {
+      0%, 100% { transform: scale(1); }
+      50% { transform: scale(1.1); }
+    }
+    .points-info { display: flex; flex-direction: column; text-align: center; }
+    .points-label { 
+      color: rgba(255, 255, 255, 0.7); 
+      font-size: 0.9rem;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+    .points-value { 
+      color: #F2E74B; 
+      font-size: 2.5rem; 
+      font-weight: 900;
+      text-shadow: 0 2px 10px rgba(242, 231, 75, 0.5);
+      line-height: 1;
+    }
 
-    .content-wrapper { padding: 3rem 2rem; max-width: 1200px; margin: 0 auto; }
-    .title { text-align: center; font-size: 2.5rem; font-weight: 900; margin-bottom: 3rem; }
-    .highlight { color: #F2E74B; }
+    .tabs {
+      display: flex;
+      gap: 1rem;
+      justify-content: center;
+      margin-bottom: 2rem;
+      flex-wrap: wrap;
+    }
+    .tab {
+      background: rgba(255, 255, 255, 0.05);
+      border: 2px solid rgba(108, 29, 218, 0.3);
+      color: white;
+      padding: 1rem 2rem;
+      border-radius: 1rem;
+      font-size: 1.1rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: 0.3s;
+    }
+    .tab:hover {
+      background: #57118cb5;
+      backdrop-filter: blur(5px);
+      border-color: rgba(242, 231, 75, 0.5);
+    }
+    .tab.active {
+      background: linear-gradient(135deg, #F2E74B, #FFD700);
+      border-color: #F2E74B;
+      color: #1A0B2E;
+      box-shadow: 0 10px 30px rgba(242, 231, 75, 0.4);
+    }
 
-    .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 2rem; }
+    .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 2.5rem; }
     
     .reward-card { 
-      background: rgba(255,255,255,0.03); border-radius: 1.5rem; border: 1px solid rgba(255,255,255,0.1); 
-      overflow: hidden; display: flex; flex-direction: column; transition: 0.3s;
+      background: #1c03387d; 
+      backdrop-filter: blur(5px); 
+      border-radius: 2rem; 
+      border: 2px solid rgba(242, 231, 75, 0.2); 
+      overflow: hidden; 
+      display: flex; 
+      flex-direction: column; 
+      transition: 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+      cursor: pointer;
     }
-    .reward-card.disabled { opacity: 0.6; filter: grayscale(0.5); }
-    .reward-card:not(.disabled):hover { transform: translateY(-5px); border-color: #F2E74B; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
+    .reward-card.disabled { opacity: 0.6; filter: grayscale(0.2); }
+    .reward-card:hover { 
+      transform: translateY(-10px); 
+      border-color: #F2E74B; 
+      background: #57118cb5;
+      backdrop-filter: blur(5px);
+      box-shadow: 0 20px 50px rgba(0,0,0,0.6); 
+    }
+    .reward-card:active { transform: translateY(-5px) scale(0.98); }
 
-    .card-img-container { height: 200px; padding: 1rem; display: flex; align-items: center; justify-content: center; background: rgba(0,0,0,0.2); }
-    .reward-img { max-height: 100%; max-width: 100%; object-fit: contain; filter: drop-shadow(0 5px 10px rgba(0,0,0,0.5)); }
+    .card-img-container { height: 220px; padding: 1.5rem; display: flex; align-items: center; justify-content: center; background: rgba(0,0,0,0.2); }
+    .reward-img { max-height: 100%; max-width: 100%; object-fit: contain; filter: drop-shadow(0 5px 15px rgba(0,0,0,0.5)); transition: 0.3s; }
+    .reward-card:hover .reward-img { transform: scale(1.05); }
 
-    .card-content { padding: 1.5rem; flex: 1; display: flex; flex-direction: column; }
-    .cost-badge { align-self: flex-start; background: #333; color: #aaa; padding: 4px 10px; border-radius: 6px; font-weight: bold; font-size: 0.8rem; margin-bottom: 0.5rem; }
-    .cost-badge.can-afford { background: #6C1DDA; color: white; }
+    .card-content { padding: 2rem; flex: 1; display: flex; flex-direction: column; }
+    .cost-badge { align-self: flex-start; background: rgba(255,255,255,0.1); color: #aaa; padding: 6px 14px; border-radius: 2rem; font-weight: 900; font-size: 0.9rem; margin-bottom: 1rem; border: 1px solid rgba(255,255,255,0.1); }
+    .cost-badge.can-afford { background: rgba(242, 231, 75, 0.2); color: #F2E74B; border-color: #F2E74B; }
     
-    h3 { margin: 0 0 0.5rem 0; font-size: 1.2rem; font-weight: 800; line-height: 1.3; }
-    p { color: #aaa; font-size: 0.9rem; line-height: 1.4; margin-bottom: 1rem; flex: 1; }
-    .stock-info { color: #ff5555; font-size: 0.8rem; font-weight: bold; margin-bottom: 0.5rem; }
+    h3 { margin: 0 0 0.8rem 0; font-size: 1.5rem; font-weight: 900; line-height: 1.2; color: white; }
+    p { color: rgba(255,255,255,0.7); font-size: 1rem; line-height: 1.5; margin-bottom: 1.5rem; flex: 1; }
+    .stock-info { color: #ff5555; font-size: 0.9rem; font-weight: 900; margin-bottom: 1rem; text-transform: uppercase; }
 
     .redeem-btn { 
-      width: 100%; padding: 1.2rem; border: none; font-weight: 900; cursor: pointer; transition: 0.2s;
-      background: #F2E74B; color: #1A0B2E; text-transform: uppercase; font-size: 0.9rem;
+      width: 100%; 
+      padding: 1.4rem; 
+      border: none; 
+      font-weight: 950; 
+      cursor: pointer; 
+      transition: 0.3s;
+      background: linear-gradient(135deg, #F2E74B, #FFD700);
+      color: #1A0B2E; 
+      text-transform: uppercase; 
+      font-size: 1.1rem;
+      letter-spacing: 1px;
     }
-    .redeem-btn:disabled { background: #333; color: #666; cursor: not-allowed; }
-    .redeem-btn:not(:disabled):hover { background: #fff; }
+    .redeem-btn:disabled { background: #444; color: #888; cursor: not-allowed; }
+    .redeem-btn:not(:disabled):hover { 
+      background: white; 
+      box-shadow: 0 -5px 20px rgba(242, 231, 75, 0.4);
+    }
 
-    .loading-state { display: flex; justify-content: center; padding: 4rem; }
-    .spinner { width: 40px; height: 40px; border: 4px solid rgba(255,255,255,0.1); border-top-color: #F2E74B; border-radius: 50%; animation: spin 1s linear infinite; }
+    .empty-state { text-align: center; padding: 5rem 2rem; grid-column: 1 / -1; }
+    .empty-state .icon { font-size: 4rem; margin-bottom: 1rem; }
+    .empty-state h2 { color: #F2E74B; font-weight: 900; }
+    .empty-state p { color: #aaa; }
+
+    .loading-state { display: flex; justify-content: center; padding: 6rem; }
+    .spinner { width: 50px; height: 50px; border: 5px solid rgba(255,255,255,0.1); border-top-color: #F2E74B; border-radius: 50%; animation: spin 1s linear infinite; }
     @keyframes spin { to { transform: rotate(360deg); } }
   `]
 })
 export class RedeemRewardsComponent implements OnInit {
-    rewards = signal<any[]>([]);
-    userPoints = signal(0);
-    loading = signal(true);
-    processingId: number | null = null;
+  rewards = signal<any[]>([]);
+  activeFilter = signal<'all' | 'redeemable'>('all');
+  userPoints = signal(0);
+  loading = signal(true);
+  processingId: number | null = null;
 
-    private http = inject(HttpClient);
-    private toast = inject(ToastService);
-    private auth = inject(AuthService);
+  filteredRewards = computed(() => {
+    const filter = this.activeFilter();
+    const pts = this.userPoints();
+    const all = this.rewards();
+    if (filter === 'redeemable') {
+      return all.filter(r => r.cost <= pts && r.stock > 0);
+    }
+    return all;
+  });
 
-    ngOnInit() {
+  private http = inject(HttpClient);
+  private toast = inject(ToastService);
+  private auth = inject(AuthService);
+  private analytics = inject(AnalyticsService);
+  environment = environment;
+
+  ngOnInit() {
+    this.loadData();
+  }
+
+  loadData() {
+    this.loading.set(true);
+    this.http.get(`${environment.apiUrl}/profile`).subscribe({
+      next: (profile: any) => {
+        this.userPoints.set(parseInt(profile.user.points));
+        this.http.get(`${environment.apiUrl}/rewards`).subscribe({
+          next: (res: any) => {
+            this.rewards.set(res);
+            this.loading.set(false);
+          },
+          error: () => this.loading.set(false)
+        });
+      },
+      error: () => {
+        this.toast.show('Error cargando perfil', 'error');
+        this.loading.set(false);
+      }
+    });
+  }
+
+  redeem(reward: any) {
+    if (!confirm(`¿Canjear ${reward.title} por ${reward.cost} puntos?`)) return;
+
+    this.processingId = reward.id;
+
+    this.http.post(`${environment.apiUrl}/redeem`, { reward_id: reward.id }).subscribe({
+      next: (res: any) => {
+        this.toast.show('¡Canje exitoso! Disfruta tu premio.', 'success');
+        this.processingId = null;
+        this.analytics.trackConversion('redemption', res.order_id || reward.id, {
+          rewardTitle: reward.title,
+          rewardPoints: reward.cost
+        });
         this.loadData();
-    }
-
-    loadData() {
-        this.loading.set(true);
-        // Get User Profile for Points
-        this.http.get('https://takis.qrewards.com.mx/api/index.php/profile').subscribe({
-            next: (profile: any) => {
-                this.userPoints.set(parseInt(profile.user.points));
-
-                // Get Rewards
-                this.http.get('https://takis.qrewards.com.mx/api/index.php/rewards').subscribe({
-                    next: (res: any) => {
-                        this.rewards.set(res);
-                        this.loading.set(false);
-                    },
-                    error: () => this.loading.set(false)
-                });
-            },
-            error: () => {
-                this.toast.show('Error cargando perfil', 'error');
-                this.loading.set(false);
-            }
-        });
-    }
-
-    redeem(reward: any) {
-        if (!confirm(`¿Canjear ${reward.title} por ${reward.cost} puntos?`)) return;
-
-        this.processingId = reward.id;
-
-        this.http.post('https://takis.qrewards.com.mx/api/index.php/redeem', { reward_id: reward.id }).subscribe({
-            next: (res: any) => {
-                this.toast.show('¡Canje exitoso! Disfruta tu premio.', 'success');
-                this.processingId = null;
-                this.loadData(); // Refresh points and stock
-
-                // Optional: Open modal with redemption details/PDF
-                if (res.pdf_url) {
-                    window.open(res.pdf_url, '_blank');
-                }
-            },
-            error: (err) => {
-                this.processingId = null;
-                const msg = err.error?.message || 'Error al canjear.';
-                this.toast.show(msg, 'error');
-            }
-        });
-    }
+        if (res.pdf_url) {
+          window.open(res.pdf_url, '_blank');
+        }
+      },
+      error: (err) => {
+        this.processingId = null;
+        const msg = err.error?.message || 'Error al canjear.';
+        this.toast.show(msg, 'error');
+      }
+    });
+  }
 }

@@ -3,10 +3,11 @@ import { HttpClient, HttpInterceptorFn, HttpRequest, HttpHandlerFn, HttpErrorRes
 import { Router } from '@angular/router';
 import { tap, catchError } from 'rxjs/operators';
 import { Observable, throwError } from 'rxjs';
+import { environment } from '../../environments/environment';
 
 @Injectable({ providedIn: 'root' })
 export class AuthService {
-  private apiUrl = 'https://takis.qrewards.com.mx/api/index.php';
+  private apiUrl = environment.apiUrl;
   private http = inject(HttpClient);
   private router = inject(Router);
 
@@ -59,7 +60,14 @@ export class AuthService {
 
   adminLogin(credentials: any): Observable<any> {
     return this.http.post(`${this.apiUrl}/admin/auth/login`, credentials).pipe(
-      tap((res: any) => this.saveSession(res))
+      tap((res: any) => {
+        console.log('Admin Login Response:', res);
+        this.saveSession(res);
+      }),
+      catchError((error) => {
+        console.error('Admin Login Error:', error);
+        return throwError(() => error);
+      })
     );
   }
 
