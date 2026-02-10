@@ -29,17 +29,17 @@ import { WhatsappBubbleComponent } from './whatsapp-bubble.component';
             
             <div class="steps">
               <div class="step">
-                <div class="step-number">1</div>
+                <img src="/assets/img/01.png" class="step-number-img" alt="Paso 1">
                 <h3>Compra Takis</h3>
                 <p>Busca dentro del empaque de tus Takis favoritos los codigos participantes</p>
               </div>
               <div class="step">
-                <div class="step-number">2</div>
+                <img src="/assets/img/02.png" class="step-number-img" alt="Paso 2">
                 <h3>Canjea</h3>
                 <p>Ingresa a tu cuenta, escribe el codigo y acumula puntos al instante</p>
               </div>
               <div class="step">
-                <div class="step-number">3</div>
+                <img src="/assets/img/03.png" class="step-number-img" alt="Paso 3">
                 <h3>Gana</h3>
                 <p>Visita nuestro catalogo de recompensas y elige el que mas te guste. ¡Es asi de sencillo!</p>
               </div>
@@ -60,7 +60,6 @@ import { WhatsappBubbleComponent } from './whatsapp-bubble.component';
               </div>
             </div>
           </div>
-
         </div>
       </div>
     </div>
@@ -145,19 +144,12 @@ import { WhatsappBubbleComponent } from './whatsapp-bubble.component';
       background: #57118cb5;
     }
 
-    .step-number { 
-      width: 70px; 
-      height: 70px; 
-      background: #F2E74B;
-      color: #5d1f87; 
-      border-radius: 50%; 
-      display: flex; 
-      align-items: center; 
-      justify-content: center;
-      font-size: 2rem; 
-      font-weight: 950; 
+    .step-number-img { 
+      width: 100px; 
+      height: auto; 
       margin: 0 auto 1.5rem auto;
-      box-shadow: 0 10px 30px rgba(242, 231, 75, 0.3);
+      display: block;
+      filter: drop-shadow(0 5px 15px rgba(242, 231, 75, 0.3));
     }
 
     .step h3 { 

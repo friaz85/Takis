@@ -167,16 +167,42 @@ interface CodeArea {
                 <!-- Digital PDF Section -->
                 <div class="digital-section" *ngIf="editingReward.type === 'digital'">
                   <div class="section-header">
-                    <h4>⚙️ Configuración de Certificado Digital</h4>
-                  </div>
-                  
-                  <div class="form-group">
-                    <label>Plantilla PDF</label>
-                    <input type="file" (change)="onPDFSelected($event)" accept="application/pdf" class="file-input">
-                    <small class="help-text" *ngIf="editingReward.pdf_template">Actual: {{ editingReward.pdf_template }}</small>
+                    <h4>⚙️ Configuración Digital</h4>
                   </div>
 
-                  <div class="code-areas-manager" *ngIf="pdfLoaded()">
+                  <div class="form-group" style="margin-bottom: 1.5rem;">
+                    <label>Tipo de Archivo</label>
+                    <div class="type-selector">
+                      <button 
+                        class="type-btn" 
+                        [class.active]="digitalSubtype() === 'pdf'"
+                        (click)="digitalSubtype.set('pdf'); isWallpaperMode.set(false)"
+                      >
+                        📄 Documento PDF
+                      </button>
+                      <button 
+                        class="type-btn" 
+                        [class.active]="digitalSubtype() === 'wallpaper'"
+                        (click)="digitalSubtype.set('wallpaper'); isWallpaperMode.set(true)"
+                      >
+                        🖼️ Wallpaper
+                      </button>
+                    </div>
+                  </div>
+                  
+                  <div class="form-group" *ngIf="digitalSubtype() === 'pdf'">
+                    <label>Plantilla PDF (Cupones/Certificados)</label>
+                    <input type="file" (change)="onPDFSelected($event)" accept=".pdf" class="file-input">
+                    <small class="help-text" *ngIf="editingReward.pdf_template && !isWallpaperMode()">Actual: {{ editingReward.pdf_template }}</small>
+                  </div>
+
+                  <div class="form-group" *ngIf="digitalSubtype() === 'wallpaper'">
+                    <label>Imagen Wallpaper (JPG/PNG)</label>
+                    <input type="file" (change)="onWallpaperSelected($event)" accept=".jpg,.jpeg,.png" class="file-input">
+                    <small class="help-text" *ngIf="editingReward.pdf_template && isWallpaperMode()">Actual: {{ editingReward.pdf_template }}</small>
+                  </div>
+
+                  <div class="code-areas-manager" *ngIf="digitalSubtype() === 'pdf' && pdfLoaded()">
                     <div class="areas-header">
                       <div>
                         <label>📍 Áreas de Código</label>
@@ -501,6 +527,7 @@ export class AdminRewardFormComponent implements OnInit, AfterViewInit {
 
   // Wallpaper Logic
   isWallpaperMode = signal(false);
+  digitalSubtype = signal<'pdf' | 'wallpaper'>('pdf');
   wallpaperPreview = signal<string | null>(null);
 
   codeAreas = signal<CodeArea[]>([]);
@@ -601,6 +628,7 @@ export class AdminRewardFormComponent implements OnInit, AfterViewInit {
     this.selectedImage = null;
     this.selectedPDF = null;
     this.pdfLoaded.set(false);
+    this.digitalSubtype.set('pdf'); // Default to PDF
 
     // Parse existing code areas if available (use code_areas, fallback to coordinates for legacy)
     if (reward.code_areas) {
@@ -625,9 +653,11 @@ export class AdminRewardFormComponent implements OnInit, AfterViewInit {
       const ext = reward.pdf_template.split('.').pop()?.toLowerCase();
       if (['jpg', 'jpeg', 'png'].includes(ext)) {
         this.isWallpaperMode.set(true);
+        this.digitalSubtype.set('wallpaper');
         this.wallpaperPreview.set(`${environment.uploadsUrl}/templates/${reward.pdf_template}`);
       } else {
         this.isWallpaperMode.set(false);
+        this.digitalSubtype.set('pdf');
         this.loadExistingPDF(reward.pdf_template);
       }
     }
@@ -654,24 +684,25 @@ export class AdminRewardFormComponent implements OnInit, AfterViewInit {
     }
   }
 
+  onWallpaperSelected(event: any) {
+    const file = event.target.files[0];
+    if (file) {
+      this.selectedPDF = file; // We use selectedPDF variable for upload as well
+      this.isWallpaperMode.set(true);
+
+      const reader = new FileReader();
+      reader.onload = (e: any) => this.wallpaperPreview.set(e.target.result);
+      reader.readAsDataURL(file);
+      this.pdfLoaded.set(false);
+    }
+  }
+
   onPDFSelected(event: any) {
     const file = event.target.files[0];
     if (file) {
       this.selectedPDF = file;
-
-      // Check file type
-      if (file.type.match(/image\/*/)) {
-        // It is a wallpaper
-        this.isWallpaperMode.set(true);
-        const reader = new FileReader();
-        reader.onload = (e: any) => this.wallpaperPreview.set(e.target.result);
-        reader.readAsDataURL(file);
-        this.pdfLoaded.set(false);
-      } else {
-        // Assume PDF
-        this.isWallpaperMode.set(false);
-        this.loadPDFPreview(file);
-      }
+      this.isWallpaperMode.set(false);
+      this.loadPDFPreview(file);
     }
   }
 
@@ -940,8 +971,8 @@ export class AdminRewardFormComponent implements OnInit, AfterViewInit {
         this.saving.set(false);
         return;
       }
-      // ONLY validate Code Areas if NOT Wallpaper
-      if (!this.isWallpaperMode() && this.codeAreas().length === 0) {
+      // ONLY validate Code Areas if PDF mode
+      if (this.digitalSubtype() === 'pdf' && this.codeAreas().length === 0) {
         this.toastService.show('❌ Define al menos un área de código para el PDF', 'error');
         this.saving.set(false);
         return;
