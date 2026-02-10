@@ -55,12 +55,12 @@ import { ToastService } from '../services/toast.service';
 
                   <div class="field">
                     <label>COLONIA</label>
-                    <input type="text" [(ngModel)]="profile.colony" name="colony" required class="input-flat" placeholder="COLONIA">
+                    <input type="text" [(ngModel)]="profile.colonia" name="colonia" required class="input-flat" placeholder="COLONIA">
                   </div>
 
                   <div class="field">
                     <label>ALCALDÍA / MUNICIPIO</label>
-                    <input type="text" [(ngModel)]="profile.town" name="town" required class="input-flat" placeholder="ALCALDÍA">
+                    <input type="text" [(ngModel)]="profile.municipio" name="municipio" required class="input-flat" placeholder="ALCALDÍA">
                   </div>
 
                   <div class="field">
@@ -282,7 +282,7 @@ export class UserProfileComponent implements OnInit {
 
   save() {
     // Validations
-    const requiredFields = ['full_name', 'phone', 'address', 'colony', 'town', 'city', 'state', 'zip_code'];
+    const requiredFields = ['full_name', 'phone', 'address', 'colonia', 'municipio', 'city', 'state', 'zip_code'];
     const missing = requiredFields.filter(field => !this.profile[field]);
 
     if (missing.length > 0) {

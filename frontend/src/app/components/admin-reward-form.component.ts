@@ -927,98 +927,99 @@ export class AdminRewardFormComponent implements OnInit, AfterViewInit {
     }
 
     // Specific validation based on type
+    // Specific validation based on type
     if (this.editingReward.type === 'physical') {
       if (!this.editingReward.image_url && !this.selectedImage) {
         this.toastService.show('❌ Debes subir una imagen para recompensas físicas', 'error');
         this.saving.set(false);
         return;
       }
-      if (this.editingReward.type === 'digital') {
-        if (!this.editingReward.pdf_template && !this.selectedPDF) {
-          this.toastService.show('❌ Debes subir un archivo para la recompensa digital', 'error');
-          this.saving.set(false);
-          return;
-        }
-        // ONLY validate Code Areas if NOT Wallpaper
-        if (!this.isWallpaperMode() && this.codeAreas().length === 0) {
-          this.toastService.show('❌ Define al menos un área de código para el PDF', 'error');
-          this.saving.set(false);
-          return;
-        }
+    } else if (this.editingReward.type === 'digital') {
+      if (!this.editingReward.pdf_template && !this.selectedPDF) {
+        this.toastService.show('❌ Debes subir un archivo para la recompensa digital', 'error');
+        this.saving.set(false);
+        return;
       }
-
-      try {
-        // Upload image if selected
-        if (this.selectedImage) {
-          const imageFormData = new FormData();
-          imageFormData.append('image', this.selectedImage);
-          const imageRes: any = await this.http.post(`${environment.apiUrl}/admin/upload/reward-image`, imageFormData).toPromise();
-          if (imageRes.filename) {
-            this.editingReward.image_url = imageRes.filename;
-          }
-        }
-
-        // Upload PDF if selected
-        if (this.selectedPDF) {
-          const pdfFormData = new FormData();
-          pdfFormData.append('template', this.selectedPDF);
-          const pdfRes: any = await this.http.post(`${environment.apiUrl}/admin/upload/template`, pdfFormData).toPromise();
-          if (pdfRes.filename) {
-            this.editingReward.pdf_template = pdfRes.filename;
-          }
-        }
-
-        // Serialize code areas as percentages (Only if PDF loaded and NOT wallpaper)
-        if (this.codeAreas().length > 0 && this.pdfCanvas && !this.isWallpaperMode()) {
-          const canvas = this.pdfCanvas.nativeElement;
-          this.editingReward.code_areas = this.codeAreas()
-            .map(area => {
-              const xPct = (area.x / canvas.width) * 100;
-              const yPct = (area.y / canvas.height) * 100;
-              const wPct = (area.width / canvas.width) * 100;
-              const hPct = (area.height / canvas.height) * 100;
-              return `${xPct.toFixed(2)},${yPct.toFixed(2)},${wPct.toFixed(2)},${hPct.toFixed(2)},${area.fontSize}`;
-            })
-            .join(';');
-
-          // Backup for legacy compatibility (JSON format)
-          this.editingReward.coordinates = JSON.stringify(this.codeAreas().map(area => ({
-            x: (area.x / canvas.width) * 100,
-            y: (area.y / canvas.height) * 100,
-            w: (area.width / canvas.width) * 100,
-            h: (area.height / canvas.height) * 100
-          })));
-        } else if (this.isWallpaperMode()) {
-          // Clear code areas for wallpaper
-          this.editingReward.code_areas = '';
-          this.editingReward.coordinates = '';
-        }
-
-        // Save or update reward
-        if (this.editingReward.id) {
-          await this.http.put(`${environment.apiUrl}/admin/rewards/update/${this.editingReward.id}`, this.editingReward).toPromise();
-          this.rewards.update(list => list.map(r => r.id === this.editingReward.id ? this.editingReward : r));
-          this.toastService.show('✅ Recompensa actualizada exitosamente', 'success');
-        } else {
-          const res: any = await this.http.post(`${environment.apiUrl}/admin/rewards/create`, this.editingReward).toPromise();
-          if (res.id) {
-            this.editingReward.id = res.id;
-            this.rewards.update(list => [...list, this.editingReward]);
-            this.toastService.show('✅ Recompensa creada exitosamente', 'success');
-          }
-        }
-
+      // ONLY validate Code Areas if NOT Wallpaper
+      if (!this.isWallpaperMode() && this.codeAreas().length === 0) {
+        this.toastService.show('❌ Define al menos un área de código para el PDF', 'error');
         this.saving.set(false);
-        this.showCreateModal = false;
-        this.editingReward = null;
-        this.loadRewards(); // Reload to get fresh data from server
-      } catch (error) {
-        console.error('Error saving reward:', error);
-        this.toastService.show('❌ Error al guardar la recompensa. Por favor intenta de nuevo.', 'error');
-        this.saving.set(false);
+        return;
       }
     }
+
+    try {
+      // Upload image if selected
+      if (this.selectedImage) {
+        const imageFormData = new FormData();
+        imageFormData.append('image', this.selectedImage);
+        const imageRes: any = await this.http.post(`${environment.apiUrl}/admin/upload/reward-image`, imageFormData).toPromise();
+        if (imageRes.filename) {
+          this.editingReward.image_url = imageRes.filename;
+        }
+      }
+
+      // Upload PDF if selected
+      if (this.selectedPDF) {
+        const pdfFormData = new FormData();
+        pdfFormData.append('template', this.selectedPDF);
+        const pdfRes: any = await this.http.post(`${environment.apiUrl}/admin/upload/template`, pdfFormData).toPromise();
+        if (pdfRes.filename) {
+          this.editingReward.pdf_template = pdfRes.filename;
+        }
+      }
+
+      // Serialize code areas as percentages (Only if PDF loaded and NOT wallpaper)
+      if (this.codeAreas().length > 0 && this.pdfCanvas && !this.isWallpaperMode()) {
+        const canvas = this.pdfCanvas.nativeElement;
+        this.editingReward.code_areas = this.codeAreas()
+          .map(area => {
+            const xPct = (area.x / canvas.width) * 100;
+            const yPct = (area.y / canvas.height) * 100;
+            const wPct = (area.width / canvas.width) * 100;
+            const hPct = (area.height / canvas.height) * 100;
+            return `${xPct.toFixed(2)},${yPct.toFixed(2)},${wPct.toFixed(2)},${hPct.toFixed(2)},${area.fontSize}`;
+          })
+          .join(';');
+
+        // Backup for legacy compatibility (JSON format)
+        this.editingReward.coordinates = JSON.stringify(this.codeAreas().map(area => ({
+          x: (area.x / canvas.width) * 100,
+          y: (area.y / canvas.height) * 100,
+          w: (area.width / canvas.width) * 100,
+          h: (area.height / canvas.height) * 100
+        })));
+      } else if (this.isWallpaperMode()) {
+        // Clear code areas for wallpaper
+        this.editingReward.code_areas = '';
+        this.editingReward.coordinates = '';
+      }
+
+      // Save or update reward
+      if (this.editingReward.id) {
+        await this.http.put(`${environment.apiUrl}/admin/rewards/update/${this.editingReward.id}`, this.editingReward).toPromise();
+        this.rewards.update(list => list.map(r => r.id === this.editingReward.id ? this.editingReward : r));
+        this.toastService.show('✅ Recompensa actualizada exitosamente', 'success');
+      } else {
+        const res: any = await this.http.post(`${environment.apiUrl}/admin/rewards/create`, this.editingReward).toPromise();
+        if (res.id) {
+          this.editingReward.id = res.id;
+          this.rewards.update(list => [...list, this.editingReward]);
+          this.toastService.show('✅ Recompensa creada exitosamente', 'success');
+        }
+      }
+
+      this.saving.set(false);
+      this.showCreateModal = false;
+      this.editingReward = null;
+      this.loadRewards(); // Reload to get fresh data from server
+    } catch (error) {
+      console.error('Error saving reward:', error);
+      this.toastService.show('❌ Error al guardar la recompensa. Por favor intenta de nuevo.', 'error');
+      this.saving.set(false);
+    }
   }
+
 
   deleteReward(id: number) {
     if (!confirm('¿Estás seguro de eliminar esta recompensa?')) return;
