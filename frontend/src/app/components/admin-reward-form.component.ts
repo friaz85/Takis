@@ -498,6 +498,11 @@ export class AdminRewardFormComponent implements OnInit, AfterViewInit {
   selectedPDF: File | null = null;
   saving = signal(false);
   pdfLoaded = signal(false);
+
+  // Wallpaper Logic
+  isWallpaperMode = signal(false);
+  wallpaperPreview = signal<string | null>(null);
+
   codeAreas = signal<CodeArea[]>([]);
   environment = environment;
 
@@ -582,7 +587,11 @@ export class AdminRewardFormComponent implements OnInit, AfterViewInit {
     this.selectedImage = null;
     this.selectedPDF = null;
     this.pdfLoaded.set(false);
+    this.selectedPDF = null;
+    this.pdfLoaded.set(false);
     this.codeAreas.set([]);
+    this.isWallpaperMode.set(false);
+    this.wallpaperPreview.set(null);
     this.showCreateModal = true;
   }
 
@@ -593,8 +602,15 @@ export class AdminRewardFormComponent implements OnInit, AfterViewInit {
     this.selectedPDF = null;
     this.pdfLoaded.set(false);
 
-    // Parse existing coordinates if available
-    if (reward.coordinates) {
+    // Parse existing code areas if available (use code_areas, fallback to coordinates for legacy)
+    if (reward.code_areas) {
+      const areasArray = reward.code_areas.split(';').filter((c: string) => c);
+      this.codeAreas.set(areasArray.map((areaStr: string, idx: number) => {
+        const [x, y, w, h, fs] = areaStr.split(',').map(Number);
+        return { id: idx, x: x || 100, y: y || 100, width: w || 150, height: h || 40, fontSize: fs || 14 };
+      }));
+    } else if (reward.coordinates) {
+      // Legacy fallback
       const coordsArray = reward.coordinates.split(';').filter((c: string) => c);
       this.codeAreas.set(coordsArray.map((coord: string, idx: number) => {
         const [x, y, w, h, fs] = coord.split(',').map(Number);
@@ -604,9 +620,16 @@ export class AdminRewardFormComponent implements OnInit, AfterViewInit {
       this.codeAreas.set([]);
     }
 
-    // Load PDF if exists
+    // Load PDF or Wallpaper if exists
     if (reward.pdf_template) {
-      this.loadExistingPDF(reward.pdf_template);
+      const ext = reward.pdf_template.split('.').pop()?.toLowerCase();
+      if (['jpg', 'jpeg', 'png'].includes(ext)) {
+        this.isWallpaperMode.set(true);
+        this.wallpaperPreview.set(`${environment.uploadsUrl}/templates/${reward.pdf_template}`);
+      } else {
+        this.isWallpaperMode.set(false);
+        this.loadExistingPDF(reward.pdf_template);
+      }
     }
 
     this.showCreateModal = true;
@@ -635,7 +658,20 @@ export class AdminRewardFormComponent implements OnInit, AfterViewInit {
     const file = event.target.files[0];
     if (file) {
       this.selectedPDF = file;
-      this.loadPDFPreview(file);
+
+      // Check file type
+      if (file.type.match(/image\/*/)) {
+        // It is a wallpaper
+        this.isWallpaperMode.set(true);
+        const reader = new FileReader();
+        reader.onload = (e: any) => this.wallpaperPreview.set(e.target.result);
+        reader.readAsDataURL(file);
+        this.pdfLoaded.set(false);
+      } else {
+        // Assume PDF
+        this.isWallpaperMode.set(false);
+        this.loadPDFPreview(file);
+      }
     }
   }
 
@@ -830,83 +866,157 @@ export class AdminRewardFormComponent implements OnInit, AfterViewInit {
   }
 
   private convertPercentagesToPixels(canvasWidth: number, canvasHeight: number) {
-    if (!this.editingReward.coordinates) return;
+    const rawCoords = this.editingReward.code_areas || this.editingReward.coordinates;
+    if (!rawCoords) return;
 
-    const coordsArray = this.editingReward.coordinates.split(';').filter((c: string) => c);
-    this.codeAreas.set(coordsArray.map((coord: string, idx: number) => {
-      const [xPct, yPct, wPct, hPct, fs] = coord.split(',').map(Number);
-      return {
-        id: idx,
-        x: (xPct / 100) * canvasWidth,
-        y: (yPct / 100) * canvasHeight,
-        width: (wPct / 100) * canvasWidth,
-        height: (hPct / 100) * canvasHeight,
-        fontSize: fs || 14
-      };
-    }));
+    try {
+      if (rawCoords.trim().startsWith('[')) {
+        // Handle JSON format (Legacy)
+        const parsed = JSON.parse(rawCoords);
+        this.codeAreas.set(parsed.map((c: any, idx: number) => ({
+          id: idx,
+          x: (c.x / 100) * canvasWidth,
+          y: (c.y / 100) * canvasHeight,
+          width: (c.w / 100) * canvasWidth,
+          height: (c.h / 100) * canvasHeight,
+          fontSize: c.fontSize || 14
+        })));
+      } else {
+        // Handle Semicolon format (New)
+        const coordsArray = rawCoords.split(';').filter((c: string) => c);
+        this.codeAreas.set(coordsArray.map((coord: string, idx: number) => {
+          const [xPct, yPct, wPct, hPct, fs] = coord.split(',').map(Number);
+          return {
+            id: idx,
+            x: (xPct / 100) * canvasWidth,
+            y: (yPct / 100) * canvasHeight,
+            width: (wPct / 100) * canvasWidth,
+            height: (hPct / 100) * canvasHeight,
+            fontSize: fs || 14
+          };
+        }));
+      }
+    } catch (e) {
+      console.error('Error parsing coordinates:', e);
+    }
   }
 
   async saveReward() {
     this.saving.set(true);
 
-    try {
-      // Upload image if selected
-      if (this.selectedImage) {
-        const imageFormData = new FormData();
-        imageFormData.append('image', this.selectedImage);
-        const imageRes: any = await this.http.post(`${environment.apiUrl}/admin/upload/reward-image`, imageFormData).toPromise();
-        if (imageRes.filename) {
-          this.editingReward.image_url = imageRes.filename;
-        }
-      }
-
-      // Upload PDF if selected
-      if (this.selectedPDF) {
-        const pdfFormData = new FormData();
-        pdfFormData.append('template', this.selectedPDF);
-        const pdfRes: any = await this.http.post(`${environment.apiUrl}/admin/upload/template`, pdfFormData).toPromise();
-        if (pdfRes.filename) {
-          this.editingReward.pdf_template = pdfRes.filename;
-        }
-      }
-
-      // Serialize code areas as percentages
-      if (this.codeAreas().length > 0 && this.pdfCanvas) {
-        const canvas = this.pdfCanvas.nativeElement;
-        this.editingReward.code_areas = this.codeAreas()
-          .map(area => {
-            const xPct = (area.x / canvas.width) * 100;
-            const yPct = (area.y / canvas.height) * 100;
-            const wPct = (area.width / canvas.width) * 100;
-            const hPct = (area.height / canvas.height) * 100;
-            return `${xPct.toFixed(2)},${yPct.toFixed(2)},${wPct.toFixed(2)},${hPct.toFixed(2)},${area.fontSize}`;
-          })
-          .join(';');
-        this.editingReward.coordinates = this.editingReward.code_areas; // Keep both for safety
-      }
-
-      // Save or update reward
-      if (this.editingReward.id) {
-        await this.http.put(`${environment.apiUrl}/admin/rewards/update/${this.editingReward.id}`, this.editingReward).toPromise();
-        this.rewards.update(list => list.map(r => r.id === this.editingReward.id ? this.editingReward : r));
-        this.toastService.show('✅ Recompensa actualizada exitosamente', 'success');
-      } else {
-        const res: any = await this.http.post(`${environment.apiUrl}/admin/rewards/create`, this.editingReward).toPromise();
-        if (res.id) {
-          this.editingReward.id = res.id;
-          this.rewards.update(list => [...list, this.editingReward]);
-          this.toastService.show('✅ Recompensa creada exitosamente', 'success');
-        }
-      }
-
+    // Validation
+    if (!this.editingReward.title) {
+      this.toastService.show('❌ El título es obligatorio', 'error');
       this.saving.set(false);
-      this.showCreateModal = false;
-      this.editingReward = null;
-      this.loadRewards(); // Reload to get fresh data from server
-    } catch (error) {
-      console.error('Error saving reward:', error);
-      this.toastService.show('❌ Error al guardar la recompensa. Por favor intenta de nuevo.', 'error');
+      return;
+    }
+    if (!this.editingReward.description) {
+      this.toastService.show('❌ La descripción es obligatoria', 'error');
       this.saving.set(false);
+      return;
+    }
+    if (this.editingReward.cost === null || this.editingReward.cost === undefined || this.editingReward.cost < 0) {
+      this.toastService.show('❌ El costo en puntos es inválido', 'error');
+      this.saving.set(false);
+      return;
+    }
+    if (this.editingReward.stock === null || this.editingReward.stock === undefined || this.editingReward.stock < 0) {
+      this.toastService.show('❌ El stock es inválido', 'error');
+      this.saving.set(false);
+      return;
+    }
+
+    // Specific validation based on type
+    if (this.editingReward.type === 'physical') {
+      if (!this.editingReward.image_url && !this.selectedImage) {
+        this.toastService.show('❌ Debes subir una imagen para recompensas físicas', 'error');
+        this.saving.set(false);
+        return;
+      }
+      if (this.editingReward.type === 'digital') {
+        if (!this.editingReward.pdf_template && !this.selectedPDF) {
+          this.toastService.show('❌ Debes subir un archivo para la recompensa digital', 'error');
+          this.saving.set(false);
+          return;
+        }
+        // ONLY validate Code Areas if NOT Wallpaper
+        if (!this.isWallpaperMode() && this.codeAreas().length === 0) {
+          this.toastService.show('❌ Define al menos un área de código para el PDF', 'error');
+          this.saving.set(false);
+          return;
+        }
+      }
+
+      try {
+        // Upload image if selected
+        if (this.selectedImage) {
+          const imageFormData = new FormData();
+          imageFormData.append('image', this.selectedImage);
+          const imageRes: any = await this.http.post(`${environment.apiUrl}/admin/upload/reward-image`, imageFormData).toPromise();
+          if (imageRes.filename) {
+            this.editingReward.image_url = imageRes.filename;
+          }
+        }
+
+        // Upload PDF if selected
+        if (this.selectedPDF) {
+          const pdfFormData = new FormData();
+          pdfFormData.append('template', this.selectedPDF);
+          const pdfRes: any = await this.http.post(`${environment.apiUrl}/admin/upload/template`, pdfFormData).toPromise();
+          if (pdfRes.filename) {
+            this.editingReward.pdf_template = pdfRes.filename;
+          }
+        }
+
+        // Serialize code areas as percentages (Only if PDF loaded and NOT wallpaper)
+        if (this.codeAreas().length > 0 && this.pdfCanvas && !this.isWallpaperMode()) {
+          const canvas = this.pdfCanvas.nativeElement;
+          this.editingReward.code_areas = this.codeAreas()
+            .map(area => {
+              const xPct = (area.x / canvas.width) * 100;
+              const yPct = (area.y / canvas.height) * 100;
+              const wPct = (area.width / canvas.width) * 100;
+              const hPct = (area.height / canvas.height) * 100;
+              return `${xPct.toFixed(2)},${yPct.toFixed(2)},${wPct.toFixed(2)},${hPct.toFixed(2)},${area.fontSize}`;
+            })
+            .join(';');
+
+          // Backup for legacy compatibility (JSON format)
+          this.editingReward.coordinates = JSON.stringify(this.codeAreas().map(area => ({
+            x: (area.x / canvas.width) * 100,
+            y: (area.y / canvas.height) * 100,
+            w: (area.width / canvas.width) * 100,
+            h: (area.height / canvas.height) * 100
+          })));
+        } else if (this.isWallpaperMode()) {
+          // Clear code areas for wallpaper
+          this.editingReward.code_areas = '';
+          this.editingReward.coordinates = '';
+        }
+
+        // Save or update reward
+        if (this.editingReward.id) {
+          await this.http.put(`${environment.apiUrl}/admin/rewards/update/${this.editingReward.id}`, this.editingReward).toPromise();
+          this.rewards.update(list => list.map(r => r.id === this.editingReward.id ? this.editingReward : r));
+          this.toastService.show('✅ Recompensa actualizada exitosamente', 'success');
+        } else {
+          const res: any = await this.http.post(`${environment.apiUrl}/admin/rewards/create`, this.editingReward).toPromise();
+          if (res.id) {
+            this.editingReward.id = res.id;
+            this.rewards.update(list => [...list, this.editingReward]);
+            this.toastService.show('✅ Recompensa creada exitosamente', 'success');
+          }
+        }
+
+        this.saving.set(false);
+        this.showCreateModal = false;
+        this.editingReward = null;
+        this.loadRewards(); // Reload to get fresh data from server
+      } catch (error) {
+        console.error('Error saving reward:', error);
+        this.toastService.show('❌ Error al guardar la recompensa. Por favor intenta de nuevo.', 'error');
+        this.saving.set(false);
+      }
     }
   }
 

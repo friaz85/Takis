@@ -1,365 +1,400 @@
-import { Component, inject, signal } from '@angular/core';
+import { Component, inject, signal, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { HttpClient } from '@angular/common/http';
 import { UserNavbarComponent } from './user-navbar.component';
+import { WhatsappBubbleComponent } from './whatsapp-bubble.component';
 import { ToastService } from '../services/toast.service';
 import { environment } from '../../environments/environment';
 
 @Component({
   selector: 'app-home',
   standalone: true,
-  imports: [CommonModule, FormsModule, UserNavbarComponent],
+  imports: [CommonModule, FormsModule, UserNavbarComponent, WhatsappBubbleComponent],
   template: `
     <user-navbar></user-navbar>
+    <app-whatsapp-bubble></app-whatsapp-bubble>
     
-    <div class="home-container">
-      <!-- Hero Section -->
-      <section class="hero-section">
-        <div class="hero-flex-layout">
+    <div class="landing">
+      <div class="hero">
+        <div class="hero-flex">
+          
+          <!-- Left: Banderin (No Animation) -->
           <div class="hero-left">
-            <img src="assets/img/Banderin-completo.png" alt="Takis" class="hero-logo desktop-logo">
-            <img src="assets/img/Banderin_01.png" alt="Takis" class="hero-logo mobile-logo">
+            <div class="logo-wrapper">
+              <img src="/assets/img/Banderin-completo.png" alt="Takis" class="takis-logo desktop-logo">
+              <img src="/assets/img/Banderin_01.png" alt="Takis" class="takis-logo mobile-logo">
+            </div>
           </div>
           
-          <div class="hero-right">
-            <h1 class="takis-title">¡GANA INCREIBLES <span class="highlight">PREMIOS</span>!</h1>
-            <p class="hero-subtitle">¡Ingresa tus codigos y acumula puntos para premios epicos!</p>
+          <!-- Right: Home Card -->
+          <div class="hero-right home-card" [style.backgroundImage]="'linear-gradient(rgba(86, 14, 140, 0.8), rgba(86, 14, 140, 0.6)), url(/assets/img/BG_soccer.jpg)'">
             
-            <!-- Code Input Card -->
-            <div class="code-card">
-              <h2>Ingresa tu codigo</h2>
-              <div class="code-input-group">
-                <input 
-                  type="text" 
-                  [(ngModel)]="code" 
-                  placeholder="TAKIS-XXXX-XXXX"
-                  (keyup.enter)="redeemCode()"
-                  class="code-input"
-                >
+            <h1 class="welcome-title">¡HOLA {{ userName }}!</h1>
+            
+            <!-- Scoreboard Points Display -->
+            <div class="scoreboard">
+                <div class="score-end left-end"></div>
+                <div class="score-bar">
+                    <span class="score-label">TIENES</span>
+                    
+                    <div class="score-center-spacer"></div>
+
+                    <span class="score-label">PUNTOS</span>
+                    
+                    <div class="score-center">
+                        <span class="score-value">{{ userPoints() }}</span>
+                    </div>
+                </div>
+                <div class="score-end right-end"></div>
+            </div>
+
+            <!-- Code Form -->
+            <div class="code-section">
+                <label class="code-label">REGISTRAR CODIGO</label>
+                <div class="input-wrapper">
+                    <input 
+                      type="text" 
+                      [(ngModel)]="code" 
+                      placeholder="CODIGO"
+                      (keyup.enter)="redeemCode()"
+                      class="code-input"
+                    >
+                </div>
+
                 <button (click)="redeemCode()" [disabled]="submitting()" class="redeem-btn">
-                  {{ submitting() ? '⏳' : '🎁' }} {{ submitting() ? 'Canjeando...' : 'Canjear' }}
+                   {{ submitting() ? 'CANJEANDO...' : 'CANJEAR CODIGO' }}
                 </button>
-              </div>
+
+                <button (click)="goToRewards()" class="rewards-btn">
+                   VER RECOMPENSAS
+                </button>
             </div>
 
-            <!-- Points Display -->
-            <div class="points-display">
-              <div class="points-icon">⭐</div>
-              <div class="points-info">
-                <span class="points-label">Tus puntos</span>
-                <span class="points-value">{{ userPoints() }}</span>
-              </div>
-            </div>
+            <img src="/assets/img/Logo-Takis.png" class="corner-logo" alt="Takis Logo">
           </div>
+
         </div>
-      </section>
-
-
+      </div>
     </div>
   `,
   styles: [`
-    .home-container { min-height: 100vh; background: transparent; }
-
-    /* Hero Section */
-    .hero-section { 
-      position: relative; 
+    .landing { 
       min-height: 100vh; 
-      display: flex; 
-      align-items: center; 
-      justify-content: center;
-      padding: 6rem 2rem 2rem 2rem;
-    }
-
-    .hero-flex-layout {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 5rem;
-      max-width: 1200px;
-      width: 100%;
-      z-index: 1;
-    }
-
-    .hero-left {
-      flex: 1;
-      display: flex;
-      justify-content: flex-end;
-    }
-
-    .hero-right {
-      flex: 1.2;
-      text-align: center;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-    }
-
-    .hero-logo { 
-      width: 100%;
-      max-width: 450px; 
-      height: auto; 
-      filter: drop-shadow(0 10px 30px rgba(242, 231, 75, 0.5));
-      animation: float 3s ease-in-out infinite;
-    }
-    .mobile-logo { display: none; }
-
-    @keyframes float {
-      0%, 100% { transform: translateY(0); }
-      50% { transform: translateY(-20px); }
-    }
-
-    .hero-title { display: none; }
-
-    .highlight { color: #F2E74B; }
-
-
-    .hero-subtitle { 
-      font-size: 1.5rem; 
-      color: white; 
-      margin: 0 0 2.5rem 0;
-      opacity: 0.9;
-      font-weight: 500;
-      text-align: center;
-    }
-
-    /* Code Card */
-    .code-card { 
-      background: #1c03387d; 
-      backdrop-filter: blur(5px);
-      border: 2px solid rgba(242, 231, 75, 0.3);
-      border-radius: 2rem; 
-      padding: 2.5rem; 
-      margin-bottom: 2rem;
-      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
-      transition: 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-    }
-    .code-card:hover, .code-card:focus-within, .code-card:active { 
-      border-color: #F2E74B; 
-      transform: translateY(-10px); 
-      background: #57118cb5;
-      backdrop-filter: blur(5px);
-    }
-
-    .code-card h2 { 
-      color: #F2E74B; 
-      margin: 0 0 1.5rem 0; 
-      font-size: 1.5rem;
-      font-weight: 800;
-    }
-    .code-input-group { 
-      display: flex; 
-      gap: 1rem; 
-      flex-wrap: wrap;
-    }
-    .code-input { 
-      flex: 1; 
-      min-width: 200px;
-      background: rgba(0, 0, 0, 0.3); 
-      border: 2px solid rgba(242, 231, 75, 0.5);
-      color: white; 
-      padding: 1.2rem 1.5rem; 
-      border-radius: 1rem; 
-      font-size: 1.1rem;
-      font-weight: 600;
-      text-transform: uppercase;
-      letter-spacing: 2px;
-      outline: none;
-      transition: 0.3s;
-    }
-    .code-input:focus { 
-      border-color: #6C1DDA; 
-      box-shadow: 0 0 20px rgba(108, 29, 218, 0.4);
-    }
-    .code-input::placeholder { color: rgba(255, 255, 255, 0.5); }
-    .redeem-btn { 
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      background: linear-gradient(135deg, #F2E74B, #FFD700);
-      border: none; 
-      color: #1A0B2E; 
-      padding: 1.2rem 2.5rem; 
-      border-radius: 1rem;
-      font-size: 1.1rem; 
-      font-weight: 900; 
-      cursor: pointer; 
-      transition: 0.3s;
-      box-shadow: 0 10px 30px rgba(242, 231, 75, 0.4);
-      text-transform: uppercase;
-      letter-spacing: 1px;
-      text-align: center;
-    }
-    .redeem-btn:hover:not(:disabled) { 
-      transform: translateY(-3px); 
-      box-shadow: 0 15px 40px rgba(242, 231, 75, 0.6);
-    }
-    .redeem-btn:disabled { opacity: 0.6; cursor: not-allowed; }
-
-    /* Points Display */
-    .points-display { 
+      width: 100vw;
+      background: transparent; 
       display: flex; 
       align-items: center; 
       justify-content: center; 
-      gap: 1.5rem;
-      background: #1c03387d;
-      backdrop-filter: blur(5px);
-      border: 2px solid rgba(242, 231, 75, 0.4);
-      border-radius: 1.5rem;
-      padding: 1.5rem 2rem;
-      transition: 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-      cursor: pointer;
-    }
-    .points-display:hover, .points-display:active { 
-      border-color: #F2E74B; 
-      transform: translateY(-10px); 
-      background: #57118cb5;
-      backdrop-filter: blur(5px);
-    }
-    .points-icon { 
-      font-size: 3rem;
-      animation: pulse 2s ease-in-out infinite;
-    }
-    @keyframes pulse {
-      0%, 100% { transform: scale(1); }
-      50% { transform: scale(1.1); }
-    }
-    .points-info { display: flex; flex-direction: column; }
-    .points-label { 
-      color: rgba(255, 255, 255, 0.7); 
-      font-size: 0.9rem;
-      text-transform: uppercase;
-      letter-spacing: 1px;
-    }
-    .points-value { 
-      color: #F2E74B; 
-      font-size: 2.5rem; 
-      font-weight: 900;
-      text-shadow: 0 2px 10px rgba(242, 231, 75, 0.5);
+      overflow-x: hidden;
+      overflow-y: auto;
+      position: relative;
+      padding-top: 60px; /* Space for navbar */
     }
 
-
-
-    /* How It Works */
-    .how-it-works { 
-      padding: 4rem 2rem; 
-      background: rgba(108, 29, 218, 0.1);
-      text-align: center;
-    }
-    .how-it-works h2 { 
-      color: #F2E74B; 
-      font-size: 2.5rem; 
-      margin: 0 0 3rem 0;
-      font-weight: 900;
-    }
-    .steps { 
-      display: grid; 
-      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-      gap: 3rem; 
+    .hero { 
+      padding: 1rem 2rem; 
+      z-index: 10;
+      position: relative;
+      width: 100%;
       max-width: 1200px;
       margin: 0 auto;
     }
-    .step { 
-      background: rgba(255, 255, 255, 0.05);
-      border: 2px solid rgba(242, 231, 75, 0.2);
-      border-radius: 1.5rem;
-      padding: 2rem;
-      transition: 0.3s;
-    }
-    .step:hover { 
-      border-color: #F2E74B;
-      transform: translateY(-5px);
-    }
-    .step-number { 
-      width: 60px; 
-      height: 60px; 
-      background: linear-gradient(135deg, #F2E74B, #FFD700);
-      color: #1A0B2E; 
-      border-radius: 50%; 
-      display: flex; 
-      align-items: center; 
+
+    .hero-flex {
+      display: flex;
+      align-items: center;
       justify-content: center;
-      font-size: 2rem; 
-      font-weight: 900; 
-      margin: 0 auto 1.5rem auto;
-      box-shadow: 0 10px 30px rgba(242, 231, 75, 0.4);
+      gap: 2rem;
     }
-    .step h3 { 
-      color: white; 
-      margin: 0 0 1rem 0; 
-      font-size: 1.3rem;
-      font-weight: 800;
+
+    .hero-left { flex: 1; display: flex; justify-content: center; }
+    
+    .takis-logo { 
+      width: auto;
+      height: auto;
+      max-height: 85vh;
+      max-width: 100%;
+      object-fit: contain;
+      /* No Animation */
     }
-    .step p { 
-      color: rgba(255, 255, 255, 0.7); 
-      margin: 0;
-      line-height: 1.6;
+
+    .hero-right {
+      flex: 1.2; 
+      max-width: 600px;
     }
+
+    .home-card {
+      background-size: cover;
+      background-position: center;
+      border-radius: 2rem;
+      padding: 2rem 2rem 8rem 2rem; /* Less top, More bottom */
+      box-shadow: 0 20px 50px rgba(0,0,0,0.5);
+      text-align: center;
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 500px;
+      border: 1px solid rgba(242, 231, 75, 0.3);
+    }
+
+    .welcome-title {
+        color: #f2e74b;
+        font-size: 3rem;
+        font-weight: 900;
+        text-transform: uppercase;
+        margin-bottom: 2rem;
+        text-shadow: 0 4px 10px rgba(0, 0, 0, .5);
+        letter-spacing: 2px;
+        background: url(/assets/img/texture-gold.jpg);
+        -webkit-background-clip: text;
+        margin-top: 0px;
+    }
+
+    /* Scoreboard Styles */
+    .scoreboard {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 100%;
+        margin-bottom: 3rem;
+        position: relative;
+    }
+
+    .score-bar {
+        flex: 1;
+        height: 60px;
+        background: linear-gradient(to bottom, #f0f0f0 0%, #d9d9d9 50%, #bfbfbf 100%);
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 0 2rem;
+        border-top: 2px solid white;
+        border-bottom: 2px solid #999;
+        box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+        position: relative;
+        z-index: 1;
+    }
+
+    .score-end {
+        width: 50px;
+        height: 60px;
+        background: linear-gradient(180deg, #9b4db3 0%, #560E8C 100%);
+        border: 2px solid #ccc;
+        box-shadow: inset 0 0 10px rgba(0,0,0,0.3);
+    }
+    .left-end { border-radius: 10px 0 0 10px; border-right: none; }
+    .right-end { border-radius: 0 10px 10px 0; border-left: none; }
+
+    .score-label {
+        color: #1A0B2E;
+        font-weight: 900;
+        font-size: 1.2rem;
+        text-transform: uppercase;
+        flex: 1;
+        text-align: center;
+    }
+    
+    .score-center-spacer { flex: 0 0 140px; } /* Space for the absolute center piece */
+
+    .score-center {
+        position: absolute;
+        left: 50%;
+        top: 50%;
+        transform: translate(-50%, -50%);
+        width: 140px;
+        height: 90px;
+        background: radial-gradient(circle at center, #8e44ad 0%, #560E8C 100%);
+        background-image: radial-gradient(#a569bd 1px, transparent 1px), radial-gradient(circle at center, #8e44ad 0%, #560E8C 100%);
+        background-size: 4px 4px, 100% 100%;
+        border: 2px solid #ccc;
+        border-radius: 0 0 40px 40px;
+        box-shadow: 0 5px 15px rgba(0,0,0,0.4);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 2;
+        overflow: hidden;
+    }
+    
+    /* Shine effect for score-center */
+    .score-center::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: -100%;
+        width: 50%;
+        height: 100%;
+        background: linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent);
+        animation: shine-center 5s infinite;
+    }
+    
+    @keyframes shine-center {
+        0% { left: -100%; }
+        100% { left: 200%; }
+    }
+
+    .score-value {
+        font-size: 2.5rem;
+        font-weight: 900;
+        background: linear-gradient(to bottom, #fff 0%, #ccc 50%, #fff 100%);
+        -webkit-background-clip: text;
+        background-clip: text;
+        color: transparent;
+        filter: drop-shadow(0 2px 0 rgba(0,0,0,0.5));
+        white-space: nowrap;
+    }
+
+    /* Code Section */
+    .code-section { width: 100%; max-width: 400px; }
+    
+    .code-label {
+        display: block;
+        color: white;
+        font-weight: 900; /* Bolder */
+        text-transform: uppercase;
+        margin-bottom: 0.8rem;
+        font-size: 1.5rem; /* Larger */
+        text-shadow: 0 2px 4px rgba(0,0,0,0.8);
+        letter-spacing: 1px;
+    }
+
+    .input-wrapper {
+        margin-bottom: 1.5rem;
+    }
+
+    .code-input {
+        width: 100%;
+        background: rgba(255,255,255,0.25); /* Lighter background */
+        border: 2px solid rgba(255, 255, 255, 0.5); /* More visible border */
+        padding: 1.2rem;
+        border-radius: 0.8rem;
+        color: white;
+        font-size: 1.5rem; /* Larger text */
+        text-align: center;
+        text-transform: uppercase;
+        font-weight: 900;
+        outline: none;
+        transition: 0.3s;
+        box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+    }
+    .code-input:focus {
+        background: rgba(255,255,255,0.35);
+        border-color: #F2E74B;
+        box-shadow: 0 0 20px rgba(242, 231, 75, 0.4);
+    }
+    .code-input::placeholder { 
+        color: rgba(255,255,255,0.6); 
+        font-weight: normal;
+    }
+
+    .redeem-btn {
+        background: #F2E74B;
+        color: #5d1f87;
+        border: none;
+        padding: 1rem 2rem;
+        border-radius: 0.5rem;
+        font-size: 1.2rem;
+        font-weight: 900;
+        cursor: pointer;
+        text-transform: uppercase;
+        width: 100%;
+        transition: 0.2s;
+        box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+        font-family: 'TakisVeneer', 'Inter', sans-serif;
+    }
+    
+    .redeem-btn:hover:not(:disabled) {
+        transform: translateY(-2px);
+    }
+
+    .rewards-btn {
+        background: transparent;
+        color: #F2E74B;
+        border: 2px solid #F2E74B;
+        padding: 1rem 2rem;
+        border-radius: 0.5rem;
+        font-size: 1.2rem;
+        font-weight: 900;
+        cursor: pointer;
+        text-transform: uppercase;
+        width: 100%;
+        transition: 0.2s;
+        margin-top: 1rem;
+        font-family: 'TakisVeneer', 'Inter', sans-serif;
+    }
+    
+    .rewards-btn:hover {
+        background: rgba(242, 231, 75, 0.1);
+        transform: translateY(-2px);
+    }
+
+    .corner-logo {
+      position: absolute;
+      bottom: 20px; /* Back inside */
+      right: 20px;
+      width: 90px;
+      height: auto;
+      filter: drop-shadow(0 2px 5px rgba(0,0,0,0.3));
+      z-index: 10;
+    }
+
+
+    /* Responsive */
+    .mobile-logo { display: none; }
 
     @media (max-width: 992px) {
-      .hero-flex-layout {
-        flex-direction: column;
-        gap: 0.1rem;
-        text-align: center;
-        padding-top: 2rem;
-      }
-      .desktop-logo { display: none; }
-      .mobile-logo { display: block; }
-      .hero-left, .hero-right {
-        width: 100%;
-        text-align: center;
-        justify-content: center;
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-      }
-      .hero-logo {
-        max-width: 280px;
-      }
-      .hero-title {
-        font-size: 2.22rem;
-      }
-      .hero-subtitle {
-        font-size: 1.1rem;
-        margin-bottom: 2rem;
-      }
-      .code-card {
-        padding: 1.5rem;
-        width: 100%;
-        max-width: 500px;
-      }
-      .code-input-group {
-        flex-direction: column;
-      }
-      .redeem-btn {
-        width: 100%;
-      }
-      .points-display {
-        justify-content: center;
-        width: 100%;
-        max-width: 500px;
-      }
-
+        .corner-logo { display: none; } /* Hide on mobile */
+        
+        .hero-flex {
+            flex-direction: column;
+        }
+        .hero-left {
+            justify-content: center;
+        }
+        .desktop-logo { display: none; }
+        .takis-logo { max-width: 280px; }
+        .mobile-logo { display: block; width: 100%; height: auto; }
+        .home-card {
+            width: 100%;
+            padding: 2rem 1rem 6rem 1rem;
+            min-height: auto;
+        }
+        
+        /* Scoreboard Responsive Fixes */
+        .scoreboard { transform: scale(0.95); width: 100%; }
+        .score-bar { padding: 0 0.5rem; }
+        .score-label { font-size: 0.8rem; letter-spacing: 0; }
+        .score-center-spacer { flex: 0 0 110px; }
+        .score-center { width: 110px; }
+        .score-value { font-size: 2rem; }
     }
   `]
 })
-export class HomeComponent {
+export class HomeComponent implements OnInit {
   code = '';
   submitting = signal(false);
   userPoints = signal(0);
+  userName = 'TAKIS FÁN'; // Default
 
   private router = inject(Router);
   private http = inject(HttpClient);
   private toastService = inject(ToastService);
 
   ngOnInit() {
+    const user = JSON.parse(localStorage.getItem('takis_session') || '{}')?.user;
+    if (user) {
+      this.userName = user.name ? user.name.split(' ')[0].toUpperCase() : 'TAKIS FAN'; // Get first name
+    }
     this.loadUserPoints();
   }
 
   loadUserPoints() {
-    const user = JSON.parse(localStorage.getItem('user') || '{}');
-    if (user.id) {
+    const user = JSON.parse(localStorage.getItem('takis_session') || '{}')?.user;
+    if (user?.id) {
       this.http.get(`${environment.apiUrl}/user/points/${user.id}`).subscribe({
         next: (res: any) => {
           this.userPoints.set(res.points || 0);
@@ -371,6 +406,10 @@ export class HomeComponent {
     }
   }
 
+  goToRewards() {
+    this.router.navigate(['/rewards']);
+  }
+
   redeemCode() {
     if (!this.code.trim()) {
       this.toastService.show('Por favor ingresa un codigo', 'error');
@@ -378,7 +417,7 @@ export class HomeComponent {
     }
 
     this.submitting.set(true);
-    const user = JSON.parse(localStorage.getItem('user') || '{}');
+    const user = JSON.parse(localStorage.getItem('takis_session') || '{}')?.user;
 
     this.http.post(`${environment.apiUrl}/codes/redeem`, {
       code: this.code.toUpperCase(),
@@ -391,21 +430,14 @@ export class HomeComponent {
         this.submitting.set(false);
       },
       error: (err: any) => {
-        this.toastService.show(err.error?.message || 'Error al canjear el codigo', 'error', 5000);
+        // Try to extract error message from different possible locations
+        const errorMessage = err.error?.message ||
+          err.error?.messages?.error ||
+          err.message ||
+          'Error al canjear el codigo';
+        this.toastService.show(errorMessage, 'error', 5000);
         this.submitting.set(false);
       }
     });
-  }
-
-  goToRewards() {
-    this.router.navigate(['/rewards']);
-  }
-
-  goToProfile() {
-    this.router.navigate(['/perfil']);
-  }
-
-  goToHistory() {
-    this.router.navigate(['/historial']);
   }
 }

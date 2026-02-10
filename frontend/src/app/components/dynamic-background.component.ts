@@ -26,8 +26,6 @@ import { CommonModule } from '@angular/common';
     .gradient-overlay {
       position: absolute;
       inset: 0;
-      background: radial-gradient(circle at 50% 50%, rgba(255, 0, 0, 0.03) 0%, transparent 70%),
-                  linear-gradient(180deg, rgba(26, 11, 46, 0.4) 0%, rgba(26, 11, 46, 0.6) 100%);
     }
 
     .takis-wrapper {

@@ -13,7 +13,7 @@ NC='\033[0m' # No Color
 
 # Load environment configuration
 if [ -f "deploy/dev/.env" ]; then
-    export $(cat deploy/dev/.env | grep -v '^#' | xargs)
+    export $(cat deploy/dev/.env | grep -v '^#' | grep -v 'app.baseURL' | xargs)
 else
     echo -e "${RED}Error: deploy/dev/.env no encontrado${NC}"
     exit 1

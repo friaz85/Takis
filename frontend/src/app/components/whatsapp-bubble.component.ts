@@ -1,15 +1,15 @@
 import { Component } from '@angular/core';
 
 @Component({
-    selector: 'app-whatsapp-bubble',
-    standalone: true,
-    template: `
-    <a href="https://wa.me/5215500000000" target="_blank" class="wa-bubble">
+  selector: 'app-whatsapp-bubble',
+  standalone: true,
+  template: `
+    <a href="https://wa.me/5215500000000?text=Hola,%20necesito%20ayuda%20con%20Takis%20Aficion%20Intensa" target="_blank" class="wa-bubble">
       <img src="https://upload.wikimedia.org/wikipedia/commons/6/6b/WhatsApp.svg" alt="Support">
       <span class="tooltip">¿Necesitas ayuda intensa?</span>
     </a>
   `,
-    styles: [`
+  styles: [`
     .wa-bubble { position: fixed; bottom: 30px; right: 30px; background: #25D366; width: 60px; height: 60px; border-radius: 50%; display: flex; align-items: center; justify-content: center; box-shadow: 0 10px 25px rgba(0,0,0,0.3); z-index: 1000; transition: 0.3s; }
     .wa-bubble:hover { transform: scale(1.1) rotate(10deg); }
     img { width: 35px; }

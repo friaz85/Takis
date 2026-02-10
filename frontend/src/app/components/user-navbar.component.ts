@@ -22,11 +22,11 @@ import { AuthService } from '../services/auth.service';
           </button>
 
           <div class="links" [class.open]="isMenuOpen">
-             <a routerLink="/home" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}" (click)="isMenuOpen = false">🏠 INICIO</a>
-             <a routerLink="/rewards" routerLinkActive="active" (click)="isMenuOpen = false">🎁 PREMIOS</a>
-             <a routerLink="/como-funciona" routerLinkActive="active" (click)="isMenuOpen = false">❓ COMO FUNCIONA</a>
-             <a routerLink="/perfil" routerLinkActive="active" (click)="isMenuOpen = false">👤 PERFIL</a>
-             <a routerLink="/historial" routerLinkActive="active" (click)="isMenuOpen = false">📜 HISTORIAL</a>
+             <a routerLink="/home" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}" (click)="isMenuOpen = false">INICIO</a>
+             <a routerLink="/rewards" routerLinkActive="active" (click)="isMenuOpen = false">RECOMPENSAS</a>
+             <a routerLink="/historial" routerLinkActive="active" (click)="isMenuOpen = false">HISTORIAL</a>
+             <a routerLink="/perfil" routerLinkActive="active" (click)="isMenuOpen = false">PERFIL</a>
+             <a routerLink="/como-funciona" routerLinkActive="active" (click)="isMenuOpen = false">MECANICA</a>
              <button (click)="logout()" class="logout-btn mobile-only">SALIR</button>
           </div>
 
@@ -59,7 +59,7 @@ import { AuthService } from '../services/auth.service';
       color: #5d1f87; 
       text-decoration: none; 
       font-weight: 900; 
-      font-size: 0.95rem;
+      font-size: 1.1rem;
       padding: 0.5rem 1rem; 
       border-radius: 0.5rem;
       transition: all 0.3s ease;
@@ -87,6 +87,7 @@ import { AuthService } from '../services/auth.service';
       cursor: pointer; 
       transition: all 0.3s ease;
       letter-spacing: 1px;
+      font-family: 'TakisVeneer', 'Inter', sans-serif;
     }
     .logout-btn:hover { 
       background: #5d1f87; 
@@ -145,7 +146,7 @@ import { AuthService } from '../services/auth.service';
       }
 
       .links.open { transform: translateY(0); }
-      .links a { font-size: 1.5rem; }
+      .links a { font-size: 1.8rem; }
     }
   `]
 })

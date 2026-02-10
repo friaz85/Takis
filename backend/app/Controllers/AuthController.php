@@ -3,6 +3,7 @@
 namespace App\Controllers;
 
 use App\Models\UserModel;
+use App\Models\SecurityLogModel;
 use CodeIgniter\RESTful\ResourceController;
 use Firebase\JWT\JWT;
 use App\Libraries\EmailSender;
@@ -27,7 +28,15 @@ class AuthController extends ResourceController
             return $this->fail($this->validator->getErrors());
         }
 
-        $email     = $this->request->getVar('email');
+        $email = $this->request->getVar('email');
+        $phone = $this->request->getVar('phone');
+
+        // Validate unique phone number
+        $userWithPhone = $userModel->where('phone', $phone)->first();
+        if ($userWithPhone && $userWithPhone['email'] !== $email) {
+            return $this->fail('El telefono ya esta registrado', 400);
+        }
+
         $otp       = rand(100000, 999999);
         $otpExpiry = date('Y-m-d H:i:s', strtotime('+10 minutes'));
 
@@ -100,9 +109,34 @@ class AuthController extends ResourceController
             return $this->failNotFound('Usuario no encontrado.');
         }
 
+        // Check if user is blocked
+        if (isset($user['is_blocked']) && $user['is_blocked'] == 1) {
+            $reason = $user['blocked_reason'] ?? 'Actividad sospechosa detectada';
+
+            // Log blocked login attempt
+            $logModel = new SecurityLogModel();
+            $logModel->save([
+                'ip_address' => $this->request->getIPAddress(),
+                'user_id'    => $user['id'],
+                'action'     => 'login_blocked',
+                'details'    => 'Usuario bloqueado intentó acceder'
+            ]);
+
+            return $this->fail("Tu cuenta ha sido bloqueada temporalmente. Razón: {$reason}. Contacta a soporte.", 403);
+        }
+
         if ($user['otp'] == $otp && strtotime($user['otp_expiry']) > time()) {
 
             $userModel->update($user['id'], ['is_verified' => 1, 'otp' => null, 'otp_expiry' => null]);
+
+            // Log Login Success
+            $logModel = new SecurityLogModel();
+            $logModel->save([
+                'ip_address' => $this->request->getIPAddress(),
+                'user_id'    => $user['id'],
+                'action'     => 'login_success',
+                'details'    => 'OTP Verified'
+            ]);
 
             $payload = [
                 'iat'   => time(),
@@ -126,6 +160,15 @@ class AuthController extends ResourceController
                 ]
             ]);
         }
+
+        // Log Login Failed
+        $logModel = new SecurityLogModel();
+        $logModel->save([
+            'ip_address' => $this->request->getIPAddress(),
+            'user_id'    => $user['id'], // We know user exists here, just OTP failed
+            'action'     => 'login_failed',
+            'details'    => 'Invalid or Expired OTP'
+        ]);
 
         return $this->fail('Código inválido o expirado.', 401);
     }

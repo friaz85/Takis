@@ -73,7 +73,9 @@ import { environment } from '../../environments/environment';
     h3 { color: white; margin: 1rem 0 0.5rem 0; font-weight: 900; font-size: 1.2rem; }
     p { color: #aaa; font-size: 0.9rem; margin-bottom: 2rem; flex: 1; line-height: 1.4; }
     .redeem-btn { width: 100%; padding: 1rem; background: transparent; border: 2px solid #F2E74B; color: #F2E74B; border-radius: 1rem; font-weight: 900; cursor: pointer; transition: 0.3s; margin-top: auto; }
-    .redeem-btn:hover:not(:disabled) { background: #F2E74B; color: #1A0B2E; }
+    .redeem-btn:hover:not(:disabled) {
+        transform: translateY(-2px);
+    }
     .redeem-btn:disabled { border-color: #444; color: #444; cursor: not-allowed; }
 
     .loading-state { display: flex; justify-content: center; padding: 4rem; }

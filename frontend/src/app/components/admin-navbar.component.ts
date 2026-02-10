@@ -47,7 +47,7 @@ import { AdminLayoutService } from '../services/admin-layout.service';
           <span class="icon">🎫</span> Códigos Promocionales
         </a>
         <a routerLink="/admin/entry-codes" routerLinkActive="active" class="nav-item" (click)="onNavItemClick()">
-          <span class="icon">🎟️</span> Códigos Canjeados
+          <span class="icon">🎟️</span> Recompensas Canjeadas
         </a>
       </nav>
 

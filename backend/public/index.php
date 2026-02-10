@@ -24,6 +24,9 @@ if (!defined('ENVIRONMENT')) {
     define('ENVIRONMENT', env('CI_ENVIRONMENT', 'production'));
 }
 
+// Set Mexico timezone (UTC-6)
+date_default_timezone_set('America/Mexico_City');
+
 // Enable errors if not in production
 if (ENVIRONMENT !== 'production') {
     error_reporting(E_ALL);

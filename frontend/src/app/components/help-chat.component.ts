@@ -2,6 +2,7 @@ import { Component, signal, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import Swal from 'sweetalert2';
 
 @Component({
     selector: 'app-help-chat',
@@ -49,7 +50,21 @@ export class HelpChatComponent {
         if (!this.msg) return;
         this.http.post('https://takis.qrewards.com.mx/api/index.php/support/ticket', { message: this.msg }).subscribe({
             next: () => {
-                alert('¡Ticket enviado! Te contactaremos pronto.');
+                Swal.fire({
+                    title: 'Ticket enviado!',
+                    text: 'Te contactaremos pronto.',
+                    icon: 'success',
+                    confirmButtonText: 'OK',
+                    confirmButtonColor: '#6C1DDA',
+                    background: 'linear-gradient(135deg, #ffffff 0%, #f8f8f8 100%)',
+                    color: '#333',
+                    iconColor: '#4eff88',
+                    customClass: {
+                        popup: 'takis-swal-popup',
+                        confirmButton: 'takis-swal-button'
+                    },
+                    buttonsStyling: false
+                });
                 this.msg = '';
                 this.toggle();
             }

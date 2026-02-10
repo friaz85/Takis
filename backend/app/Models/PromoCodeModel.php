@@ -8,6 +8,6 @@ class PromoCodeModel extends Model
 {
     protected $table = 'promo_codes';
     protected $primaryKey = 'id';
-    protected $allowedFields = ['code', 'points', 'is_used', 'used_by', 'used_at'];
+    protected $allowedFields = ['code', 'points', 'is_used', 'used_by', 'used_at', 'used_ip'];
     protected $useTimestamps = false;
 }

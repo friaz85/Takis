@@ -22,16 +22,24 @@ export class AuthService {
 
   private checkSession() {
     const data = localStorage.getItem('takis_session');
+    console.log('AuthService: Checking Session', data ? 'Found Data' : 'No Data');
+
     if (data) {
       try {
         const session = JSON.parse(data);
         const thirtyDays = 30 * 24 * 60 * 60 * 1000;
-        if (Date.now() - session.timestamp < thirtyDays) {
+        const now = Date.now();
+        const diff = now - (session.timestamp || 0);
+
+        if (session.user && session.token && diff < thirtyDays) {
+          console.log('AuthService: Session Restored', session.user);
           this._user.set(session.user);
         } else {
+          console.warn('AuthService: Session Expired or Invalid', { diff, thirtyDays, hasUser: !!session.user });
           this.logout();
         }
       } catch (e) {
+        console.error('AuthService: Session Parse Error', e);
         this.logout();
       }
     }
@@ -80,13 +88,17 @@ export class AuthService {
   }
 
   private saveSession(res: any) {
-    if (!res.token || !res.user) return; // Guard logic
+    if (!res.token || !res.user) {
+      console.error('AuthService: saveSession failed - Missing token or user', res);
+      return;
+    }
 
     const sessionData = {
       user: res.user,
       token: res.token,
       timestamp: Date.now()
     };
+    console.log('AuthService: Saving Session', sessionData);
     localStorage.setItem('takis_session', JSON.stringify(sessionData));
     localStorage.setItem('takis_token', res.token);
     this._user.set(res.user);

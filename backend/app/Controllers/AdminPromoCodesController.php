@@ -13,7 +13,7 @@ class AdminPromoCodesController extends ResourceController
         $promoModel = new PromoCodeModel();
         $userModel  = new UserModel();
 
-        $codes = $promoModel->orderBy('created_at', 'DESC')->findAll();
+        $codes = $promoModel->orderBy('id', 'DESC')->findAll();
 
         // Enrich with user names
         foreach ($codes as &$code) {

@@ -17,7 +17,8 @@ class RewardAdminController extends ResourceController
     public function publicCatalog()
     {
         $rewardModel = new RewardModel();
-        return $this->respond($rewardModel->where('active', 1)->findAll());
+        // Filter out items with no stock as per user preference
+        return $this->respond($rewardModel->where('active', 1)->where('stock >', 0)->findAll());
     }
 
     public function createReward()
@@ -32,19 +33,23 @@ class RewardAdminController extends ResourceController
             'cost'         => $data['cost'] ?? 0,
             'stock'        => $data['stock'] ?? 0,
             'active'       => $data['active'] ?? 1,
-            'image_url'    => $data['image_url'] ?? null,
-            'pdf_template' => $data['pdf_template'] ?? null,
-            'coordinates'  => $data['coordinates'] ?? null,
-            'code_areas'   => $data['code_areas'] ?? $data['coordinates'] ?? null,
+            'image_url'    => !empty($data['image_url']) ? $data['image_url'] : null,
+            'pdf_template' => !empty($data['pdf_template']) ? $data['pdf_template'] : null,
+            'coordinates'  => !empty($data['coordinates']) ? $data['coordinates'] : null,
+            'code_areas'   => !empty($data['code_areas']) ? $data['code_areas'] : null,
             'font_size'    => $data['font_size'] ?? 12,
         ];
+
+        // Debug log
+        log_message('error', 'Attempting to create reward with data: ' . json_encode($saveData));
 
         if ($rewardModel->insert($saveData)) {
             $rewardId = $rewardModel->insertID();
             return $this->respondCreated(['message' => 'Recompensa creada', 'id' => $rewardId]);
         }
 
-        return $this->fail('Error al crear la recompensa');
+        log_message('error', 'Create Reward Failed: ' . json_encode($rewardModel->errors()));
+        return $this->fail($rewardModel->errors());
     }
 
     public function updateReward($id = null)
@@ -52,15 +57,37 @@ class RewardAdminController extends ResourceController
         $rewardModel = new RewardModel();
         $data        = $this->request->getJSON(true) ?? $this->request->getVar();
 
-        // Ensure some fields are handled if they come in coordinates vs code_areas
-        if (isset($data['coordinates']) && !isset($data['code_areas'])) {
-            $data['code_areas'] = $data['coordinates'];
-        }
+        // Sanitize data for update
+        $updateData = [];
+        if (isset($data['title']))
+            $updateData['title'] = $data['title'];
+        if (isset($data['description']))
+            $updateData['description'] = $data['description'];
+        if (isset($data['type']))
+            $updateData['type'] = $data['type'];
+        if (isset($data['cost']))
+            $updateData['cost'] = $data['cost'];
+        if (isset($data['stock']))
+            $updateData['stock'] = $data['stock'];
+        if (isset($data['active']))
+            $updateData['active'] = $data['active'];
+        if (key_exists('image_url', $data))
+            $updateData['image_url'] = !empty($data['image_url']) ? $data['image_url'] : null;
+        if (key_exists('pdf_template', $data))
+            $updateData['pdf_template'] = !empty($data['pdf_template']) ? $data['pdf_template'] : null;
+        if (key_exists('coordinates', $data))
+            $updateData['coordinates'] = !empty($data['coordinates']) ? $data['coordinates'] : null;
+        if (key_exists('code_areas', $data))
+            $updateData['code_areas'] = !empty($data['code_areas']) ? $data['code_areas'] : null;
+        if (isset($data['font_size']))
+            $updateData['font_size'] = $data['font_size'];
 
-        if ($rewardModel->update($id, $data)) {
+        if ($rewardModel->update($id, $updateData)) {
             return $this->respond(['message' => 'Recompensa actualizada']);
         }
-        return $this->fail('Error al actualizar');
+
+        log_message('error', 'Update Reward Failed: ' . json_encode($rewardModel->errors()));
+        return $this->fail($rewardModel->errors());
     }
 
     public function deleteReward($id = null)

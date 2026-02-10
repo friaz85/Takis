@@ -17,12 +17,17 @@ class UserModel extends Model
         'role',
         'points',
         'address',
+        'colonia',
+        'municipio',
         'city',
         'state',
         'zip_code',
         'session_version',
-        'otp',        // NEW
-        'otp_expiry'  // NEW
+        'otp',
+        'otp_expiry',
+        'is_blocked',
+        'blocked_reason',
+        'blocked_at'
     ];
     protected $useTimestamps = true;
 

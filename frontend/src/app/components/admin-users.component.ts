@@ -44,7 +44,8 @@ import { environment } from '../../environments/environment';
                 <th>Correo</th>
                 <th class="hide-mobile">Teléfono</th>
                 <th class="hide-mobile">Ubicación</th>
-                <th class="text-right">Fecha Registro</th>
+                <th>Estado</th>
+                <th class="text-right">Acciones</th>
               </tr>
             </thead>
             <tbody>
@@ -56,10 +57,23 @@ import { environment } from '../../environments/environment';
                    {{ user.state || 'N/A' }}
                    <small class="block text-gray">{{ user.city }}</small>
                 </td>
-                <td class="text-right text-sm text-gray">{{ user.created_at | date:'short' }}</td>
+                <td>
+                  <span class="status-badge" [class.blocked]="user.is_blocked">
+                    {{ user.is_blocked ? '🔒 Bloqueado' : '✅ Activo' }}
+                  </span>
+                </td>
+                <td class="text-right">
+                  <button 
+                    class="action-btn" 
+                    [class.unblock]="user.is_blocked"
+                    (click)="openBlockModal(user)"
+                  >
+                    {{ user.is_blocked ? 'Desbloquear' : 'Bloquear' }}
+                  </button>
+                </td>
               </tr>
               <tr *ngIf="filteredUsers().length === 0">
-                 <td colspan="5" class="text-center py-8 text-gray">No se encontraron usuarios</td>
+                 <td colspan="7" class="text-center py-8 text-gray">No se encontraron usuarios</td>
               </tr>
             </tbody>
           </table>
@@ -74,6 +88,54 @@ import { environment } from '../../environments/environment';
             <button [disabled]="currentPage === 1" (click)="currentPage = currentPage - 1">«</button>
             <span class="current-page">{{ currentPage }}</span>
             <button [disabled]="currentPage >= totalPages()" (click)="currentPage = currentPage + 1">»</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Block/Unblock Modal -->
+      <div class="modal-overlay" *ngIf="selectedUser()" (click)="closeBlockModal($event)">
+        <div class="block-modal" (click)="$event.stopPropagation()">
+          <div class="modal-header">
+            <h3>{{ selectedUser().is_blocked ? 'Desbloquear Usuario' : 'Bloquear Usuario' }}</h3>
+            <button class="close-btn" (click)="closeBlockModal($event)">✕</button>
+          </div>
+          
+          <div class="modal-body">
+            <div class="user-info">
+              <p><strong>Usuario:</strong> {{ selectedUser().full_name }}</p>
+              <p><strong>Email:</strong> {{ selectedUser().email }}</p>
+            </div>
+
+            <div class="form-group" *ngIf="!selectedUser().is_blocked">
+              <label>Razón del Bloqueo</label>
+              <textarea 
+                [(ngModel)]="blockReason" 
+                placeholder="Ej: Actividad sospechosa, múltiples intentos fallidos, etc."
+                rows="3"
+                class="reason-textarea"
+              ></textarea>
+            </div>
+
+            <div class="warning-box" *ngIf="!selectedUser().is_blocked">
+              <p>⚠️ El usuario no podrá acceder a su cuenta hasta que sea desbloqueado.</p>
+            </div>
+
+            <div class="info-box" *ngIf="selectedUser().is_blocked">
+              <p><strong>Razón del bloqueo:</strong> {{ selectedUser().blocked_reason || 'No especificada' }}</p>
+              <p><strong>Bloqueado el:</strong> {{ selectedUser().blocked_at | date:'medium' }}</p>
+            </div>
+          </div>
+
+          <div class="modal-footer">
+            <button class="btn-cancel" (click)="closeBlockModal($event)">Cancelar</button>
+            <button 
+              class="btn-action" 
+              [class.unblock]="selectedUser().is_blocked"
+              (click)="toggleUserBlock()"
+              [disabled]="!selectedUser().is_blocked && !blockReason"
+            >
+              {{ selectedUser().is_blocked ? '🔓 Desbloquear' : '🔒 Bloquear' }}
+            </button>
           </div>
         </div>
       </div>
@@ -129,6 +191,55 @@ import { environment } from '../../environments/environment';
 
     .block { display: block; }
 
+    .status-badge {
+      padding: 0.4rem 0.8rem; border-radius: 0.5rem; font-size: 0.75rem;
+      font-weight: bold; background: #00cc66; color: white;
+    }
+    .status-badge.blocked { background: #ff3333; }
+
+    .action-btn {
+      background: #ff3333; border: none; color: white; padding: 0.5rem 1rem;
+      border-radius: 0.5rem; cursor: pointer; font-size: 0.85rem; font-weight: bold;
+      transition: 0.2s;
+    }
+    .action-btn:hover { background: #ff5555; transform: translateY(-2px); }
+    .action-btn.unblock { background: #00cc66; }
+    .action-btn.unblock:hover { background: #00dd77; }
+    .action-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+    /* Modal */
+    .modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.8); display: flex; align-items: center; justify-content: center; z-index: 1000; padding: 1rem; }
+    .block-modal { background: #1A0B2E; border: 2px solid #6C1DDA; border-radius: 1.5rem; padding: 2rem; width: 100%; max-width: 500px; }
+    .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; }
+    .modal-header h3 { margin: 0; color: #F2E74B; }
+    .close-btn { background: transparent; border: none; color: white; font-size: 1.5rem; cursor: pointer; transition: 0.2s; }
+    .close-btn:hover { color: #F2E74B; transform: rotate(90deg); }
+    
+    .modal-body { margin-bottom: 1.5rem; }
+    .user-info { background: rgba(108, 29, 218, 0.1); padding: 1rem; border-radius: 0.5rem; margin-bottom: 1rem; }
+    .user-info p { margin: 0.5rem 0; color: white; }
+    
+    .form-group { display: flex; flex-direction: column; gap: 0.5rem; margin-bottom: 1rem; }
+    .form-group label { color: #F2E74B; font-size: 0.85rem; font-weight: bold; }
+    .reason-textarea { 
+      width: 100%; background: rgba(0,0,0,0.2); border: 1px solid #6C1DDA; color: white; 
+      padding: 0.8rem; border-radius: 0.5rem; outline: none; font-family: inherit; resize: vertical;
+    }
+    
+    .warning-box { background: rgba(255, 165, 0, 0.1); border: 1px solid #ffaa00; padding: 1rem; border-radius: 0.5rem; }
+    .warning-box p { margin: 0; color: #ffaa00; font-size: 0.9rem; }
+    
+    .info-box { background: rgba(108, 29, 218, 0.1); border: 1px solid #6C1DDA; padding: 1rem; border-radius: 0.5rem; }
+    .info-box p { margin: 0.5rem 0; color: white; font-size: 0.9rem; }
+    
+    .modal-footer { display: flex; justify-content: flex-end; gap: 1rem; }
+    .btn-cancel { background: transparent; border: 1px solid rgba(255,255,255,0.2); color: #ccc; padding: 0.75rem 1.5rem; border-radius: 0.5rem; cursor: pointer; font-weight: bold; }
+    .btn-action { background: #ff3333; border: none; color: white; padding: 0.75rem 1.5rem; border-radius: 0.5rem; cursor: pointer; font-weight: bold; transition: 0.3s; }
+    .btn-action:hover { background: #ff5555; }
+    .btn-action.unblock { background: #00cc66; }
+    .btn-action.unblock:hover { background: #00dd77; }
+    .btn-action:disabled { opacity: 0.5; cursor: not-allowed; }
+
     @media (max-width: 1100px) {
       .admin-page { margin-left: 0; padding: 5rem 1rem 2rem 1rem; }
       .header-row { flex-direction: column; align-items: flex-start; }
@@ -141,6 +252,8 @@ import { environment } from '../../environments/environment';
 })
 export class AdminUsersComponent implements OnInit {
   users = signal<any[]>([]);
+  selectedUser = signal<any>(null);
+  blockReason = '';
   searchTerm = signal('');
   currentPage = 1;
   pageSize = 10;
@@ -157,6 +270,49 @@ export class AdminUsersComponent implements OnInit {
     this.http.get(`${environment.apiUrl}/admin/users`).subscribe({
       next: (res: any) => this.users.set(res),
       error: (e: any) => console.error(e)
+    });
+  }
+
+  openBlockModal(user: any) {
+    this.selectedUser.set({ ...user });
+    this.blockReason = '';
+  }
+
+  closeBlockModal(event: Event) {
+    event.stopPropagation();
+    this.selectedUser.set(null);
+    this.blockReason = '';
+  }
+
+  toggleUserBlock() {
+    const user = this.selectedUser();
+    const isBlocking = !user.is_blocked;
+
+    this.http.post(`${environment.apiUrl}/admin/users/${user.id}/toggle-block`, {
+      block: isBlocking,
+      reason: this.blockReason
+    }).subscribe({
+      next: () => {
+        // Update local user list
+        this.users.update(list => list.map(u => {
+          if (u.id === user.id) {
+            return {
+              ...u,
+              is_blocked: isBlocking ? 1 : 0,
+              blocked_reason: isBlocking ? this.blockReason : null,
+              blocked_at: isBlocking ? new Date().toISOString() : null
+            };
+          }
+          return u;
+        }));
+        this.selectedUser.set(null);
+        this.blockReason = '';
+        console.log(isBlocking ? 'Usuario bloqueado' : 'Usuario desbloqueado');
+      },
+      error: (err) => {
+        console.error('Error al actualizar usuario:', err);
+        this.selectedUser.set(null);
+      }
     });
   }
 

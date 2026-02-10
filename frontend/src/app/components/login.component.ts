@@ -1,5 +1,4 @@
 import { Component, signal, inject, OnInit } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
 import { FormsModule } from '@angular/forms';
 import { CommonModule } from '@angular/common';
 import { Router, RouterLink } from '@angular/router';
@@ -11,73 +10,222 @@ import { ToastService } from '../services/toast.service';
   standalone: true,
   imports: [CommonModule, FormsModule, RouterLink],
   template: `
-    <div class="auth-page">
-      <a routerLink="/" class="back-btn">← Volver</a>
+    <div class="landing">
+      <a routerLink="/" class="back-link">← Volver</a>
+      
+      <div class="hero">
+        <div class="hero-flex">
+          <!-- Left Column: Banners -->
+          <div class="hero-left">
+            <div class="logo-wrapper">
+              <img src="/assets/img/Banderin-completo.png" alt="Takis" class="takis-logo desktop-logo animate__animated animate__zoomIn">
+              <img src="/assets/img/Banderin_01.png" alt="Takis" class="takis-logo mobile-logo animate__animated animate__zoomIn">
+            </div>
+          </div>
 
-      <div class="glass-card">
-        <div class="logo-container">
-           <img src="assets/img/Banderin_01.png" alt="Takis" class="logo-img">
+          <!-- Right Column: Login Form -->
+          <div class="hero-right login-card">
+            <h2 class="form-title">INICIAR SESIÓN</h2>
+            
+            <form (submit)="onSubmit()" class="login-form">
+              <div class="field">
+                <label>CORREO ELECTRÓNICO</label>
+                <input type="email" [(ngModel)]="email" name="email" required class="input-flat" placeholder="tu@correo.com">
+              </div>
+
+              <button type="submit" class="submit-btn" [disabled]="loading()">
+                {{ loading() ? 'ENVIANDO...' : 'ENVIAR CÓDIGO DE ACCESO' }}
+              </button>
+              
+              <div class="register-link">
+                 ¿No tienes cuenta? <a routerLink="/auth/register">Regístrate aquí</a>
+              </div>
+            </form>
+          </div>
         </div>
-
-        <h2 class="takis-title">INICIO <span class="highlight">SESION</span></h2>
-        
-        <form (submit)="onSubmit()">
-          <div class="field">
-            <label>CORREO ELECTRONICO</label>
-            <input type="email" [(ngModel)]="email" name="email" required placeholder="tu@correo.com">
-          </div>
-
-          <!-- Password removed. OTP Login only -->
-
-          <button type="submit" class="takis-btn" [disabled]="loading()">
-            {{ loading() ? 'ENVIANDO...' : 'ENVIAR CODIGO DE ACCESO' }}
-          </button>
-          
-          <div class="register-link">
-             ¿No tienes cuenta? <a routerLink="/auth/register">Registrate aqui</a>
-          </div>
-        </form>
       </div>
     </div>
   `,
   styles: [`
-    .auth-page { min-height: 100vh; background: transparent; display: flex; align-items: center; justify-content: center; padding: 1rem; position: relative; }
-    .back-btn { 
-      position: absolute; top: 2rem; left: 2rem; 
-      color: rgba(255,255,255,0.7); text-decoration: none; 
-      font-weight: bold; font-size: 0.9rem; transition: 0.2s;
+    .landing { 
+      min-height: 100vh; 
+      width: 100vw;
+      background: transparent; 
+      display: flex; 
+      align-items: center; 
+      justify-content: center; 
+      overflow-x: hidden;
+      overflow-y: auto;
+      position: relative;
+    }
+
+    .back-link {
+        position: absolute;
+        top: 2rem;
+        left: 2rem;
+        color: white;
+        text-decoration: none;
+        font-weight: bold;
+        z-index: 100;
+        cursor: pointer;
+    }
+
+    .hero { 
+      padding: 1rem 2rem; 
       z-index: 10;
+      position: relative;
+      width: 100%;
+      max-width: 1200px;
+      margin: 0 auto;
     }
-    .back-btn:hover { color: #F2E74B; transform: translateX(-5px); }
-    .glass-card { 
-      background: #1c03387d; 
-      backdrop-filter: blur(5px); 
-      padding: 3rem; 
-      border-radius: 2rem; 
-      width: 100%; 
-      max-width: 450px; 
-      border: 2px solid rgba(242, 231, 75, 0.2); 
-      box-shadow: 0 40px 100px rgba(0,0,0,0.5);
-      transition: 0.4s;
+
+    .hero-flex {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 2rem;
     }
-    .glass-card:hover, .glass-card:focus-within, .glass-card:active { 
-      border-color: #F2E74B; 
-      transform: translateY(-10px); 
-      background: #57118cb5;
-      backdrop-filter: blur(5px);
+
+    .hero-left { flex: 1; display: flex; justify-content: center; }
+    
+    .logo-wrapper { position: relative; display: inline-block; }
+    
+    .takis-logo { 
+      width: auto;
+      height: auto;
+      max-height: 90vh;
+      max-width: 100%;
+      object-fit: contain;
+      position: relative;
+      z-index: 2;
     }
-    .logo-container { text-align: center; margin-bottom: 2rem; }
-    .logo-img { width: 180px; filter: drop-shadow(0 0 10px rgba(108, 29, 218, 0.5)); }
-    .highlight { color: #F2E74B; }
-    .field { margin-bottom: 1.5rem; }
-    .field label { display: block; color: #aaa; font-size: 0.8rem; margin-bottom: 0.5rem; font-weight: bold; }
-    .field input { width: 100%; padding: 1rem; border-radius: 0.5rem; background: rgba(0,0,0,0.2); border: 2px solid rgba(255,255,255,0.1); color: white; outline: none; transition: 0.3s; }
-    .field input:focus { border-color: #6C1DDA; background: rgba(108, 29, 218, 0.05); box-shadow: 0 0 15px rgba(108, 29, 218, 0.3); }
-    .takis-btn { width: 100%; padding: 1.2rem; background: #F2E74B; color: #1A0B2E; border: none; border-radius: 1rem; font-weight: 900; cursor: pointer; transition: 0.2s; }
-    .takis-btn:hover { transform: scale(1.02); box-shadow: 0 0 15px rgba(242, 231, 75, 0.4); }
-    .register-link { text-align: center; margin-top: 1.5rem; color: #aaa; font-size: 0.9rem; }
-    .register-link a { color: #F2E74B; text-decoration: none; font-weight: bold; }
-    .register-link a:hover { text-decoration: underline; }
+
+    .hero-right {
+      flex: 1;
+      max-width: 500px;
+    }
+
+    .login-card {
+      background: white;
+      border-radius: 2rem;
+      padding: 3rem 2rem;
+      box-shadow: 0 20px 50px rgba(0,0,0,0.5);
+      text-align: center;
+    }
+
+    .form-title {
+        color: #560E8C;
+        font-size: 2.5rem;
+        font-weight: 900;
+        margin: 0 0 2rem 0;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        background: url('/assets/img/texture-purple.png'), #560E8C;
+        -webkit-background-clip: text;
+        background-clip: text;
+        color: #560E8C; 
+    }
+
+    .login-form {
+        display: flex;
+        flex-direction: column;
+        gap: 1.5rem;
+    }
+
+    .field { text-align: left; }
+    
+    .field label {
+        display: block;
+        color: #aaa;
+        font-weight: 900;
+        font-size: 1.3rem;
+        margin-bottom: 0.5rem;
+        text-transform: uppercase;
+        text-align: center;
+    }
+
+    .input-flat {
+        width: 100%;
+        background: #F2F2F2;
+        border: none;
+        border-radius: 0.4rem;
+        padding: 0.8rem 1rem;
+        font-size: 1rem;
+        color: #333;
+        font-weight: bold;
+        text-align: center;
+        outline: none;
+        transition: 0.2s;
+    }
+    
+    .input-flat::placeholder {
+        color: #b0b0b0;
+        opacity: 1;
+        font-weight: normal;
+    }
+    
+    .input-flat:focus {
+        background: #e0e0e0;
+        box-shadow: 0 0 0 2px rgba(86, 14, 140, 0.2);
+    }
+
+    .submit-btn {
+        background: #560E8C;
+        color: white;
+        border: none;
+        padding: 1rem;
+        border-radius: 0.5rem;
+        font-size: 1.3rem;
+        font-weight: 900;
+        cursor: pointer;
+        text-transform: uppercase;
+        width: 100%;
+        margin-top: 1rem;
+        transition: 0.3s;
+        font-family: 'TakisVeneer', 'Inter', sans-serif;
+    }
+
+    .submit-btn:hover:not(:disabled) {
+        transform: translateY(-3px);
+        background: #450b70;
+        box-shadow: 0 5px 15px rgba(86, 14, 140, 0.4);
+    }
+
+    .submit-btn:disabled {
+        opacity: 0.7;
+        cursor: not-allowed;
+    }
+    
+    .register-link {
+        margin-top: 1rem;
+        color: #888;
+        font-size: 0.9rem;
+    }
+    
+    .register-link a {
+        color: #560E8C;
+        text-decoration: none;
+        font-weight: bold;
+    }
+
+    /* Responsive */
+    .mobile-logo { display: none; }
+
+    @media (max-width: 992px) {
+        .hero-flex {
+            flex-direction: column;
+        }
+        .hero-left {
+            justify-content: center;
+        }
+        .desktop-logo { display: none; }
+        .takis-logo { max-width: 280px; }
+        .mobile-logo { display: block; width: 100%; height: auto; }
+        .login-card {
+            width: 100%;
+            padding: 2rem 1.5rem;
+        }
+    }
   `]
 })
 export class LoginComponent implements OnInit {
@@ -96,16 +244,21 @@ export class LoginComponent implements OnInit {
 
   onSubmit() {
     if (!this.email) {
-      this.toast.show('Ingresa tu correo.', 'info');
+      this.toast.show('El campo de correo es obligatorio.', 'info');
+      return;
+    }
+
+    const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+    if (!emailRegex.test(this.email)) {
+      this.toast.show('Por favor ingresa un correo electrónico válido.', 'error');
       return;
     }
 
     this.loading.set(true);
-    // Call new method requestLoginOtp
     this.auth.requestLoginOtp(this.email).subscribe({
       next: (res: any) => {
         this.loading.set(false);
-        this.toast.show(res.message || 'Codigo enviado.', 'success');
+        this.toast.show(res.message || 'Código enviado.', 'success');
         this.router.navigate(['/auth/otp'], { queryParams: { email: this.email } });
       },
       error: (err) => {

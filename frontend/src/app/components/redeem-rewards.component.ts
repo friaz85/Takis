@@ -1,7 +1,10 @@
 import { Component, signal, inject, OnInit, computed } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
+import { Router } from '@angular/router';
 import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
 import { UserNavbarComponent } from './user-navbar.component';
+import { WhatsappBubbleComponent } from './whatsapp-bubble.component';
 import { ToastService } from '../services/toast.service';
 import { AuthService } from '../services/auth.service';
 import { AnalyticsService } from '../services/analytics.service';
@@ -10,272 +13,466 @@ import { environment } from '../../environments/environment';
 @Component({
   selector: 'app-redeem-rewards',
   standalone: true,
-  imports: [CommonModule, UserNavbarComponent],
+  imports: [CommonModule, FormsModule, UserNavbarComponent, WhatsappBubbleComponent],
   template: `
     <user-navbar></user-navbar>
+    <app-whatsapp-bubble></app-whatsapp-bubble>
     
-    <div class="redeem-page">
-      <div class="user-stats-bar">
-         <div class="points-display">
-            <div class="points-icon">⭐</div>
-            <div class="points-info">
-              <span class="points-label">Tus puntos</span>
-              <span class="points-value">{{ userPoints() | number }}</span>
-            </div>
-         </div>
-      </div>
-
-      <div class="glass-card main-card">
-        <header class="redeem-header">
-            <h2 class="takis-title">CANJEA TUS <span class="highlight">PREMIOS</span></h2>
-            <p class="subtitle">Usa tus puntos para obtener recompensas exclusivas</p>
-        </header>
-
-        <!-- Tabs/Filters moved below title -->
-        <div class="tabs">
-          <button 
-            class="tab" 
-            [class.active]="activeFilter() === 'all'"
-            (click)="activeFilter.set('all')"
-          >
-            🔍 TODOS
-          </button>
-          <button 
-            class="tab" 
-            [class.active]="activeFilter() === 'redeemable'"
-            (click)="activeFilter.set('redeemable')"
-          >
-            🔥 CANJEABLES
-          </button>
-        </div>
-
-        <div *ngIf="loading()" class="loading-state">
-            <div class="spinner"></div>
-        </div>
-
-        <div class="grid" *ngIf="!loading()">
-            @for (item of filteredRewards(); track item.id) {
-            <div class="reward-card" [class.disabled]="item.stock <= 0">
-                <div class="card-img-container">
-                    <img [src]="item.image_url ? environment.uploadsUrl + '/rewards/' + item.image_url : 'assets/takis-piece.png'" alt="{{ item.title }}" class="reward-img">
-                </div>
-
-                <div class="card-content">
-                    <div class="cost-badge" [class.can-afford]="item.cost <= userPoints()">
-                        {{ item.cost | number }} PTS
-                    </div>
-                    <h3>{{ item.title }}</h3>
-                    <p>{{ item.description }}</p>
-
-                    <div class="stock-info" *ngIf="item.stock < 5 && item.stock > 0">
-                        ¡Solo quedan {{ item.stock }}!
-                    </div>
-                </div>
-                
-                <button class="redeem-btn" 
-                    [disabled]="item.stock <= 0 || item.cost > userPoints() || processingId === item.id"
-                    (click)="redeem(item)">
+    <div class="landing">
+      <div class="hero">
+        <div class="hero-flex">
+          
+          <!-- Left: Banderin -->
+          <div class="hero-left">
+             <div class="logo-wrapper">
+               <img src="/assets/img/Banderin-completo.png" alt="Takis" class="takis-logo desktop-logo animate__animated animate__zoomIn">
+               <img src="/assets/img/Banderin_01.png" alt="Takis" class="takis-logo mobile-logo animate__animated animate__zoomIn">
+             </div>
+          </div>
+          
+          <!-- Right: Catalog Card -->
+          <div class="hero-right catalog-card">
+            
+            <!-- Scoreboard Points Display -->
+            <div class="scoreboard">
+                <div class="score-end left-end"></div>
+                <div class="score-bar">
+                    <span class="score-label">TIENES</span>
                     
-                    @if (processingId === item.id) {
-                        Canjeando...
-                    } @else if (item.stock <= 0) {
-                        AGOTADO
-                    } @else if (item.cost > userPoints()) {
-                        TE FALTAN {{ item.cost - userPoints() | number }} PTS
-                    } @else {
-                        CANJEAR AHORA
-                    }
-                </button>
-            </div>
-            }
-        </div>
+                    <div class="score-center-spacer"></div>
 
-        <!-- Empty State -->
-        <div class="empty-state" *ngIf="filteredRewards().length === 0 && !loading()">
-          <div class="icon">🎁</div>
-          <h2>Sin resultados</h2>
-          <p>{{ activeFilter() === 'redeemable' ? 'Aún no tienes puntos suficientes para estos premios.' : 'No hay premios disponibles en este momento.' }}</p>
+                    <span class="score-label">PUNTOS</span>
+                    
+                    <div class="score-center">
+                        <span class="score-value">{{ userPoints() | number:'1.0-0' }}</span>
+                    </div>
+                </div>
+                <div class="score-end right-end"></div>
+            </div>
+
+            <h2 class="catalog-title">CATALOGO DE RECOMPENSAS</h2>
+
+            <div *ngIf="loading()" class="loading-state">
+                <div class="spinner"></div>
+                <p>CARGANDO RECOMPENSAS...</p>
+            </div>
+
+            <div class="rewards-grid custom-scroll" *ngIf="!loading()">
+              <div class="reward-item" *ngFor="let item of filteredRewards()" (click)="redeem(item)">
+                <div class="reward-img-container">
+                    <img [src]="item.image_url ? environment.uploadsUrl + '/rewards/' + item.image_url : 'assets/takis-piece.png'" [alt]="item.title">
+                </div>
+                <h3 class="reward-title">{{ item.title }}</h3>
+                <div class="reward-pts">{{ item.cost }} PUNTOS</div>
+                
+                <!-- Stock Badge or Overlay -->
+                <div class="overlay-hover">
+                    <span>{{ item.cost <= userPoints() ? 'CANJEAR' : 'FALTAN PUNTOS' }}</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Empty State -->
+            <div class="empty-state" *ngIf="filteredRewards().length === 0 && !loading()">
+              <h2>SIN RESULTADOS</h2>
+              <p>{{ activeFilter() === 'redeemable' ? 'Aun no tienes puntos suficientes.' : 'No hay recompensas disponibles.' }}</p>
+            </div>
+            
+             <!-- Corner Logo (Desktop Only) -->
+            <img src="/assets/img/Logo-Takis.png" class="corner-logo" alt="Takis Logo">
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <!-- Address Modal -->
+    <div class="modal-overlay" *ngIf="showAddressModal()">
+      <div class="modal-card">
+        <div class="modal-header">
+          <h3>COMPLETA TU DIRECCIÓN</h3>
+          <button class="close-btn" (click)="closeModal()">×</button>
+        </div>
+        <div class="modal-body">
+          <p class="modal-intro">Para enviarte tu <strong>{{ pendingReward()?.title }}</strong> necesitamos completar tus datos de envío.</p>
+          
+          <form (ngSubmit)="submitAddress()">
+            <div class="form-grid">
+              <div class="form-group full">
+                <label>NOMBRE DEL DESTINATARIO</label>
+                <input type="text" [(ngModel)]="addressForm.recipient_name" name="recipient_name" required placeholder="Nombre completo de quien recibirá el paquete">
+              </div>
+
+              <div class="form-group full">
+                <label>Calle y Número</label>
+                <input type="text" [(ngModel)]="addressForm.address" name="address" required placeholder="Ej. Av. Reforma 123">
+              </div>
+              
+              <div class="form-group">
+                <label>Colonia</label>
+                <input type="text" [(ngModel)]="addressForm.colonia" name="colonia" required placeholder="Colonia">
+              </div>
+              
+              <div class="form-group">
+                <label>Alcaldía / Municipio</label>
+                <input type="text" [(ngModel)]="addressForm.municipio" name="municipio" required placeholder="Municipio">
+              </div>
+
+              <div class="form-group">
+                <label>Ciudad</label>
+                <input type="text" [(ngModel)]="addressForm.city" name="city" required placeholder="Ciudad">
+              </div>
+
+              <div class="form-group">
+                <label>Estado</label>
+                <input type="text" [(ngModel)]="addressForm.state" name="state" required placeholder="Estado">
+              </div>
+
+              <div class="form-group">
+                <label>Código Postal</label>
+                <input type="text" [(ngModel)]="addressForm.zip_code" name="zip_code" required placeholder="CP">
+              </div>
+
+              <div class="form-group">
+                <label>Teléfono de Contacto</label>
+                <input type="text" [(ngModel)]="addressForm.phone" name="phone" required placeholder="10 dígitos">
+              </div>
+            </div>
+
+            <button type="submit" class="takis-btn-primary block" [disabled]="submittingAddress()">
+              {{ submittingAddress() ? 'GUARDANDO...' : 'GUARDAR Y CANJEAR' }}
+            </button>
+          </form>
         </div>
       </div>
     </div>
   `,
   styles: [`
-    .redeem-page { 
-      padding: 6rem 2rem 2rem 2rem;
-      background: transparent; 
+    .landing { 
       min-height: 100vh; 
-      color: white; 
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: flex-start;
-    }
-
-    .glass-card { 
-      background: #1c03387d; 
-      backdrop-filter: blur(5px); 
-      padding: 3rem; 
-      border-radius: 2rem; 
-      width: 95%; 
-      max-width: 1200px;
-      border: 2px solid rgba(242, 231, 75, 0.2); 
-      box-shadow: 0 40px 100px rgba(0,0,0,0.5);
-      transition: 0.4s;
-    }
-    .glass-card:hover, .glass-card:focus-within, .glass-card:active { 
-      border-color: #F2E74B; 
-      transform: translateY(-10px); 
-      background: #57118cb5;
-      backdrop-filter: blur(5px);
-    }
-
-    .redeem-header { text-align: center; margin-bottom: 2rem; }
-
-    .subtitle { color: #aaa; text-align: center; margin-bottom: 2rem; font-size: 1.1rem; }
-    .highlight { color: #F2E74B; }
-    
-    .user-stats-bar { 
-       background: transparent; 
-       padding: 0; 
-       text-align: center; 
-       display: flex;
-       justify-content: center;
-       margin-bottom: 3rem;
-    }
-    .points-display { 
+      width: 100vw;
+      background: transparent; 
       display: flex; 
       align-items: center; 
       justify-content: center; 
-      gap: 1.5rem;
-      background: #1c03387d;
-      border: 2px solid rgba(242, 231, 75, 0.3);
-      border-radius: 1.5rem;
-      padding: 1.5rem 2.5rem;
-      box-shadow: 0 10px 30px rgba(0,0,0,0.3);
-      transition: 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-      cursor: pointer;
-    }
-    .points-display:hover, .points-display:active { 
-      border-color: #F2E74B; 
-      transform: translateY(-10px); 
-      background: #57118cb5;
-      backdrop-filter: blur(5px);
-    }
-    .points-icon { 
-      font-size: 3rem;
-      animation: pulse 2s ease-in-out infinite;
-    }
-    @keyframes pulse {
-      0%, 100% { transform: scale(1); }
-      50% { transform: scale(1.1); }
-    }
-    .points-info { display: flex; flex-direction: column; text-align: center; }
-    .points-label { 
-      color: rgba(255, 255, 255, 0.7); 
-      font-size: 0.9rem;
-      text-transform: uppercase;
-      letter-spacing: 1px;
-    }
-    .points-value { 
-      color: #F2E74B; 
-      font-size: 2.5rem; 
-      font-weight: 900;
-      text-shadow: 0 2px 10px rgba(242, 231, 75, 0.5);
-      line-height: 1;
+      overflow-x: hidden;
+      overflow-y: auto;
+      position: relative;
+      padding-top: 80px;
     }
 
-    .tabs {
+    .hero { 
+      padding: 1rem 2rem 4rem 2rem; 
+      width: 100%;
+      max-width: 1400px;
+      margin: 0 auto;
+      z-index: 10;
+    }
+
+    .hero-flex {
       display: flex;
-      gap: 1rem;
+      align-items: flex-start;
       justify-content: center;
-      margin-bottom: 2rem;
-      flex-wrap: wrap;
-    }
-    .tab {
-      background: rgba(255, 255, 255, 0.05);
-      border: 2px solid rgba(108, 29, 218, 0.3);
-      color: white;
-      padding: 1rem 2rem;
-      border-radius: 1rem;
-      font-size: 1.1rem;
-      font-weight: 700;
-      cursor: pointer;
-      transition: 0.3s;
-    }
-    .tab:hover {
-      background: #57118cb5;
-      backdrop-filter: blur(5px);
-      border-color: rgba(242, 231, 75, 0.5);
-    }
-    .tab.active {
-      background: linear-gradient(135deg, #F2E74B, #FFD700);
-      border-color: #F2E74B;
-      color: #1A0B2E;
-      box-shadow: 0 10px 30px rgba(242, 231, 75, 0.4);
+      gap: 2rem;
     }
 
-    .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 2.5rem; }
+    .hero-left { flex: 0 0 300px; display: flex; justify-content: center; position: sticky; top: 100px; }
     
-    .reward-card { 
-      background: #1c03387d; 
-      backdrop-filter: blur(5px); 
-      border-radius: 2rem; 
-      border: 2px solid rgba(242, 231, 75, 0.2); 
-      overflow: hidden; 
-      display: flex; 
-      flex-direction: column; 
-      transition: 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-      cursor: pointer;
+    .takis-logo { 
+      width: 100%;
+      height: auto;
+      max-height: 85vh;
+      object-fit: contain;
     }
-    .reward-card.disabled { opacity: 0.6; filter: grayscale(0.2); }
-    .reward-card:hover { 
-      transform: translateY(-10px); 
-      border-color: #F2E74B; 
-      background: #57118cb5;
-      backdrop-filter: blur(5px);
-      box-shadow: 0 20px 50px rgba(0,0,0,0.6); 
+
+    .hero-right {
+      flex: 1;
+      width: 100%;
     }
-    .reward-card:active { transform: translateY(-5px) scale(0.98); }
 
-    .card-img-container { height: 220px; padding: 1.5rem; display: flex; align-items: center; justify-content: center; background: rgba(0,0,0,0.2); }
-    .reward-img { max-height: 100%; max-width: 100%; object-fit: contain; filter: drop-shadow(0 5px 15px rgba(0,0,0,0.5)); transition: 0.3s; }
-    .reward-card:hover .reward-img { transform: scale(1.05); }
+    .catalog-card {
+      background: rgba(86, 14, 140, 0.8);
+      border-radius: 2rem;
+      padding: 3rem;
+      box-shadow: 0 20px 50px rgba(0,0,0,0.5);
+      text-align: center;
+      position: relative;
+      border: 1px solid rgba(242, 231, 75, 0.3);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      min-height: 600px;
+    }
 
-    .card-content { padding: 2rem; flex: 1; display: flex; flex-direction: column; }
-    .cost-badge { align-self: flex-start; background: rgba(255,255,255,0.1); color: #aaa; padding: 6px 14px; border-radius: 2rem; font-weight: 900; font-size: 0.9rem; margin-bottom: 1rem; border: 1px solid rgba(255,255,255,0.1); }
-    .cost-badge.can-afford { background: rgba(242, 231, 75, 0.2); color: #F2E74B; border-color: #F2E74B; }
+    /* Scoreboard Styles */
+    .scoreboard {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 100%;
+        max-width: 600px;
+        margin-bottom: 3rem;
+        position: relative;
+    }
+
+    .score-bar {
+        flex: 1;
+        height: 60px;
+        background: linear-gradient(to bottom, #f0f0f0 0%, #d9d9d9 50%, #bfbfbf 100%);
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 0 2rem;
+        border-top: 2px solid white;
+        border-bottom: 2px solid #999;
+        box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+        position: relative;
+        z-index: 1;
+    }
+
+    .score-end {
+        width: 50px;
+        height: 60px;
+        background: linear-gradient(180deg, #9b4db3 0%, #560E8C 100%);
+        border: 2px solid #ccc;
+        box-shadow: inset 0 0 10px rgba(0,0,0,0.3);
+    }
+    .left-end { border-radius: 10px 0 0 10px; border-right: none; }
+    .right-end { border-radius: 0 10px 10px 0; border-left: none; }
+
+    .score-label {
+        color: #1A0B2E;
+        font-weight: 900;
+        font-size: 1.2rem;
+        text-transform: uppercase;
+        flex: 1;
+        text-align: center;
+    }
     
-    h3 { margin: 0 0 0.8rem 0; font-size: 1.5rem; font-weight: 900; line-height: 1.2; color: white; }
-    p { color: rgba(255,255,255,0.7); font-size: 1rem; line-height: 1.5; margin-bottom: 1.5rem; flex: 1; }
-    .stock-info { color: #ff5555; font-size: 0.9rem; font-weight: 900; margin-bottom: 1rem; text-transform: uppercase; }
+    .score-center-spacer { flex: 0 0 140px; }
 
-    .redeem-btn { 
-      width: 100%; 
-      padding: 1.4rem; 
-      border: none; 
-      font-weight: 950; 
-      cursor: pointer; 
-      transition: 0.3s;
-      background: linear-gradient(135deg, #F2E74B, #FFD700);
-      color: #1A0B2E; 
-      text-transform: uppercase; 
-      font-size: 1.1rem;
-      letter-spacing: 1px;
+    .score-center {
+        position: absolute;
+        left: 50%;
+        top: 50%;
+        transform: translate(-50%, -50%);
+        width: 140px;
+        height: 90px;
+        background: radial-gradient(circle at center, #8e44ad 0%, #560E8C 100%);
+        background-image: radial-gradient(#a569bd 1px, transparent 1px), radial-gradient(circle at center, #8e44ad 0%, #560E8C 100%);
+        background-size: 4px 4px, 100% 100%;
+        border: 2px solid #ccc;
+        border-radius: 0 0 40px 40px;
+        box-shadow: 0 5px 15px rgba(0,0,0,0.4);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 2;
+        overflow: hidden;
     }
-    .redeem-btn:disabled { background: #444; color: #888; cursor: not-allowed; }
-    .redeem-btn:not(:disabled):hover { 
-      background: white; 
-      box-shadow: 0 -5px 20px rgba(242, 231, 75, 0.4);
+
+    /* Shine effect for score-center */
+    .score-center::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: -100%;
+        width: 50%;
+        height: 100%;
+        background: linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent);
+        animation: shine-center 5s infinite;
+    }
+    
+    @keyframes shine-center {
+        0% { left: -100%; }
+        100% { left: 200%; }
     }
 
-    .empty-state { text-align: center; padding: 5rem 2rem; grid-column: 1 / -1; }
-    .empty-state .icon { font-size: 4rem; margin-bottom: 1rem; }
-    .empty-state h2 { color: #F2E74B; font-weight: 900; }
-    .empty-state p { color: #aaa; }
+    .score-value {
+        font-size: 2.5rem;
+        font-weight: 900;
+        background: linear-gradient(to bottom, #fff 0%, #ccc 50%, #fff 100%);
+        -webkit-background-clip: text;
+        background-clip: text;
+        color: transparent;
+        filter: drop-shadow(0 2px 0 rgba(0,0,0,0.5));
+        white-space: nowrap;
+    }
 
-    .loading-state { display: flex; justify-content: center; padding: 6rem; }
-    .spinner { width: 50px; height: 50px; border: 5px solid rgba(255,255,255,0.1); border-top-color: #F2E74B; border-radius: 50%; animation: spin 1s linear infinite; }
+    .catalog-title {
+        color: #f2e74b;
+        font-size: 3rem !important;
+        margin-top: 0px !important;
+        font-weight: 900;
+        text-transform: uppercase;
+        margin-bottom: 1rem;
+        text-shadow: 0 4px 10px rgba(0, 0, 0, .5);
+        letter-spacing: 2px;
+        background: url(/assets/img/texture-gold.jpg);
+        -webkit-background-clip: text;
+    }
+
+    .rewards-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+        gap: 2rem 1rem;
+        width: 100%;
+        padding-right: 0.5rem;
+    }
+    
+    .reward-item {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        text-align: center;
+        transition: 0.3s;
+        cursor: pointer;
+        position: relative;
+        padding: 1rem;
+        border-radius: 1rem;
+    }
+    .reward-item:hover { 
+        background: rgba(255,255,255,0.05);
+        transform: translateY(-5px); 
+    }
+
+    .reward-img-container {
+        width: 100%;
+        height: 140px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-bottom: 0.8rem;
+    }
+    .img-fluid, .reward-img-container img {
+        max-width: 100%;
+        max-height: 100%;
+        object-fit: contain;
+        filter: drop-shadow(0 5px 10px rgba(0,0,0,0.5));
+    }
+
+    .reward-title {
+        color: white;
+        font-size: 0.85rem;
+        font-weight: 900;
+        text-transform: uppercase;
+        margin-bottom: 0.3rem;
+        line-height: 1.2;
+        min-height: 2.4em;
+    }
+
+    .reward-pts {
+        color: #F2E74B;
+        font-size: 0.8rem;
+        font-weight: 900;
+        text-transform: uppercase;
+    }
+    
+    .overlay-hover {
+        position: absolute;
+        top: 0; left: 0; right: 0; bottom: 0;
+        background: #1f0235c7;
+        border-radius: 1rem;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        opacity: 0;
+        transition: 0.3s;
+    }
+    .reward-item:hover .overlay-hover { opacity: 1; }
+    .overlay-hover span {
+        color: #F2E74B;
+        font-weight: 900;
+        text-transform: uppercase;
+        border: 2px solid #F2E74B;
+        padding: 0.5rem 1rem;
+        border-radius: 1rem;
+        background: rgba(0,0,0,0.5);
+    }
+
+    .corner-logo {
+      position: absolute;
+      bottom: 20px;
+      right: 20px;
+      width: 80px;
+      height: auto;
+      filter: drop-shadow(0 2px 5px rgba(0,0,0,0.3));
+      z-index: 10;
+    }
+
+    .loading-state, .empty-state { text-align: center; color: white; padding: 3rem; grid-column: 1/-1; }
+    .spinner { width: 40px; height: 40px; border: 4px solid rgba(255,255,255,0.1); border-top-color: #F2E74B; border-radius: 50%; animation: spin 1s linear infinite; margin: 0 auto 1.5rem auto; }
     @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* Scroll */
+    .custom-scroll::-webkit-scrollbar { width: 6px; }
+    .custom-scroll::-webkit-scrollbar-thumb { background: #560E8C; border-radius: 3px; }
+
+    /* Modal Styles */
+    .modal-overlay {
+      position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+      background: rgba(0,0,0,0.8); z-index: 1000;
+      display: flex; align-items: center; justify-content: center;
+      backdrop-filter: blur(5px);
+    }
+    .modal-card {
+      background: #1A0B2E;
+      border: 2px solid #F2E74B;
+      border-radius: 1.5rem;
+      padding: 2rem;
+      width: 90%; max-width: 600px;
+      position: relative;
+      box-shadow: 0 0 50px rgba(108, 29, 218, 0.5);
+    }
+    .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 1rem; }
+    .modal-header h3 { color: #F2E74B; margin: 0; font-weight: 900; text-transform: uppercase; }
+    .close-btn { background: none; border: none; color: white; font-size: 2rem; cursor: pointer; }
+    
+    .modal-intro { color: white; margin-bottom: 1.5rem; font-size: 0.95rem; line-height: 1.5; }
+    
+    .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1.5rem; }
+    .form-group { display: flex; flex-direction: column; }
+    .form-group.full { grid-column: 1 / -1; }
+    .form-group label { color: #F2E74B; font-size: 0.8rem; font-weight: 700; margin-bottom: 0.4rem; text-transform: uppercase; }
+    .form-group input { background: rgba(255,255,255,0.05); border: 2px solid rgba(255,255,255,0.1); color: white; padding: 0.8rem; border-radius: 0.8rem; transition: 0.3s; outline: none; }
+    .form-group input:focus { border-color: #F2E74B; background: rgba(255,255,255,0.1); }
+    
+    .takis-btn-primary { 
+      background: #F2E74B; color: #5d1f87; border: none; 
+      padding: 1rem; border-radius: 0.8rem; 
+      font-weight: 900; font-size: 1.1rem; width: 100%; 
+      cursor: pointer; text-transform: uppercase; transition: 0.3s;
+      font-family: 'TakisVeneer', 'Inter', sans-serif;
+    }
+    .takis-btn-primary:hover { transform: scale(1.02); box-shadow: 0 0 20px rgba(242, 231, 75, 0.4); }
+    .takis-btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
+
+    /* Responsive */
+    .mobile-logo { display: none; }
+
+    @media (max-width: 992px) {
+        .hero-flex { flex-direction: column; align-items: center; }
+        .hero-left { position: relative; top: 0; margin-bottom: 2rem; flex: auto; max-width: 100%; }
+        
+        .desktop-logo { display: none; }
+        .mobile-logo { display: block; width: 100%; height: auto; max-width: 280px; }
+        .corner-logo { display: none; }
+        
+        .catalog-card { padding: 2rem 1rem; min-height: auto; }
+        .rewards-grid { grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 1rem; }
+        
+        /* Scoreboard Responsive Fixes */
+        .scoreboard { transform: scale(0.9); width: 100%; }
+        .score-bar { padding: 0 0.5rem; }
+        .score-label { font-size: 0.8rem; letter-spacing: 0; }
+        .score-center-spacer { flex: 0 0 110px; }
+        .score-center { width: 110px; height: 75px; }
+        .score-value { font-size: 2rem; }
+
+        .catalog-title { font-size: 2rem; }
+        
+        .form-grid { grid-template-columns: 1fr; }
+    }
   `]
 })
 export class RedeemRewardsComponent implements OnInit {
@@ -284,6 +481,23 @@ export class RedeemRewardsComponent implements OnInit {
   userPoints = signal(0);
   loading = signal(true);
   processingId: number | null = null;
+
+  // Modal State
+  showAddressModal = signal(false);
+  submittingAddress = signal(false);
+  pendingReward = signal<any>(null);
+  addressForm: any = {
+    recipient_name: '',
+    address: '',
+    colonia: '',
+    municipio: '',
+    city: '',
+    state: '',
+    zip_code: '',
+    phone: ''
+  };
+
+  environment = environment;
 
   filteredRewards = computed(() => {
     const filter = this.activeFilter();
@@ -299,7 +513,7 @@ export class RedeemRewardsComponent implements OnInit {
   private toast = inject(ToastService);
   private auth = inject(AuthService);
   private analytics = inject(AnalyticsService);
-  environment = environment;
+  private router = inject(Router);
 
   ngOnInit() {
     this.loadData();
@@ -307,46 +521,138 @@ export class RedeemRewardsComponent implements OnInit {
 
   loadData() {
     this.loading.set(true);
+    // Use auth.getProfile if available to ensure token usage, or http directly
     this.http.get(`${environment.apiUrl}/profile`).subscribe({
       next: (profile: any) => {
-        this.userPoints.set(parseInt(profile.user.points));
+        // Fix: ProfileController returns user object directly, but we support {user: ...} just in case
+        const user = profile.user || profile;
+        const userPoints = user.points;
+        this.userPoints.set(parseInt(userPoints || 0));
+
+        // Pre-fill form just in case
+        this.addressForm = {
+          recipient_name: user.full_name || user.name || '',
+          address: user.address || '',
+          colonia: user.colonia || '',
+          municipio: user.municipio || '',
+          city: user.city || '',
+          state: user.state || '',
+          zip_code: user.zip_code || '',
+          phone: user.phone || ''
+        };
+
         this.http.get(`${environment.apiUrl}/rewards`).subscribe({
           next: (res: any) => {
-            this.rewards.set(res);
+            // Ensure cost is number for proper filtering
+            const formattedRewards = Array.isArray(res) ? res.map((r: any) => ({
+              ...r,
+              cost: Number(r.cost),
+              stock: Number(r.stock)
+            })) : [];
+
+            this.rewards.set(formattedRewards);
             this.loading.set(false);
           },
           error: () => this.loading.set(false)
         });
       },
       error: () => {
-        this.toast.show('Error cargando perfil', 'error');
         this.loading.set(false);
       }
     });
   }
 
   redeem(reward: any) {
+    if (this.processingId) return;
+    if (reward.cost > this.userPoints()) {
+      this.toast.show(`Te faltan ${reward.cost - this.userPoints()} puntos.`, 'info');
+      return;
+    }
+    if (reward.stock <= 0) {
+      this.toast.show('Producto agotado.', 'error');
+      return;
+    }
+
     if (!confirm(`¿Canjear ${reward.title} por ${reward.cost} puntos?`)) return;
 
     this.processingId = reward.id;
 
     this.http.post(`${environment.apiUrl}/redeem`, { reward_id: reward.id }).subscribe({
       next: (res: any) => {
+        // Optimistic update
+        this.userPoints.update(p => p - reward.cost);
         this.toast.show('¡Canje exitoso! Disfruta tu premio.', 'success');
         this.processingId = null;
         this.analytics.trackConversion('redemption', res.order_id || reward.id, {
           rewardTitle: reward.title,
           rewardPoints: reward.cost
         });
+
+        // Reload to sync
         this.loadData();
+
         if (res.pdf_url) {
           window.open(res.pdf_url, '_blank');
         }
       },
       error: (err) => {
         this.processingId = null;
-        const msg = err.error?.message || 'Error al canjear.';
+        console.error('Redeem Error', err);
+
+        // Check for specific error code
+        const errorCode = err.error?.error || err.error?.code || err.error?.messages?.code;
+        if (errorCode === 'PROFILE_INCOMPLETE') {
+          this.pendingReward.set(reward);
+          this.showAddressModal.set(true);
+          // No redirect needed now
+          return;
+        }
+
+        // CodeIgniter .fail() often returns { messages: { error: "X" } } or plain { message: "X" }
+        let msg = err.error?.message;
+        if (!msg && err.error?.messages) {
+          msg = typeof err.error.messages === 'object' ? err.error.messages.error : err.error.messages;
+        }
+        if (!msg) msg = 'Error al canjear. Intenta de nuevo.';
+
         this.toast.show(msg, 'error');
+      }
+    });
+  }
+
+  closeModal() {
+    this.showAddressModal.set(false);
+    this.pendingReward.set(null);
+  }
+
+  submitAddress() {
+    if (this.submittingAddress()) return;
+
+    // Basic validation
+    if (!this.addressForm.address || !this.addressForm.phone || !this.addressForm.zip_code) {
+      this.toast.show('Por favor completa los campos requeridos', 'info');
+      return;
+    }
+
+    this.submittingAddress.set(true);
+
+    // Update Profile First
+    this.http.post(`${environment.apiUrl}/profile`, this.addressForm).subscribe({
+      next: (res: any) => {
+        this.toast.show('Dirección guardada exitosamente', 'success');
+        this.submittingAddress.set(false);
+        this.showAddressModal.set(false);
+
+        // Retry Redemption immediately
+        const pending = this.pendingReward();
+        if (pending) {
+          this.redeem(pending);
+        }
+      },
+      error: (err) => {
+        console.error('Update Profile Error', err);
+        this.submittingAddress.set(false);
+        this.toast.show('Error al guardar la dirección. Intenta de nuevo.', 'error');
       }
     });
   }

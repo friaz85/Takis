@@ -5,10 +5,10 @@ import { Router } from '@angular/router';
 import { AuthService } from '../services/auth.service';
 
 @Component({
-    selector: 'app-admin-login',
-    standalone: true,
-    imports: [CommonModule, FormsModule],
-    template: `
+  selector: 'app-admin-login',
+  standalone: true,
+  imports: [CommonModule, FormsModule],
+  template: `
     <div class="admin-login-container">
       <div class="login-card">
         <div class="logo-section">
@@ -42,13 +42,15 @@ import { AuthService } from '../services/auth.service';
       <div class="takis-floater three"></div>
     </div>
   `,
-    styles: [`
+  styles: [`
     .admin-login-container {
       min-height: 100vh;
       display: flex;
       align-items: center;
       justify-content: center;
-      background: linear-gradient(135deg, #2d004d 0%, #1a0033 100%);
+      background-image: linear-gradient(rgba(45, 0, 77, 0.7), rgba(26, 0, 51, 0.8)), url('/assets/img/BG_takis.jpg');
+      background-size: cover;
+      background-position: center;
       position: relative;
       overflow: hidden;
     }
@@ -171,27 +173,27 @@ import { AuthService } from '../services/auth.service';
   `]
 })
 export class AdminLoginComponent {
-    private auth = inject(AuthService);
-    private router = inject(Router);
+  private auth = inject(AuthService);
+  private router = inject(Router);
 
-    username = '';
-    password = '';
-    loading = signal(false);
-    error = signal('');
+  username = '';
+  password = '';
+  loading = signal(false);
+  error = signal('');
 
-    onSubmit(e: Event) {
-        e.preventDefault();
-        this.loading.set(true);
-        this.error.set('');
+  onSubmit(e: Event) {
+    e.preventDefault();
+    this.loading.set(true);
+    this.error.set('');
 
-        this.auth.adminLogin({ username: this.username, password: this.password }).subscribe({
-            next: () => {
-                this.router.navigate(['/admin/dashboard']);
-            },
-            error: (err) => {
-                this.error.set(err.error?.message || 'Error de conexión');
-                this.loading.set(false);
-            }
-        });
-    }
+    this.auth.adminLogin({ username: this.username, password: this.password }).subscribe({
+      next: () => {
+        this.router.navigate(['/admin/dashboard']);
+      },
+      error: (err) => {
+        this.error.set(err.error?.message || 'Error de conexión');
+        this.loading.set(false);
+      }
+    });
+  }
 }

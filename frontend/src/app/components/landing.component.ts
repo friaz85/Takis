@@ -9,29 +9,28 @@ import { AuthService } from '../services/auth.service';
   imports: [CommonModule, RouterLink],
   template: `
     <div class="landing">
-      <div class="dynamic-bg">
-        <div class="blob one"></div>
-        <div class="blob two"></div>
-        <div class="blob three"></div>
-      </div>
+      
+
       
       <div class="hero">
         <div class="hero-flex">
           <div class="hero-left">
             <div class="logo-wrapper">
-              <img src="assets/img/Banderin-completo.png" alt="Takis" class="takis-logo animate__animated animate__zoomIn">
+              <img src="/assets/img/Banderin-completo.png" alt="Takis" class="takis-logo desktop-logo animate__animated animate__zoomIn">
+              <img src="/assets/img/Banderin_01.png" alt="Takis" class="takis-logo mobile-logo animate__animated animate__zoomIn">
               <div class="logo-glow"></div>
             </div>
           </div>
           
-          <div class="hero-right">
-            <h1 class="takis-title">¡SACA TU LADO <span class="highlight">INTENSO</span> Y GANA!</h1>
+          
+          <div class="hero-right login-card" [style.backgroundImage]="'linear-gradient(rgba(86, 14, 140, 0.85), rgba(86, 14, 140, 0.85)), url(/assets/img/BG_landing.jpg)'">
+            <h1 class="takis-title" style="color: #F2E74B">BIENVENIDO</h1>
             <p class="desc">Registra tus codigos y canjea premios epicos.</p>
             <div class="actions">
               <a routerLink="/auth/register" class="takis-btn primary">REGISTRARME</a>
               <a routerLink="/auth/login" class="takis-btn outline">INICIAR SESION</a>
-              <a routerLink="/catalog" class="takis-btn secondary">VER PREMIOS</a>
             </div>
+            <img src="/assets/img/Logo-Takis.png" class="corner-logo" alt="Takis Logo">
           </div>
         </div>
       </div>
@@ -41,11 +40,13 @@ import { AuthService } from '../services/auth.service';
   styles: [`
     .landing { 
       min-height: 100vh; 
+      width: 100vw;
       background: transparent; 
       display: flex; 
       align-items: center; 
       justify-content: center; 
-      overflow: hidden; 
+      overflow-x: hidden;
+      overflow-y: auto; /* Enable scroll if needed */
       position: relative;
     }
 
@@ -80,18 +81,19 @@ import { AuthService } from '../services/auth.service';
     }
 
     .hero { 
-      padding: 4rem 2rem; 
+      padding: 1rem 2rem; 
       z-index: 10;
       position: relative;
       width: 100%;
       max-width: 1200px;
+      margin: 0 auto;
     }
 
     .hero-flex {
       display: flex;
       align-items: center;
       justify-content: center;
-      gap: 4rem;
+      gap: 2rem;
     }
 
     .hero-left { flex: 1; display: flex; justify-content: flex-end; }
@@ -103,18 +105,40 @@ import { AuthService } from '../services/auth.service';
       align-items: center;
     }
 
+    .login-card {
+      background-size: cover;
+      background-position: center;
+      padding: 3rem;
+      border-radius: 2rem;
+      position: relative;
+      box-shadow: 0 20px 50px rgba(0,0,0,0.5);
+      border: 1px solid rgba(242, 231, 75, 0.3);
+      min-height: 500px;
+      justify-content: center;
+    }
+
+    .corner-logo {
+      position: absolute;
+      bottom: 20px;
+      right: 20px;
+      width: 80px;
+      height: auto;
+      filter: drop-shadow(0 2px 5px rgba(0,0,0,0.3));
+    }
+
     .logo-wrapper {
       position: relative;
       display: inline-block;
     }
 
     .takis-logo { 
-      width: 100%;
-      max-width: 450px; 
+      width: auto;
+      height: auto;
+      max-height: 98vh;
+      max-width: 100%;
+      object-fit: contain;
       position: relative;
       z-index: 2;
-      filter: drop-shadow(0 0 30px rgba(0,0,0,0.5));
-      animation: float 3s ease-in-out infinite;
     }
 
     @keyframes float {
@@ -129,10 +153,6 @@ import { AuthService } from '../services/auth.service';
       transform: translate(-50%, -50%);
       width: 100%;
       height: 100%;
-      background: radial-gradient(circle, rgba(242, 231, 75, 0.2) 0%, transparent 70%);
-      filter: blur(20px);
-      z-index: 1;
-      animation: pulse 3s infinite ease-in-out;
     }
 
     @keyframes pulse {
@@ -146,7 +166,7 @@ import { AuthService } from '../services/auth.service';
     .desc { 
       color: #e0e0e0; 
       font-size: 1.4rem; 
-      margin-bottom: 3.5rem; 
+      margin-bottom: 2rem; 
       font-weight: 500;
       text-shadow: 0 2px 4px rgba(0,0,0,0.3);
       text-align: center;
@@ -158,19 +178,32 @@ import { AuthService } from '../services/auth.service';
       display: flex;
       align-items: center;
       justify-content: center;
-      padding: 1.4rem 3rem; 
-      min-height: 60px;
-      border-radius: 1.2rem; 
+      padding: 1rem 2rem; 
+      min-height: 50px;
+      border-radius: 1rem; 
       font-weight: 900; 
       text-decoration: none; 
       transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); 
       font-size: 1.2rem; 
       text-align: center;
+      font-family: 'TakisVeneer', 'Inter', sans-serif;
+    }
+
+    .purple-btn {
+      background: #560E8C;
+      color: white;
+      box-shadow: 0 10px 0 #3a095e, 0 20px 30px rgba(86, 14, 140, 0.4);
+    }
+
+    .purple-btn:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 15px 0 #3a095e, 0 25px 40px rgba(86, 14, 140, 0.6);
+      background: #6a1aa3;
     }
 
     .primary { 
       background: #F2E74B; 
-      color: #1A0B2E; 
+      color: #5d1f87; 
       box-shadow: 0 10px 0 #b3ab37, 0 20px 30px rgba(242, 231, 75, 0.2); 
     }
 
@@ -206,6 +239,9 @@ import { AuthService } from '../services/auth.service';
 
     /* Decorative pieces */
 
+    /* Desktop defaults */
+    .mobile-logo { display: none; }
+
     @media (max-width: 992px) {
       .hero-flex {
         flex-direction: column;
@@ -220,8 +256,16 @@ import { AuthService } from '../services/auth.service';
         justify-content: center;
         flex-direction: column;
       }
-      .headline { font-size: 2.5rem; }
-      .takis-logo { max-width: 280px; }
+      .takis-logo { 
+        max-width: 280px; 
+        max-height: none; /* Let mobile version determine height */
+      }
+      .desktop-logo { display: none; }
+      .mobile-logo { display: block; width: 100%; height: auto; }
+      
+      .hero-flex {
+        padding: 2rem 0; /* Add padding for scrollable content */
+      }
     }
   `]
 })

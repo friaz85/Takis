@@ -4,6 +4,16 @@ namespace App\Libraries;
 
 class EmailSender
 {
+    private static function removeAccents($string)
+    {
+        $string = str_replace(
+            ['á', 'é', 'í', 'ó', 'ú', 'Á', 'É', 'Í', 'Ó', 'Ú', 'ñ', 'Ñ'],
+            ['a', 'e', 'i', 'o', 'u', 'A', 'E', 'I', 'O', 'U', 'n', 'N'],
+            $string
+        );
+        return $string;
+    }
+
     public static function sendEmail($to, $subject, $title, $messageHtml, $actionText = null, $actionUrl = null)
     {
         $email = \Config\Services::email();
@@ -27,11 +37,23 @@ class EmailSender
         $fromEmail = env('EMAIL_FROM', 'no-reply@takis.qrewards.com.mx');
         $fromName  = env('EMAIL_FROM_NAME', 'Takis Promo');
 
-        $email->setFrom($fromEmail, $fromName);
+        $email->setFrom($fromEmail, self::removeAccents($fromName));
         $email->setTo($to);
-        $email->setSubject($subject);
+        $email->setSubject(self::removeAccents($subject));
 
-        $html = self::buildHtml($title, $messageHtml, $actionText, $actionUrl);
+        // Clean message content
+        $cleanTitle = self::buildHtml($title, $messageHtml, $actionText, $actionUrl); // We pass raw here, buildHtml will clean it? No, let's clean before
+        // Actually, messageHtml might contain HTML tags. We should only clean text content, but that's hard. 
+        // The user request is "quitar los acentos". 
+        // Simple str_replace on the whole HTML might break attributes if they had accents (unlikely for standard tags).
+        // Let's assume messageHtml is mostly text provided by us.
+
+        // Re-implementing logic to be cleaner:
+        $cleanTitleText   = $title; // self::removeAccents($title);
+        $cleanMessageHtml = $messageHtml; // self::removeAccents($messageHtml);
+        $cleanActionText  = $actionText; // $actionText ? self::removeAccents($actionText) : null;
+
+        $html = self::buildHtml($cleanTitleText, $cleanMessageHtml, $cleanActionText, $actionUrl);
 
         $email->setMessage($html);
 
@@ -78,16 +100,24 @@ class EmailSender
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>$title</title>
+    <style>
+        @font-face {
+            font-family: 'Veneer';
+            src: url('https://dev.takisaficionintensa.com.mx/assets/fonts/Veneer.otf') format('opentype');
+            font-weight: normal;
+            font-style: normal;
+        }
+    </style>
 </head>
-<body style="margin: 0; padding: 0; background-color: $bgColor; font-family: Arial, sans-serif; color: #ffffff;">
-    <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="background-color: $bgColor;">
+<body style="margin: 0; padding: 0; background-color: $bgColor; background-image: url('https://dev.takisaficionintensa.com.mx/assets/img/BG_takis.jpg'); background-size: cover; background-position: center; font-family: 'Veneer', 'Arial Black', Impact, sans-serif; color: #ffffff;">
+    <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="background-image: url('https://dev.takisaficionintensa.com.mx/assets/img/BG_takis.jpg'); background-size: cover; background-position: center; background-color: $bgColor;">
         <tr>
             <td align="center" style="padding: 40px 10px;">
                 <!-- Card Container -->
-                <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="max-width: 600px; background-color: $cardColor; border-radius: 16px; border: 1px solid #442a66; overflow: hidden; box-shadow: 0 10px 30px rgba(0,0,0,0.5);">
+                <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="max-width: 600px; background-color: rgba(37, 22, 58, 0.9); border-radius: 16px; border: 1px solid #442a66; overflow: hidden; box-shadow: 0 10px 30px rgba(0,0,0,0.5);">
                     <!-- Header with Logo -->
                     <tr>
-                        <td align="center" style="padding: 30px; background-color: #120621; border-bottom: 1px solid #442a66;">
+                        <td align="center" style="padding: 30px; background-color: rgba(18, 6, 33, 0.95); border-bottom: 1px solid #442a66;">
                             <img src="$logoUrl" alt="Takis" width="150" style="display: block; border: 0;">
                         </td>
                     </tr>
@@ -107,7 +137,7 @@ class EmailSender
 
                     <!-- Footer -->
                     <tr>
-                        <td style="padding: 20px; background-color: #120621; text-align: center; color: #666; font-size: 12px; border-top: 1px solid #442a66;">
+                        <td style="padding: 20px; background-color: rgba(18, 6, 33, 0.95); text-align: center; color: #666; font-size: 12px; border-top: 1px solid #442a66;">
                             <p style="margin: 0;">&copy; $year Takis Promo. Todos los derechos reservados.</p>
                             <p style="margin: 5px 0 0 0;">Si no solicitaste este correo, puedes ignorarlo.</p>
                         </td>

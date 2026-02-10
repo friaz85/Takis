@@ -92,13 +92,12 @@ import { environment } from '../../environments/environment';
                 <th>Estado</th>
                 <th>Usado Por</th>
                 <th>Fecha de Uso</th>
-                <th class="hide-mobile">Creado</th>
               </tr>
             </thead>
             <tbody>
               <tr *ngFor="let code of paginatedCodes()">
                 <td>{{ code.id }}</td>
-                <td class="font-bold">{{ code.code }}</td>
+                <td class="font-bold code-masked">***{{ getLastDigits(code.code) }}</td>
                 <td><span class="points-badge">{{ code.points }} pts</span></td>
                 <td>
                   <span class="status-pill" [class.used]="code.is_used" [class.available]="!code.is_used">
@@ -107,7 +106,6 @@ import { environment } from '../../environments/environment';
                 </td>
                 <td>{{ code.user_name || '-' }}</td>
                 <td>{{ code.used_at ? (code.used_at | date:'short') : '-' }}</td>
-                <td class="hide-mobile">{{ code.created_at | date:'short' }}</td>
               </tr>
             </tbody>
           </table>
@@ -171,6 +169,7 @@ import { environment } from '../../environments/environment';
     td { padding: 1rem; border-bottom: 1px solid rgba(255,255,255,0.05); }
     tbody tr:hover { background: rgba(108, 29, 218, 0.1); }
     .font-bold { font-weight: 800; color: #F2E74B; }
+    .code-masked { font-family: 'Courier New', monospace; letter-spacing: 1px; }
     .points-badge { background: rgba(0, 204, 102, 0.2); color: #00cc66; padding: 0.3rem 0.6rem; border-radius: 0.3rem; font-weight: bold; font-size: 0.85rem; }
     .status-pill { padding: 0.3rem 0.8rem; border-radius: 0.5rem; font-size: 0.75rem; font-weight: bold; }
     .status-pill.available { background: #00cc66; color: white; }
@@ -243,4 +242,9 @@ export class AdminPromoCodesComponent implements OnInit {
   totalPages = computed(() => Math.ceil(this.filteredCodes().length / this.pageSize));
   availableCodes = computed(() => this.codes().filter(c => !c.is_used).length);
   usedCodes = computed(() => this.codes().filter(c => c.is_used).length);
+
+  getLastDigits(code: string): string {
+    if (!code) return '';
+    return code.slice(-3);
+  }
 }

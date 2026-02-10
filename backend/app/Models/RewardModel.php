@@ -21,5 +21,5 @@ class RewardModel extends Model
         'code_areas',
         'font_size'
     ];
-    protected $useTimestamps = true;
+    protected $useTimestamps = false;
 }

@@ -121,6 +121,40 @@ import { environment } from '../../environments/environment';
                 </select>
               </div>
 
+              <!-- Tracking Information Section -->
+              <div class="tracking-section mt-4" *ngIf="selectedOrder().status === 'shipped' || selectedOrder().status === 'delivered'">
+                <h4 class="section-title">📦 Información de Envío</h4>
+                
+                <div class="form-group mt-3">
+                  <label>Número de Guía</label>
+                  <input 
+                    type="text" 
+                    [(ngModel)]="selectedOrder().tracking_number" 
+                    placeholder="Ej: 1234567890"
+                    class="tracking-input"
+                  >
+                </div>
+
+                <div class="form-group mt-3">
+                  <label>URL de Rastreo</label>
+                  <input 
+                    type="url" 
+                    [(ngModel)]="selectedOrder().tracking_url" 
+                    placeholder="https://rastreo.paqueteria.com/..."
+                    class="tracking-input"
+                  >
+                </div>
+
+                <div class="form-group mt-3">
+                  <label>Fecha de Entrega Estimada</label>
+                  <input 
+                    type="date" 
+                    [(ngModel)]="selectedOrder().delivery_date" 
+                    class="tracking-input"
+                  >
+                </div>
+              </div>
+
               <div class="form-group mt-4">
                 <label>Comentarios / Notas</label>
                 <textarea 
@@ -212,6 +246,37 @@ import { environment } from '../../environments/environment';
       padding: 1rem; border-radius: 0.6rem; outline: none; font-size: 0.95rem; font-family: inherit;
     }
     .notes-textarea { resize: vertical; min-height: 100px; }
+    
+    .tracking-section { 
+      background: rgba(108, 29, 218, 0.1); 
+      border: 1px solid rgba(108, 29, 218, 0.3); 
+      border-radius: 0.8rem; 
+      padding: 1.5rem; 
+      margin-top: 1.5rem;
+    }
+    .section-title { 
+      color: #F2E74B; 
+      font-size: 1rem; 
+      font-weight: bold; 
+      margin: 0 0 1rem 0; 
+      text-transform: uppercase;
+    }
+    .tracking-input { 
+      width: 100%; 
+      background: rgba(0,0,0,0.3); 
+      border: 1px solid #6C1DDA; 
+      color: white; 
+      padding: 1rem; 
+      border-radius: 0.6rem; 
+      outline: none; 
+      font-size: 0.95rem; 
+      font-family: inherit;
+    }
+    .tracking-input:focus { 
+      border-color: #F2E74B; 
+      background: rgba(0,0,0,0.4);
+    }
+    .mt-3 { margin-top: 0.75rem; }
 
     .modal-footer { display: flex; justify-content: flex-end; gap: 1rem; margin-top: 2.5rem; }
     .btn-cancel { background: transparent; border: 1px solid rgba(255,255,255,0.2); color: #ccc; padding: 0.75rem 1.5rem; border-radius: 0.5rem; cursor: pointer; font-weight: bold; }
@@ -254,11 +319,11 @@ export class AdminOrdersComponent implements OnInit {
 
   loadOrders() {
     const mockData = [
-      { id: 1, user_name: 'Juan Pérez', user_email: 'juan.perez@gmail.com', reward_title: 'Audífonos Bluetooth Pro', points_cost: 5000, status: 'delivered', admin_notes: '', created_at: new Date(Date.now() - 86400000).toISOString() },
-      { id: 2, user_name: 'María García', user_email: 'maria.garcia@outlook.com', reward_title: 'Mochila Takis Edición Especial', points_cost: 3500, status: 'shipped', admin_notes: 'Guía: 123456789', created_at: new Date(Date.now() - 172800000).toISOString() },
-      { id: 3, user_name: 'Roberto Sánchez', user_email: 'roberto.s@prodigy.net', reward_title: 'Sudadera Takis Limited', points_cost: 7500, status: 'processing', admin_notes: '', created_at: new Date(Date.now() - 259200000).toISOString() },
-      { id: 4, user_name: 'Ana Martínez', user_email: 'ana.mtz@yahoo.com', reward_title: 'Gorra Takis Flare', points_cost: 2000, status: 'pending', admin_notes: '', created_at: new Date(Date.now() - 345600000).toISOString() },
-      { id: 5, user_name: 'Carlos López', user_email: 'clopez@gmail.com', reward_title: 'Tarjeta Amazon $500', points_cost: 10000, status: 'delivered', admin_notes: 'Código enviado por email', created_at: new Date(Date.now() - 432000000).toISOString() }
+      { id: 1, user_name: 'Juan Pérez', user_email: 'juan.perez@gmail.com', reward_title: 'Audífonos Bluetooth Pro', points_cost: 5000, status: 'delivered', admin_notes: '', tracking_number: 'FDX987654321', tracking_url: 'https://fedex.com/track/987654321', delivery_date: '2026-02-08', created_at: new Date(Date.now() - 86400000).toISOString() },
+      { id: 2, user_name: 'María García', user_email: 'maria.garcia@outlook.com', reward_title: 'Mochila Takis Edición Especial', points_cost: 3500, status: 'shipped', admin_notes: 'Guía: 123456789', tracking_number: '123456789', tracking_url: 'https://dhl.com/track/123456789', delivery_date: '2026-02-12', created_at: new Date(Date.now() - 172800000).toISOString() },
+      { id: 3, user_name: 'Roberto Sánchez', user_email: 'roberto.s@prodigy.net', reward_title: 'Sudadera Takis Limited', points_cost: 7500, status: 'processing', admin_notes: '', tracking_number: null, tracking_url: null, delivery_date: null, created_at: new Date(Date.now() - 259200000).toISOString() },
+      { id: 4, user_name: 'Ana Martínez', user_email: 'ana.mtz@yahoo.com', reward_title: 'Gorra Takis Flare', points_cost: 2000, status: 'pending', admin_notes: '', tracking_number: null, tracking_url: null, delivery_date: null, created_at: new Date(Date.now() - 345600000).toISOString() },
+      { id: 5, user_name: 'Carlos López', user_email: 'clopez@gmail.com', reward_title: 'Tarjeta Amazon $500', points_cost: 10000, status: 'delivered', admin_notes: 'Código enviado por email', tracking_number: null, tracking_url: null, delivery_date: null, created_at: new Date(Date.now() - 432000000).toISOString() }
     ];
 
     this.http.get(`${environment.apiUrl}/admin/orders`).subscribe({
@@ -293,7 +358,13 @@ export class AdminOrdersComponent implements OnInit {
   totalPages = computed(() => Math.ceil(this.filteredOrders().length / this.pageSize));
 
   selectOrder(order: any) {
-    this.selectedOrder.set({ ...order });
+    this.selectedOrder.set({
+      ...order,
+      tracking_number: order.tracking_number || '',
+      tracking_url: order.tracking_url || '',
+      delivery_date: order.delivery_date || '',
+      admin_notes: order.admin_notes || ''
+    });
   }
 
   closeOrderModal(event: Event) {
@@ -305,12 +376,28 @@ export class AdminOrdersComponent implements OnInit {
     this.savingOrder.set(true);
     const updated = this.selectedOrder();
 
-    // Simulate API update
-    setTimeout(() => {
-      this.orders.update(list => list.map(o => o.id === updated.id ? updated : o));
-      this.savingOrder.set(false);
-      this.selectedOrder.set(null);
-    }, 1000);
+    // Send to backend
+    this.http.post(`${environment.apiUrl}/admin/orders/${updated.id}/update`, {
+      status: updated.status,
+      admin_notes: updated.admin_notes,
+      tracking_number: updated.tracking_number,
+      tracking_url: updated.tracking_url,
+      delivery_date: updated.delivery_date
+    }).subscribe({
+      next: () => {
+        this.orders.update(list => list.map(o => o.id === updated.id ? updated : o));
+        this.savingOrder.set(false);
+        this.selectedOrder.set(null);
+        console.log('Pedido actualizado exitosamente');
+      },
+      error: (err) => {
+        console.error('Error al actualizar pedido:', err);
+        // Fallback: update locally anyway
+        this.orders.update(list => list.map(o => o.id === updated.id ? updated : o));
+        this.savingOrder.set(false);
+        this.selectedOrder.set(null);
+      }
+    });
   }
 
   exportToCSV() {

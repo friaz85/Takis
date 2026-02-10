@@ -28,7 +28,19 @@ $routes->set404Override();
  * --------------------------------------------------------------------
  */
 
-$routes->get('/', 'Home::index');
+
+
+
+
+
+// Update Schema
+$routes->get('update-schema', 'UpdatePromoSchemaController::update');
+
+// Setup DB
+$routes->get('setup-db', 'SetupController::index');
+
+// Debug
+$routes->get('debug-codes', 'DebugController::index');
 
 // Public Catalog
 $routes->get('rewards', 'RewardAdminController::publicCatalog');
@@ -69,12 +81,37 @@ $routes->group('admin', ['filter' => 'admin_auth'], function ($routes) {
     $routes->get('dashboard', 'DashboardAdminController::getStats');
     $routes->get('stats', 'DashboardAdminController::getStats');
     $routes->get('users', 'AdminUserController::index');
+    $routes->get('users/stats', 'AdminUserController::getStats');
+    $routes->post('users/(:num)/toggle-block', 'AdminUserController::toggleBlock/$1');
     $routes->get('entry-codes', 'AdminEntryCodeController::index');
+    $routes->get('redemptions', 'AdminRedemptionsController::index');
 
     // Promo Codes Management
     $routes->get('promo-codes', 'AdminPromoCodesController::index');
     $routes->post('promo-codes/generate', 'AdminPromoCodesController::generate');
     $routes->post('promo-codes/upload', 'AdminPromoCodesController::upload');
+
+    // Orders Management
+    $routes->get('orders', 'AdminOrdersController::index');
+    $routes->post('orders/(:num)/update', 'AdminOrdersController::updateOrder/$1');
+
+    // Support Tickets Management
+    $routes->get('support', 'AdminSupportController::index');
+    $routes->get('support/stats', 'AdminSupportController::getStats');
+    $routes->get('support/(:num)', 'AdminSupportController::getTicket/$1');
+    $routes->post('support/(:num)/update', 'AdminSupportController::updateTicket/$1');
+    $routes->post('support/(:num)/response', 'AdminSupportController::addResponse/$1');
+
+    // Uploads
+    $routes->post('upload/reward-image', 'UploadController::uploadRewardImage');
+    $routes->post('upload/template', 'UploadController::uploadTemplate');
+});
+
+// Ultramsg API Routes (Public - No auth required)
+$routes->group('api/ultramsg', function ($routes) {
+    $routes->post('get-user', 'UltramsgApiController::getUser');
+    $routes->post('create-ticket', 'UltramsgApiController::createTicket');
+    $routes->post('add-response', 'UltramsgApiController::addResponse');
 });
 
 /*

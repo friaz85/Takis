@@ -32,8 +32,9 @@ class UploadController extends ResourceController
             return $this->fail($file->getErrorString());
         }
 
-        if ($file->getClientMimeType() !== 'application/pdf') {
-            return $this->fail('Solo se permiten archivos PDF.');
+        $allowedMimes = ['application/pdf', 'image/jpeg', 'image/png', 'image/jpg'];
+        if (!in_array($file->getClientMimeType(), $allowedMimes)) {
+            return $this->fail('Solo se permiten archivos PDF, JPG o PNG.');
         }
 
         $newName = $file->getRandomName();

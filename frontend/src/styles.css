@@ -70,3 +70,77 @@ body {
 .animate__fadeInUp {
   animation-name: fadeInUp;
 }
+
+/* All placeholders and inputs in client-facing components should use the site font */
+.landing input::placeholder,
+.landing textarea::placeholder,
+.modal-overlay input::placeholder,
+.modal-overlay textarea::placeholder {
+  font-family: 'TakisVeneer', 'Inter', sans-serif !important;
+  font-size: 1.1rem !important;
+}
+
+.landing input,
+.landing textarea,
+.modal-overlay input,
+.modal-overlay textarea {
+  font-family: 'TakisVeneer', 'Inter', sans-serif !important;
+  font-size: 1.3rem !important;
+}
+
+/* SweetAlert2 Custom Styles for Takis */
+.takis-swal-popup {
+  border-radius: 1.5rem !important;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3) !important;
+  padding: 2rem !important;
+}
+
+.takis-swal-button {
+  background: #6C1DDA !important;
+  color: white !important;
+  border: none !important;
+  padding: 0.75rem 2rem !important;
+  border-radius: 0.75rem !important;
+  font-weight: 900 !important;
+  font-size: 1rem !important;
+  text-transform: uppercase !important;
+  cursor: pointer !important;
+  transition: all 0.3s ease !important;
+  font-family: 'TakisVeneer', 'Inter', sans-serif !important;
+  box-shadow: 0 4px 15px rgba(108, 29, 218, 0.3) !important;
+}
+
+.takis-swal-button:hover {
+  background: #560E8C !important;
+  transform: translateY(-2px) !important;
+  box-shadow: 0 6px 20px rgba(108, 29, 218, 0.4) !important;
+}
+
+/* Toast specific styles */
+.takis-toast-popup {
+  border-radius: 1rem !important;
+  border: 2px solid rgba(242, 231, 75, 0.3) !important;
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.4) !important;
+}
+
+.takis-toast-title {
+  font-family: 'TakisVeneer', 'Inter', sans-serif !important;
+  font-weight: 700 !important;
+  font-size: 1rem !important;
+}
+
+.takis-toast-icon {
+  border-width: 3px !important;
+}
+
+/* SweetAlert2 title styling */
+.swal2-title {
+  font-family: 'TakisVeneer', 'Inter', sans-serif !important;
+  font-weight: 900 !important;
+  font-size: 1.8rem !important;
+}
+
+.swal2-html-container {
+  font-family: 'Inter', sans-serif !important;
+  font-size: 1rem !important;
+}

@@ -43,15 +43,43 @@ class DashboardAdminController extends ResourceController
             ORDER BY date ASC
         ")->getResultArray();
 
-        // Recent Activity (Table)
-        $recentActivity = $db->query("
-            SELECT re.id, u.full_name as user, r.title as reward, re.created_at, re.status 
-            FROM redemptions re 
-            JOIN users u ON u.id = re.user_id 
-            JOIN rewards r ON r.id = re.reward_id 
-            ORDER BY re.created_at DESC 
-            LIMIT 10
-        ")->getResultArray();
+        // Recent Activity (Logs from security_logs)
+        try {
+            $recentActivity = $db->query("
+                SELECT l.id, 
+                       COALESCE(u.full_name, 'Sistema/Anónimo') as user, 
+                       l.details as reward, 
+                       l.action as status, 
+                       NOW() as created_at 
+                FROM security_logs l 
+                LEFT JOIN users u ON u.id = l.user_id 
+                ORDER BY l.id DESC 
+                LIMIT 5
+            ")->getResultArray();
+
+            if (empty($recentActivity)) {
+                $recentActivity = [
+                    [
+                        'id'         => 0,
+                        'user'       => 'Sistema',
+                        'reward'     => 'La tabla security_logs está vacía (0 registros)',
+                        'status'     => 'info',
+                        'created_at' => date('Y-m-d H:i:s')
+                    ]
+                ];
+            }
+        } catch (\Throwable $e) {
+            // Return error as a visible row in the table
+            $recentActivity = [
+                [
+                    'id'         => 0,
+                    'user'       => 'Error SQL',
+                    'reward'     => 'Error: ' . $e->getMessage(),
+                    'status'     => 'error',
+                    'created_at' => date('Y-m-d H:i:s')
+                ]
+            ];
+        }
 
         // Promo Codes Stats
         $promoStats = $db->query("

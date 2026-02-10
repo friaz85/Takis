@@ -3,120 +3,150 @@ import { CommonModule } from '@angular/common';
 import { HttpClient } from '@angular/common/http';
 import { FormsModule } from '@angular/forms';
 import { UserNavbarComponent } from './user-navbar.component';
+import { WhatsappBubbleComponent } from './whatsapp-bubble.component';
 import { environment } from '../../environments/environment';
 
 @Component({
   selector: 'app-history',
   standalone: true,
-  imports: [CommonModule, FormsModule, UserNavbarComponent],
+  imports: [CommonModule, FormsModule, UserNavbarComponent, WhatsappBubbleComponent],
   template: `
     <user-navbar></user-navbar>
+    <app-whatsapp-bubble></app-whatsapp-bubble>
     
-    <div class="history-page">
-      <div class="glass-card main-card">
-        <div class="history-header">
-          <h1 class="takis-title">MI <span class="highlight">HISTORIAL</span></h1>
-          <p class="subtitle">Revisa todos tus canjes y recompensas</p>
-        </div>
-
-        <!-- Tabs -->
-        <div class="tabs">
-          <button 
-            class="tab" 
-            [class.active]="activeTab() === 'codes'"
-            (click)="activeTab.set('codes')"
-          >
-            🎫 Codigos Canjeados
-          </button>
-          <button 
-            class="tab" 
-            [class.active]="activeTab() === 'rewards'"
-            (click)="activeTab.set('rewards')"
-          >
-            🎁 Recompensas Obtenidas
-          </button>
-        </div>
-
-        <!-- Codes History -->
-        <div class="content" *ngIf="activeTab() === 'codes'">
-          <div class="cards-grid">
-            <div class="history-card" *ngFor="let code of codes()">
-              <div class="card-header">
-                <span class="code-badge">{{ code.code }}</span>
-                <span class="points-earned">+{{ code.points }} pts</span>
-              </div>
-              <div class="card-body">
-                <p class="date">📅 {{ code.redeemed_at | date:'medium' }}</p>
-              </div>
-            </div>
-            <div class="empty-state" *ngIf="codes().length === 0">
-              <p>🔍 No has canjeado codigos aun</p>
-              <small>Ingresa codigos en la pagina principal para acumular puntos</small>
+    <div class="landing">
+      <div class="hero">
+        <div class="hero-flex">
+          
+          <!-- Left: Banderin -->
+          <div class="hero-left">
+            <div class="logo-wrapper">
+              <img src="/assets/img/Banderin-completo.png" alt="Takis" class="takis-logo desktop-logo animate__animated animate__zoomIn">
+              <img src="/assets/img/Banderin_01.png" alt="Takis" class="takis-logo mobile-logo animate__animated animate__zoomIn">
             </div>
           </div>
-        </div>
+          
+          <!-- Right: History Card -->
+          <div class="hero-right history-card">
+            
+            <h1 class="history-title">MI <span class="highlight">HISTORIAL</span></h1>
+            
+            <!-- Rewards Table -->
+            <div class="table-container custom-scroll">
+              <table class="glass-table">
+                <thead>
+                  <tr>
+                    <th>PREMIO</th>
+                    <th>COSTO</th>
+                    <th>ESTATUS</th>
+                    <th>FECHA</th>
+                    <th>ACCIONES</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr *ngFor="let reward of rewards()">
+                    <td class="reward-cell">
+                      <div class="reward-mini">
+                        <img [src]="reward.image_url ? environment.uploadsUrl + '/rewards/' + reward.image_url : 'assets/takis-piece.png'" alt="Img">
+                        <span>{{ reward.title }}</span>
+                      </div>
+                    </td>
+                    <td class="points-cell">-{{ reward.cost }}</td>
+                    <td>
+                      <span class="status-badge" [class]="reward.status">
+                        {{ getStatusText(reward.status) }}
+                      </span>
+                    </td>
+                    <td>{{ reward.created_at | date:'dd/MM/yyyy HH:mm' }}</td>
+                    <td>
+                      <button 
+                        *ngIf="reward.pdf_path && reward.status === 'completed'" 
+                        (click)="reprintCoupon(reward)"
+                        class="reprint-btn"
+                        title="Reimprimir cupón">
+                        🖨️ REIMPRIMIR
+                      </button>
+                      <span *ngIf="!reward.pdf_path || reward.status !== 'completed'" class="no-action">-</span>
+                    </td>
+                  </tr>
+                  <tr *ngIf="rewards().length === 0">
+                    <td colspan="5" class="empty-cell">No has canjeado recompensas aún.</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
 
-        <!-- Rewards History -->
-        <div class="content" *ngIf="activeTab() === 'rewards'">
-          <div class="cards-grid">
-            <div class="reward-card" *ngFor="let reward of rewards()">
-              <div class="reward-image">
-                <img [src]="reward.image_url ? environment.uploadsUrl + '/rewards/' + reward.image_url : 'assets/takis-piece.png'" alt="{{ reward.title }}">
-              </div>
-              <div class="reward-info">
-                <h3>{{ reward.title }}</h3>
-                <div class="reward-meta">
-                  <span class="cost">💰 {{ reward.points_cost }} puntos</span>
-                  <span class="status" [class]="reward.status">
-                    {{ getStatusText(reward.status) }}
-                  </span>
-                </div>
-                <p class="date">📅 {{ reward.redeemed_at | date:'medium' }}</p>
-              </div>
-            </div>
-            <div class="empty-state" *ngIf="rewards().length === 0">
-              <p>🎁 No has canjeado recompensas aún</p>
-              <small>Visita el catálogo para canjear tus puntos por premios increíbles</small>
-            </div>
           </div>
+
         </div>
       </div>
     </div>
   `,
   styles: [`
-    .history-page {
-      min-height: 100vh;
-      background: transparent;
-      padding: 6rem 2rem 2rem 2rem;
+    .landing { 
+      min-height: 100vh; 
+      width: 100vw;
+      background: transparent; 
+      display: flex; 
+      align-items: center; 
+      justify-content: center; 
+      overflow-x: hidden;
+      overflow-y: auto;
+      position: relative;
+      padding-top: 80px;
+    }
+
+    .hero { 
+      padding: 1rem 2rem 4rem 2rem; 
+      width: 100%;
+      max-width: 1400px;
+      margin: 0 auto;
+      z-index: 10;
+    }
+
+    .hero-flex {
       display: flex;
-      justify-content: center;
       align-items: flex-start;
+      justify-content: center;
+      gap: 2rem;
     }
 
-    .glass-card { 
-      background: #1c03387d; 
-      backdrop-filter: blur(5px); 
-      padding: 3rem; 
-      border-radius: 2rem; 
-      width: 95%; 
-      max-width: 1200px;
-      border: 2px solid rgba(242, 231, 75, 0.2); 
-      box-shadow: 0 40px 100px rgba(0,0,0,0.5);
-      transition: 0.4s;
-    }
-    .glass-card:hover, .glass-card:focus-within, .glass-card:active { 
-      border-color: #F2E74B; 
-      transform: translateY(-10px); 
-      background: #57118cb5;
-      backdrop-filter: blur(5px);
+    .hero-left { flex: 0 0 300px; display: flex; justify-content: center; position: sticky; top: 100px; }
+    
+    .takis-logo { 
+      width: 100%;
+      height: auto;
+      max-height: 85vh;
+      object-fit: contain;
     }
 
-    .history-header {
+    .hero-right {
+      flex: 1;
+      width: 100%;
+    }
+
+    .history-card {
+      background: rgba(86, 14, 140, 0.8);
+      border-radius: 2rem;
+      padding: 3rem;
+      box-shadow: 0 20px 50px rgba(0,0,0,0.5);
       text-align: center;
-      margin-bottom: 3rem;
+      position: relative;
+      border: 1px solid rgba(242, 231, 75, 0.3);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      min-height: 600px;
     }
 
-    .subtitle { color: #aaa; text-align: center; margin-bottom: 2.5rem; font-size: 1.1rem; }
+    .history-title {
+        color: white;
+        font-size: 2.5rem;
+        font-weight: 900;
+        text-transform: uppercase;
+        margin-bottom: 2rem;
+        text-shadow: 0 4px 10px rgba(0,0,0,0.5);
+    }
     .highlight { color: #F2E74B; }
 
     /* Tabs */
@@ -124,188 +154,154 @@ import { environment } from '../../environments/environment';
       display: flex;
       gap: 1rem;
       justify-content: center;
-      margin-bottom: 3rem;
+      margin-bottom: 2rem;
       flex-wrap: wrap;
     }
     .tab {
-      background: rgba(255, 255, 255, 0.05);
-      border: 2px solid rgba(108, 29, 218, 0.3);
+      background: transparent;
+      border: 2px solid white;
       color: white;
-      padding: 1rem 2rem;
-      border-radius: 1rem;
-      font-size: 1.1rem;
-      font-weight: 700;
+      padding: 0.8rem 2rem;
+      border-radius: 2rem;
+      font-size: 1.2rem;
+      font-weight: 900;
       cursor: pointer;
       transition: 0.3s;
+      text-transform: uppercase;
+      font-family: 'TakisVeneer', 'Inter', sans-serif;
     }
-    .tab:hover {
-      background: #57118cb5;
-      backdrop-filter: blur(5px);
-      border-color: rgba(242, 231, 75, 0.5);
-    }
+    .tab:hover { background: rgba(255,255,255,0.1); }
     .tab.active {
-      background: linear-gradient(135deg, #F2E74B, #FFD700);
+      background: #F2E74B;
+      color: #5d1f87;
       border-color: #F2E74B;
-      color: #1A0B2E;
-      box-shadow: 0 10px 30px rgba(242, 231, 75, 0.4);
+      box-shadow: 0 0 15px rgba(242, 231, 75, 0.4);
     }
 
-    /* Content */
-    .content {
-      max-width: 1200px;
-      margin: 0 auto;
+    /* Table Styles */
+    .table-container {
+      width: 100%;
+      overflow-x: auto;
+      background: #00000075;
+      border-radius: 1rem;
+      padding: 1rem;
+      max-height: 500px;
     }
 
-    .cards-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-      gap: 2rem;
+    .glass-table {
+      width: 100%;
+      border-collapse: separate;
+      border-spacing: 0 0.5rem;
+      color: white;
+      text-align: left;
     }
-
-    .history-card {
-      background: #1c03387d;
-      backdrop-filter: blur(5px);
-      border: 2px solid rgba(242, 231, 75, 0.3);
-      border-radius: 2rem;
-      padding: 2rem;
-      transition: 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-      cursor: pointer;
-    }
-    .history-card:hover {
-      border-color: #F2E74B;
-      transform: translateY(-10px);
-      background: #57118cb5;
-      backdrop-filter: blur(5px);
-      box-shadow: 0 20px 40px rgba(0,0,0,0.5);
-    }
-    .history-card:active { transform: translateY(-5px) scale(0.98); }
-    .card-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 1rem;
-    }
-    .code-badge {
-      background: rgba(242, 231, 75, 0.2);
+    
+    .glass-table th {
+      padding: 1rem;
       color: #F2E74B;
-      padding: 0.5rem 1rem;
-      border-radius: 0.5rem;
-      font-weight: 800;
-      font-size: 0.9rem;
+      font-weight: 900;
+      text-transform: uppercase;
+      font-size: 1.1rem;
+      border-bottom: 2px solid rgba(255,255,255,0.1);
+    }
+
+    .glass-table td {
+      padding: 1rem;
+      background: rgba(255,255,255,0.05);
+      font-size: 1.1rem;
+    }
+    .glass-table tr td:first-child { border-top-left-radius: 0.5rem; border-bottom-left-radius: 0.5rem; }
+    .glass-table tr td:last-child { border-top-right-radius: 0.5rem; border-bottom-right-radius: 0.5rem; }
+
+    .code-cell {
+      font-weight: 900;
+      color: white;
       letter-spacing: 1px;
     }
-    .points-earned {
-      background: linear-gradient(135deg, #00cc66, #00ff88);
-      color: white;
-      padding: 0.5rem 1rem;
-      border-radius: 0.5rem;
+    .points-cell {
       font-weight: 900;
-      font-size: 1rem;
+      color: #F2E74B;
     }
-    .card-body .date {
-      color: rgba(255, 255, 255, 0.6);
-      font-size: 0.9rem;
-      margin: 0;
+    
+    .reward-mini {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+    }
+    .reward-mini img {
+      width: 40px;
+      height: 40px;
+      object-fit: cover;
+      border-radius: 0.3rem;
     }
 
-    /* Reward Card */
-    .reward-card {
-      background: #1c03387d;
-      backdrop-filter: blur(5px);
-      border: 2px solid rgba(242, 231, 75, 0.3);
-      border-radius: 2rem;
-      overflow: hidden;
-      transition: 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-      cursor: pointer;
-    }
-    .reward-card:hover {
-      border-color: #F2E74B;
-      transform: translateY(-10px);
-      background: #57118cb5;
-      backdrop-filter: blur(5px);
-      box-shadow: 0 20px 40px rgba(0,0,0,0.5);
-    }
-    .reward-card:active { transform: translateY(-5px) scale(0.98); }
-    .reward-image {
-      width: 100%;
-      height: 200px;
-      overflow: hidden;
-      background: rgba(0, 0, 0, 0.3);
-    }
-    .reward-image img {
-      width: 100%;
-      height: 100%;
-      object-fit: cover;
-    }
-    .reward-info {
-      padding: 1.5rem;
-    }
-    .reward-info h3 {
-      color: #F2E74B;
-      margin: 0 0 1rem 0;
-      font-size: 1.2rem;
-      font-weight: 800;
-    }
-    .reward-meta {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 1rem;
-    }
-    .cost {
-      color: white;
-      font-weight: 700;
-      font-size: 0.9rem;
-    }
-    .status {
+    .status-badge {
       padding: 0.3rem 0.8rem;
-      border-radius: 0.5rem;
-      font-size: 0.75rem;
+      border-radius: 2rem;
       font-weight: 800;
+      font-size: 0.75rem;
       text-transform: uppercase;
     }
-    .status.pending { background: #ffaa00; color: #1A0B2E; }
-    .status.processing { background: #6C1DDA; color: white; }
-    .status.shipped { background: #00aaff; color: white; }
-    .status.delivered { background: #00cc66; color: white; }
-    .reward-info .date {
-      color: rgba(255, 255, 255, 0.6);
-      font-size: 0.85rem;
-      margin: 0;
-    }
+    .status-badge.completed { background: #00cc66; color: #1A0B2E; } /* Typically digital instant */
+    .status-badge.pending { background: #ffaa00; color: #1A0B2E; }
+    .status-badge.processing { background: #6C1DDA; color: white; }
+    .status-badge.shipped { background: #00aaff; color: white; }
+    .status-badge.delivered { background: #00cc66; color: white; }
 
-    /* Empty State */
-    .empty-state {
-      grid-column: 1 / -1;
+    .empty-cell {
       text-align: center;
-      padding: 4rem 2rem;
-      background: #1c03387d;
-      backdrop-filter: blur(5px);
-      border: 2px dashed rgba(242, 231, 75, 0.2);
-      border-radius: 2rem;
-    }
-    .empty-state p {
-      color: rgba(255, 255, 255, 0.7);
-      font-size: 1.3rem;
-      margin: 0 0 0.5rem 0;
-    }
-    .empty-state small {
-      color: rgba(255, 255, 255, 0.5);
-      font-size: 1rem;
+      padding: 3rem;
+      color: rgba(255,255,255,0.5);
+      font-style: italic;
     }
 
-    @media (max-width: 768px) {
-      .history-container { padding: 5rem 1rem 2rem 1rem; }
-      .history-header h1 { font-size: 2rem; }
-      .cards-grid { grid-template-columns: 1fr; }
-      .tabs { flex-direction: column; }
-      .tab { width: 100%; }
+    .reprint-btn {
+      background: #F2E74B;
+      color: #5d1f87;
+      border: none;
+      padding: 0.5rem 1rem;
+      border-radius: 0.5rem;
+      font-size: 0.8rem;
+      font-weight: 900;
+      cursor: pointer;
+      transition: 0.3s;
+      text-transform: uppercase;
+      font-family: 'TakisVeneer', 'Inter', sans-serif;
+    }
+    .reprint-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 5px 15px rgba(242, 231, 75, 0.4);
+    }
+    .no-action {
+      color: rgba(255,255,255,0.3);
+      font-style: italic;
+    }
+
+    /* Scroll */
+    .custom-scroll::-webkit-scrollbar { width: 6px; }
+    .custom-scroll::-webkit-scrollbar-thumb { background: #560E8C; border-radius: 3px; }
+
+    /* Responsive */
+    .mobile-logo { display: none; }
+
+    @media (max-width: 992px) {
+        .hero-flex { flex-direction: column; align-items: center; }
+        .hero-left { position: relative; top: 0; margin-bottom: 2rem; flex: auto; max-width: 100%; }
+        
+        .desktop-logo { display: none; }
+        .mobile-logo { display: block; width: 100%; height: auto; max-width: 280px; }
+        
+        .history-card { padding: 2rem 1rem; min-height: auto; }
+        .history-title { font-size: 2rem; }
+        
+        .table-container { padding: 0.5rem; }
+        .glass-table th, .glass-table td { padding: 0.8rem 0.5rem; font-size: 0.8rem; }
+        .reward-mini img { width: 30px; height: 30px; }
+        .reprint-btn { font-size: 0.7rem; padding: 0.4rem 0.8rem; }
     }
   `]
 })
 export class HistoryComponent implements OnInit {
-  activeTab = signal<'codes' | 'rewards'>('codes');
-  codes = signal<any[]>([]);
   rewards = signal<any[]>([]);
 
   private http = inject(HttpClient);
@@ -316,21 +312,14 @@ export class HistoryComponent implements OnInit {
   }
 
   loadHistory() {
-    const user = JSON.parse(localStorage.getItem('user') || '{}');
-    if (!user.id) return;
+    const session = JSON.parse(localStorage.getItem('takis_session') || '{}');
+    const user = session.user;
 
-    // Load redeemed codes
-    this.http.get(`${environment.apiUrl}/user/codes/${user.id}`).subscribe({
-      next: (res: any) => {
-        this.codes.set(Array.isArray(res) ? res : []);
-      },
-      error: () => {
-        this.codes.set([]);
-      }
-    });
+    if (!user || (!user.id && !user.uid)) return;
+    const userId = user.id || user.uid;
 
     // Load redeemed rewards
-    this.http.get(`${environment.apiUrl}/user/rewards/${user.id}`).subscribe({
+    this.http.get(`${environment.apiUrl}/user/rewards/${userId}`).subscribe({
       next: (res: any) => {
         this.rewards.set(Array.isArray(res) ? res : []);
       },
@@ -340,8 +329,16 @@ export class HistoryComponent implements OnInit {
     });
   }
 
+  reprintCoupon(reward: any) {
+    if (reward.pdf_path) {
+      const pdfUrl = `${environment.uploadsUrl}/redeemed/${reward.pdf_path}`;
+      window.open(pdfUrl, '_blank');
+    }
+  }
+
   getStatusText(status: string): string {
     const statusMap: any = {
+      'completed': 'Entregado', // Digital usually
       'pending': 'Pendiente',
       'processing': 'En Proceso',
       'shipped': 'Enviado',

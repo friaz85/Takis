@@ -15,8 +15,8 @@ import { environment } from '../../environments/environment';
     <div class="admin-page" [class.sidebar-closed]="!layoutService.isSidebarOpen()">
       <div class="header-row">
         <div>
-           <h2 class="title">CÓDIGOS CANJEADOS</h2>
-           <p class="subtitle">Seguimiento de códigos ingresados por los usuarios</p>
+           <h2 class="title">RECOMPENSAS CANJEADAS</h2>
+           <p class="subtitle">Seguimiento de recompensas canjeadas por los usuarios</p>
         </div>
         <div class="header-actions">
           <button class="export-btn" (click)="exportToCSV()">
@@ -32,7 +32,7 @@ import { environment } from '../../environments/environment';
                type="text" 
                [ngModel]="searchTerm()" 
                (ngModelChange)="searchTerm.set($event); currentPage = 1"
-               placeholder="Buscar por código o usuario..."
+               placeholder="Buscar por usuario o recompensa..."
              >
            </div>
         </div>
@@ -41,32 +41,44 @@ import { environment } from '../../environments/environment';
           <table class="admin-table">
             <thead>
               <tr>
-                <th>Código</th>
                 <th>Usuario</th>
+                <th>Recompensa</th>
+                <th class="hide-mobile">Tipo</th>
                 <th class="hide-mobile">Puntos</th>
+                <th>Estado</th>
                 <th class="text-right">Fecha Canje</th>
               </tr>
             </thead>
             <tbody>
-              <tr *ngFor="let entry of paginatedCodes()">
-                <td class="code-cell">{{ entry.code }}</td>
+              <tr *ngFor="let redemption of paginatedRedemptions()">
                 <td class="font-bold">
-                   {{ entry.user_name }}
-                   <small class="block text-gray hide-mobile">{{ entry.user_email }}</small>
+                   {{ redemption.user_name }}
+                   <small class="block text-gray hide-mobile">{{ redemption.user_email }}</small>
                 </td>
-                <td class="hide-mobile text-gold font-bold">{{ entry.points_awarded }} pts</td>
-                <td class="text-right text-sm text-gray">{{ entry.created_at | date:'short' }}</td>
+                <td class="reward-cell">{{ redemption.reward_name }}</td>
+                <td class="hide-mobile">
+                  <span class="type-badge" [class.digital]="redemption.reward_type === 'digital'" [class.physical]="redemption.reward_type === 'physical'">
+                    {{ redemption.reward_type === 'digital' ? 'Digital' : 'Física' }}
+                  </span>
+                </td>
+                <td class="hide-mobile text-gold font-bold">{{ redemption.points_cost }} pts</td>
+                <td>
+                  <span class="status-badge" [class]="redemption.status">
+                    {{ getStatusLabel(redemption.status) }}
+                  </span>
+                </td>
+                <td class="text-right text-sm text-gray">{{ redemption.created_at | date:'short' }}</td>
               </tr>
-              <tr *ngIf="filteredCodes().length === 0">
-                 <td colspan="4" class="text-center py-8 text-gray">No se encontraron códigos</td>
+              <tr *ngIf="filteredRedemptions().length === 0">
+                 <td colspan="6" class="text-center py-8 text-gray">No se encontraron recompensas canjeadas</td>
               </tr>
             </tbody>
           </table>
         </div>
 
-        <div class="pagination" *ngIf="filteredCodes().length > 0">
+        <div class="pagination" *ngIf="filteredRedemptions().length > 0">
           <div class="page-info">
-             {{ (currentPage - 1) * pageSize + 1 }} - {{ Math.min(currentPage * pageSize, filteredCodes().length) }} de {{ filteredCodes().length }}
+             {{ (currentPage - 1) * pageSize + 1 }} - {{ Math.min(currentPage * pageSize, filteredRedemptions().length) }} de {{ filteredRedemptions().length }}
           </div>
           <div class="page-controls">
             <button [disabled]="currentPage === 1" (click)="currentPage = currentPage - 1">«</button>
@@ -97,11 +109,6 @@ import { environment } from '../../environments/environment';
       border-radius: 0.5rem; cursor: pointer; display: flex; align-items: center; 
       gap: 0.5rem; font-weight: bold; transition: 0.3s;
     }
-    .export-btn { 
-      background: #6C1DDA; border: none; color: white; padding: 0.75rem 1.5rem; 
-      border-radius: 0.5rem; cursor: pointer; display: flex; align-items: center; 
-      gap: 0.5rem; font-weight: bold; transition: 0.3s;
-    }
     .export-btn .icon { color: #fff; }
     .export-btn:hover { background: #F2E74B; color: #1A0B2E; transform: translateY(-2px); }
     .export-btn:hover .icon { color: inherit; }
@@ -118,7 +125,29 @@ import { environment } from '../../environments/environment';
     .admin-table th { background: rgba(108, 29, 218, 0.2); color: #F2E74B; padding: 1.2rem; text-align: left; font-size: 0.85rem; text-transform: uppercase; font-weight: 900; }
     .admin-table td { padding: 1.2rem; border-bottom: 1px solid rgba(108, 29, 218, 0.1); font-size: 0.9rem; }
     
-    .code-cell { font-family: 'Courier New', monospace; color: #F2E74B; font-weight: bold; letter-spacing: 1px; }
+    .reward-cell { color: #F2E74B; font-weight: bold; }
+    
+    .type-badge { 
+      padding: 0.3rem 0.8rem; 
+      border-radius: 0.5rem; 
+      font-size: 0.75rem; 
+      font-weight: bold; 
+      text-transform: uppercase;
+    }
+    .type-badge.digital { background: rgba(108, 29, 218, 0.3); color: #F2E74B; }
+    .type-badge.physical { background: rgba(0, 204, 102, 0.2); color: #00cc66; }
+    
+    .status-badge { 
+      padding: 0.3rem 0.8rem; 
+      border-radius: 0.5rem; 
+      font-size: 0.75rem; 
+      font-weight: bold; 
+      text-transform: uppercase;
+    }
+    .status-badge.pending { background: rgba(255, 193, 7, 0.2); color: #ffc107; }
+    .status-badge.completed { background: rgba(0, 204, 102, 0.2); color: #00cc66; }
+    .status-badge.shipped { background: rgba(33, 150, 243, 0.2); color: #2196f3; }
+    .status-badge.cancelled { background: rgba(244, 67, 54, 0.2); color: #f44336; }
 
     .pagination { padding: 1.5rem; display: flex; justify-content: space-between; align-items: center; }
     .page-controls { display: flex; align-items: center; gap: 1rem; }
@@ -138,7 +167,7 @@ import { environment } from '../../environments/environment';
   `]
 })
 export class AdminEntryCodesComponent implements OnInit {
-  codes = signal<any[]>([]);
+  redemptions = signal<any[]>([]);
   searchTerm = signal('');
   currentPage = 1;
   pageSize = 10;
@@ -148,63 +177,62 @@ export class AdminEntryCodesComponent implements OnInit {
   public layoutService = inject(AdminLayoutService);
 
   ngOnInit() {
-    this.loadCodes();
+    this.loadRedemptions();
   }
 
-  loadCodes() {
-    const mockData = [
-      { id: 1, code: 'TAKI-1234-ABCD', user_name: 'Carlos Ruiz', user_email: 'carlos@example.com', points_awarded: 100, created_at: new Date(Date.now() - 3600000).toISOString() },
-      { id: 2, code: 'REDM-9988-XYZZ', user_name: 'Elena Gómez', user_email: 'elena@gmail.com', points_awarded: 250, created_at: new Date(Date.now() - 7200000).toISOString() },
-      { id: 3, code: 'PROM-0011-BBAA', user_name: 'Marcos Soto', user_email: 'msoto@outlook.com', points_awarded: 50, created_at: new Date(Date.now() - 10800000).toISOString() },
-      { id: 4, code: 'WINN-5566-FFEE', user_name: 'Lucía Méndez', user_email: 'lucia.m@prodigy.net', points_awarded: 500, created_at: new Date(Date.now() - 86400000).toISOString() },
-      { id: 5, code: 'TAKI-7777-GLOW', user_name: 'Ricardo Paz', user_email: 'rpaz@gmail.com', points_awarded: 150, created_at: new Date(Date.now() - 172800000).toISOString() },
-      { id: 6, code: 'XP-LEVEL-UP-23', user_name: 'Juan Pérez', user_email: 'juan@test.com', points_awarded: 1000, created_at: new Date(Date.now() - 259200000).toISOString() },
-      { id: 7, code: 'TAKI-FLAM-HOT9', user_name: 'Sofia Lara', user_email: 'slara@mx.com', points_awarded: 200, created_at: new Date(Date.now() - 345600000).toISOString() },
-      { id: 8, code: 'CODE-99-PROMO', user_name: 'Pedro Solís', user_email: 'psolis@demo.es', points_awarded: 75, created_at: new Date(Date.now() - 432000000).toISOString() },
-      { id: 9, code: 'TAKI-2026-ROCK', user_name: 'Diana Luz', user_email: 'dluz@mail.com', points_awarded: 300, created_at: new Date(Date.now() - 518400000).toISOString() },
-      { id: 10, code: 'REWARD-ME-NOW', user_name: 'Marta Gil', user_email: 'marta.gil@web.com', points_awarded: 150, created_at: new Date(Date.now() - 604800000).toISOString() }
-    ];
-
-    this.http.get(`${environment.apiUrl}/admin/entry/codes`).subscribe({
+  loadRedemptions() {
+    this.http.get(`${environment.apiUrl}/admin/redemptions`).subscribe({
       next: (res: any) => {
         if (Array.isArray(res) && res.length > 0) {
-          this.codes.set(res);
+          this.redemptions.set(res);
         } else {
-          this.codes.set(mockData);
+          this.redemptions.set([]);
         }
       },
       error: (e: any) => {
-        console.error('API codes error, using mock data:', e);
-        this.codes.set(mockData);
+        console.error('API redemptions error:', e);
+        this.redemptions.set([]);
       }
     });
   }
 
-  filteredCodes = computed(() => {
+  filteredRedemptions = computed(() => {
     const term = this.searchTerm().toLowerCase();
-    return this.codes().filter((c: any) =>
-      c.code?.toLowerCase().includes(term) ||
-      c.user_name?.toLowerCase().includes(term)
+    return this.redemptions().filter((r: any) =>
+      r.user_name?.toLowerCase().includes(term) ||
+      r.user_email?.toLowerCase().includes(term) ||
+      r.reward_name?.toLowerCase().includes(term)
     );
   });
 
-  paginatedCodes = computed(() => {
+  paginatedRedemptions = computed(() => {
     const start = (this.currentPage - 1) * this.pageSize;
-    return this.filteredCodes().slice(start, start + this.pageSize);
+    return this.filteredRedemptions().slice(start, start + this.pageSize);
   });
 
-  totalPages = computed(() => Math.ceil(this.filteredCodes().length / this.pageSize));
+  totalPages = computed(() => Math.ceil(this.filteredRedemptions().length / this.pageSize));
+
+  getStatusLabel(status: string): string {
+    const labels: { [key: string]: string } = {
+      'pending': 'Pendiente',
+      'completed': 'Completado',
+      'shipped': 'Enviado',
+      'cancelled': 'Cancelado'
+    };
+    return labels[status] || status;
+  }
 
   exportToCSV() {
-    const headers = ['ID', 'Código', 'Puntos', 'Usuario', 'Email', 'IP', 'Fecha'];
-    const rows = this.filteredCodes().map((c: any) => [
-      c.id,
-      c.code,
-      c.points,
-      `"${c.user_name}"`,
-      c.user_email,
-      c.ip_address || 'N/A',
-      new Date(c.redeemed_at).toLocaleString('es-MX')
+    const headers = ['ID', 'Usuario', 'Email', 'Recompensa', 'Tipo', 'Puntos', 'Estado', 'Fecha'];
+    const rows = this.filteredRedemptions().map((r: any) => [
+      r.id,
+      `"${r.user_name}"`,
+      r.user_email,
+      `"${r.reward_name}"`,
+      r.reward_type === 'digital' ? 'Digital' : 'Física',
+      r.points_cost,
+      this.getStatusLabel(r.status),
+      new Date(r.created_at).toLocaleString('es-MX')
     ]);
 
     const csvContent = "\ufeff" + [headers.join(","), ...rows.map((e: any) => e.join(","))].join("\n");
@@ -212,7 +240,7 @@ export class AdminEntryCodesComponent implements OnInit {
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
     link.setAttribute("href", url);
-    link.setAttribute("download", "codigos_canjeados_takis.csv");
+    link.setAttribute("download", "recompensas_canjeadas_takis.csv");
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);

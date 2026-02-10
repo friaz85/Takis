@@ -5,10 +5,12 @@ namespace App\Controllers;
 use App\Models\PromoCodeModel;
 use App\Models\UserModel;
 use App\Models\RewardModel;
+use App\Models\RewardCodeModel;
 use App\Models\RedemptionModel;
 use App\Models\SecurityLogModel;
 use CodeIgniter\RESTful\ResourceController;
 use setasign\Fpdi\Fpdi;
+use App\Libraries\EmailSender;
 
 class RedemptionController extends ResourceController
 {
@@ -20,39 +22,105 @@ class RedemptionController extends ResourceController
         $logModel   = new SecurityLogModel();
 
         $ip     = $this->request->getIPAddress();
-        $userId = $this->request->user->id;
+        $userId = $this->request->user->id ?? $this->request->user->uid;
         $code   = $this->request->getVar('code');
 
-        $attempts = $logModel->where('ip_address', $ip)
+        /*
+         * Rate limiting to prevent bruteforce:
+         * - Per User: Max 20 failed attempts per day
+         * - Per IP: Max 60 failed attempts per day
+         */
+        $today = date('Y-m-d 00:00:00');
+
+        // Check User attempts (failed)
+        $userAttempts = $logModel->where('user_id', $userId)
             ->where('action', 'failed_redeem')
-            ->where('created_at >=', date('Y-m-d 00:00:00'))
+            ->where('last_attempt >=', $today)
             ->countAllResults();
 
-        if ($attempts > 20) {
-            return $this->fail('Demasiados intentos fallidos.', 429);
+        if ($userAttempts >= 20) {
+            return $this->fail('Demasiados intentos fallidos. Intenta más tarde.', 429);
+        }
+
+        // Check IP attempts (failed)
+        $ipAttempts = $logModel->where('ip_address', $ip)
+            ->where('action', 'failed_redeem')
+            ->where('last_attempt >=', $today)
+            ->countAllResults();
+
+        if ($ipAttempts >= 60) {
+            return $this->fail('Se ha alcanzado el límite de intentos desde esta dirección IP. Intenta más tarde.', 429);
+        }
+
+        // Check Daily Limits (Successful redemptions)
+
+        // 1. Per User: Max 20
+        $userDailyCount = $promoModel->where('used_by', $userId)
+            ->where('used_at >=', $today)
+            ->countAllResults();
+
+        if ($userDailyCount >= 20) {
+            return $this->fail('Has alcanzado el límite de 20 códigos canjeados por día.', 429);
+        }
+
+        // 2. Per IP: Max 60
+        $ipDailyCount = $promoModel->where('used_ip', $ip)
+            ->where('used_at >=', $today)
+            ->countAllResults();
+
+        if ($ipDailyCount >= 60) {
+            return $this->fail('Se ha alcanzado el límite de códigos canjeados desde esta dirección IP por hoy.', 429);
+        }
+
+        // Ensure we select points explicitly to be safe, though findAll/first should return all
+        // First check if code exists at all
+        $promo = $promoModel->where('code', $code)->first();
+
+        if (!$promo) {
+            // Log BEFORE starting transaction so it persists
+            $logModel->save(['ip_address' => $ip, 'user_id' => $userId, 'action' => 'failed_redeem', 'details' => 'Invalid Code: ' . $code]);
+            return $this->failNotFound('Código inválido. Verifica que esté escrito correctamente.');
+        }
+
+        if ($promo['is_used'] == 1) {
+            // Log BEFORE starting transaction so it persists
+            $logModel->save(['ip_address' => $ip, 'user_id' => $userId, 'action' => 'failed_redeem', 'details' => 'Code Already Used: ' . $code]);
+            return $this->fail('Este código ya ha sido utilizado anteriormente.', 400);
         }
 
         $db->transStart();
 
-        $promo = $promoModel->where('code', $code)->where('is_used', 0)->first();
+        log_message('error', 'Redeeming Code Data: ' . print_r($promo, true));
 
-        if (!$promo) {
-            $logModel->save(['ip_address' => $ip, 'user_id' => $userId, 'action' => 'failed_redeem', 'details' => "Code: $code"]);
-            $db->transRollback();
-            return $this->failNotFound('Código inválido o ya utilizado.');
+        $pointsToAdd = isset($promo['points']) ? intval($promo['points']) : 0;
+
+        // If points is 0 and fallback was triggered, something is wrong with data structure
+        if ($pointsToAdd === 0 && (!isset($promo['points']) || $promo['points'] === null)) {
+            // Try to investigate or fallback to 1 if that was intended behavior (but user said it's wrong)
+            log_message('error', 'Points column missing or null on code: ' . $code);
+            // Verify if maybe field is 'Points' or something else? No, schema is lowercase.
         }
 
+        $promoModel->update($promo['id'], [
+            'is_used' => 1,
+            'used_by' => $userId,
+            'used_at' => date('Y-m-d H:i:s'),
+            'used_ip' => $ip // Saving IP
+        ]);
 
-        $promoModel->update($promo['id'], ['is_used' => 1, 'used_by' => $userId, 'used_at' => date('Y-m-d H:i:s')]);
-        $user        = $userModel->find($userId);
-        $pointsToAdd = $promo['points'] ?? 1; // Use points from promo code
-        $newPoints   = ($user['points'] ?? 0) + $pointsToAdd;
+        $user      = $userModel->find($userId);
+        $newPoints = ($user['points'] ?? 0) + $pointsToAdd;
         $userModel->update($userId, ['points' => $newPoints]);
 
-        $logModel->save(['ip_address' => $ip, 'user_id' => $userId, 'action' => 'success_redeem', 'details' => "Code: $code, Points: $pointsToAdd"]);
+        $logModel->save(['ip_address' => $ip, 'user_id' => $userId, 'action' => 'success_redeem', 'details' => 'Code Redeemed: ' . $code]);
         $db->transComplete();
 
-        return $this->respond(['status' => 'success', 'message' => "¡Código Takis activado! +$pointsToAdd puntos", 'points' => $pointsToAdd, 'new_points' => $newPoints]);
+        return $this->respond([
+            'status'     => 'success',
+            'message'    => "¡Código Takis activado! +$pointsToAdd puntos",
+            'points'     => $pointsToAdd,
+            'new_points' => $newPoints
+        ]);
     }
 
     public function redeemReward()
@@ -60,7 +128,9 @@ class RedemptionController extends ResourceController
         $db              = \Config\Database::connect();
         $userModel       = new UserModel();
         $rewardModel     = new RewardModel();
+        $rewardCodeModel = new RewardCodeModel();
         $redemptionModel = new RedemptionModel();
+        $logModel        = new SecurityLogModel();
 
         $userId   = $this->request->user->id;
         $rewardId = $this->request->getVar('reward_id');
@@ -69,44 +139,182 @@ class RedemptionController extends ResourceController
         $reward = $rewardModel->find($rewardId);
 
         if (!$reward || $reward['stock'] <= 0) {
-            return $this->fail('Recompensa no disponible.');
+            return $this->fail('Recompensa no disponible (Stock agotado).');
         }
 
         if ($user['points'] < $reward['cost']) {
             return $this->fail('Puntos insuficientes.');
         }
 
-        $db->transStart();
-        $userModel->update($userId, ['points' => $user['points'] - $reward['cost']]);
-        $rewardModel->update($rewardId, ['stock' => $reward['stock'] - 1]);
+        // Validate Profile Data (Shipping Info) if reward is physical
+        if ($reward['type'] === 'physical') {
+            if (empty($user['address']) || empty($user['city']) || empty($user['state']) || empty($user['zip_code']) || empty($user['phone'])) {
+                // Return specific code so frontend can redirect
+                return $this->fail('Por favor completa tus datos de envío en tu perfil para canjear este premio físico.', 400, 'PROFILE_INCOMPLETE');
+            }
+        }
 
-        // Generar folio único ANTES de crear el registro
-        $tempId     = time() . rand(1000, 9999);
-        $uniqueCode = 'TKS-' . str_pad($tempId, 6, '0', STR_PAD_LEFT) . '-' . strtoupper(substr(md5($tempId), 0, 4));
+        // --- Determine number of codes needed ---
+        $codeAreasStr = $reward['code_areas'] ?? '';
+        $areas        = array_filter(explode(';', $codeAreasStr));
+        $neededCount  = count($areas) > 0 ? count($areas) : 1;
+
+        // --- Strategy: Inventory (Pre-loaded) vs Generated ---
+        $hasInventory = $rewardCodeModel->where('reward_id', $rewardId)->countAllResults() > 0;
+        $codesList    = [];
+
+        $db->transStart();
+
+        if ($hasInventory) {
+            // It is an Inventory Reward. We MUST have enough codes.
+            $availableCodes = $rewardCodeModel->where('reward_id', $rewardId)
+                ->where('is_used', 0)
+                ->limit($neededCount)
+                ->find();
+
+            if (count($availableCodes) < $neededCount) {
+                $db->transRollback();
+                return $this->fail('Lo sentimos, no hay suficientes códigos disponibles para esta recompensa en este momento.');
+            }
+
+            foreach ($availableCodes as $c) {
+                // Mark as used
+                $rewardCodeModel->update($c['id'], ['is_used' => 1]);
+                $codesList[] = $c['code'];
+            }
+        } else {
+            // It is a Generated Reward. Generate unique IDs.
+            for ($i = 0; $i < $neededCount; $i++) {
+                $tempId        = time() . rand(1000, 9999) . $i;
+                $generatedCode = 'TKS-' . str_pad($userId . rand(0, 99), 6, '0', STR_PAD_LEFT) . '-' . strtoupper(substr(md5($tempId), 0, 4));
+                $codesList[]   = $generatedCode;
+            }
+        }
+
+        // Deduct Points and Stock
+        $userUpdate   = $userModel->update($userId, ['points' => $user['points'] - $reward['cost']]);
+        $newStock     = $reward['stock'] - 1;
+        $rewardUpdate = $rewardModel->update($rewardId, ['stock' => $newStock]);
+
+        if (!$userUpdate || !$rewardUpdate) {
+            log_message('error', 'Update Failed during redemption. User: ' . $userId);
+        }
+
+        // Check for low stock and send WhatsApp alert
+        if ($reward['type'] === 'digital' && $newStock < 10 && $newStock > 0) {
+            try {
+                \App\Libraries\WhatsAppNotifier::sendLowStockAlert($reward['title'], $newStock);
+            } catch (\Exception $e) {
+                log_message('error', 'WhatsApp low stock notification failed: ' . $e->getMessage());
+            }
+        }
+
+        $finalCodeString = implode(',', $codesList);
+
+        // Prepare shipping details if physical
+        $shippingDetails = null;
+        if ($reward['type'] === 'physical') {
+            $shippingDetails = json_encode([
+                'address'   => $user['address'],
+                'colonia'   => $user['colonia'] ?? '',
+                'municipio' => $user['municipio'] ?? '',
+                'city'      => $user['city'],
+                'state'     => $user['state'],
+                'zip_code'  => $user['zip_code'],
+                'phone'     => $user['phone']
+            ]);
+        }
 
         $redemptionData = [
-            'user_id'      => $userId,
-            'reward_id'    => $rewardId,
-            'status'       => ($reward['type'] === 'digital') ? 'completed' : 'pending',
-            'digital_code' => $uniqueCode, // Guardar el código único
+            'user_id'          => $userId,
+            'reward_id'        => $rewardId,
+            'status'           => ($reward['type'] === 'digital') ? 'completed' : 'pending',
+            'digital_code'     => $finalCodeString,
+            'shipping_details' => $shippingDetails
         ];
         $redemptionModel->save($redemptionData);
         $redemptionId = $redemptionModel->insertID();
 
-        // Actualizar con el ID real para el código
-        $uniqueCode = 'TKS-' . str_pad($redemptionId, 6, '0', STR_PAD_LEFT) . '-' . strtoupper(substr(md5($redemptionId . time()), 0, 4));
-        $redemptionModel->update($redemptionId, ['digital_code' => $uniqueCode]);
+        // Generate PDF or handle wallpaper
+        $pdfUrl      = null;
+        $isWallpaper = false;
 
-        $pdfUrl = null;
         if ($reward['type'] === 'digital') {
-            $pdfUrl = $this->generateAndSavePdf($user, $reward, $redemptionId, $uniqueCode);
+            // Check extension of pdf_template to see if it's actually an image (Wallpaper moved to template field)
+            $templateExt     = pathinfo($reward['pdf_template'] ?? '', PATHINFO_EXTENSION);
+            $isImageTemplate = in_array(strtolower($templateExt), ['jpg', 'jpeg', 'png']);
+
+            // Case 1: Wallpaper defined via Image URL only (legacy/simple mode) OR Image uploaded as template
+            if ((empty($reward['pdf_template']) && !empty($reward['image_url'])) || $isImageTemplate) {
+
+                // Determine source file
+                $sourceFile = $isImageTemplate ? $reward['pdf_template'] : $reward['image_url'];
+                $sourcePath = $isImageTemplate ? 'uploads/templates/' : 'uploads/rewards/';
+
+                $isWallpaper = true;
+                $pdfUrl      = base_url($sourcePath . $sourceFile);
+
+                // Save the filename as pdf_path
+                $redemptionModel->update($redemptionId, ['pdf_path' => $sourceFile]);
+            } else {
+                // Regular digital reward with PDF Template
+                $pdfUrl = $this->generateAndSavePdf($user, $reward, $redemptionId, $codesList); // Pass array
+
+                // Update redemption with PDF path if successful
+                if ($pdfUrl) {
+                    // Extract relative path or filename if needed, but saving specific path or just url logic
+                    // For DB 'pdf_path', let's save the filename relative to 'uploads/redeemed/'
+                    $filename = basename($pdfUrl);
+                    $redemptionModel->update($redemptionId, ['pdf_path' => $filename]);
+                }
+            }
         }
 
+        $logModel->save([
+            'ip_address' => $this->request->getIPAddress(),
+            'user_id'    => $userId,
+            'action'     => 'success_reward_redemption',
+            'details'    => "Reward ID: {$rewardId} ({$reward['title']})"
+        ]);
+
         $db->transComplete();
-        return $this->respond(['status' => 'success', 'message' => '¡Canje exitoso!', 'pdf_url' => $pdfUrl, 'code' => $uniqueCode]);
+
+        if ($db->transStatus() === false) {
+            $error = $db->error();
+            log_message('error', 'Redemption Transaction Failed: ' . json_encode($error));
+            log_message('error', 'Validation Errors (User): ' . json_encode($userModel->errors()));
+            log_message('error', 'Validation Errors (Redemption): ' . json_encode($redemptionModel->errors()));
+            return $this->fail('Error al procesar el canje. Verifica los datos o intenta de nuevo.');
+        }
+
+        if ($reward['type'] === 'physical') {
+            // Ensure we use the correct base URL for the image
+            // Fallback to hardcoded dev URL if base_url is not set correctly yet by environment
+            $baseUrl  = 'https://dev.takisaficionintensa.com.mx/api';
+            $imageUrl = $baseUrl . '/uploads/rewards/' . $reward['image_url'];
+
+            $subject = 'Tu canje está siendo procesado';
+            $title   = '¡CANJE EXITOSO!';
+
+            // Build custom HTML fragment for the message part
+            $msg  = "<p>Tu orden #{$redemptionId} ha sido recibida.</p>";
+            $msg .= "<p>Hemos recibido tu solicitud para: <br><strong>{$reward['title']}</strong></p>";
+            $msg .= "<div style='margin: 20px 0;'><img src='{$imageUrl}' alt='Recompensa' style='max-width: 50%; border-radius: 10px; border: 2px solid #F2E74B;'></div>";
+            $msg .= "<p>Pronto recibirás más noticias sobre tu envío.</p>";
+
+            EmailSender::sendEmail($user['email'], $subject, $title, $msg);
+        }
+
+        return $this->respond([
+            'status'  => 'success',
+            'message' => '¡Canje exitoso!',
+            'pdf_url' => $pdfUrl,
+            'code'    => $finalCodeString
+        ]);
     }
 
-    private function generateAndSavePdf($user, $reward, $redemptionId, $code)
+
+    private function generateAndSavePdf($user, $reward, $redemptionId, $codes)
     {
         try {
             if (empty($reward['pdf_template']))
@@ -134,16 +342,26 @@ class RedemptionController extends ResourceController
             $pdf->AddPage($size['orientation'], [$size['width'], $size['height']]);
             $pdf->useTemplate($tplIdx);
 
-            // Parse code_areas format: "x,y,width,height,fontSize;x,y,width,height,fontSize"
+            // Parse code_areas format
             $codeAreas = $reward['code_areas'] ?? '';
+
+            // Normalize codes to array
+            if (!is_array($codes)) {
+                $codes = explode(',', $codes);
+            }
 
             if (!empty($codeAreas)) {
                 $areas = explode(';', $codeAreas);
 
-                foreach ($areas as $areaStr) {
+                foreach ($areas as $index => $areaStr) {
                     $areaStr = trim($areaStr);
                     if (empty($areaStr))
                         continue;
+
+                    // Get Corresponding Code for this area
+                    // If we have fewer codes than areas, fallback to the first one (or last?)
+                    // Logic dictated: "Tomar el mismo número de códigos". So index should match.
+                    $currentCode = isset($codes[$index]) ? $codes[$index] : $codes[0];
 
                     $parts = explode(',', $areaStr);
                     if (count($parts) >= 4) {
@@ -167,16 +385,17 @@ class RedemptionController extends ResourceController
                         $pdf->SetXY($x, $y);
 
                         if ($w > 0 && $h > 0) {
-                            // Use Cell for centered text in box
-                            $pdf->Cell($w, $h, $code, 0, 0, 'C');
+                            $pdf->Cell($w, $h, $currentCode, 0, 0, 'C');
                         } else {
-                            // Use Text for simple positioning
-                            $pdf->Text($x, $y, $code);
+                            $pdf->Text($x, $y, $currentCode);
                         }
                     }
                 }
             } else {
-                // Fallback: try old coordinates format
+                // Fallback for coordinates JSON or simple text
+                // Use the first code
+                $codeToPrint = $codes[0] ?? 'CODE';
+
                 $coords = json_decode($reward['coordinates'] ?? '[]', true);
 
                 if (isset($coords['x']) && !isset($coords[0])) {
@@ -202,9 +421,9 @@ class RedemptionController extends ResourceController
                     $pdf->SetXY($x, $y);
 
                     if ($w > 0 && $h > 0) {
-                        $pdf->Cell($w, $h, $code, 0, 0, 'C');
+                        $pdf->Cell($w, $h, $codeToPrint, 0, 0, 'C');
                     } else {
-                        $pdf->Text($x, $y, $code);
+                        $pdf->Text($x, $y, $codeToPrint);
                     }
                 }
             }

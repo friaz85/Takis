@@ -15,16 +15,22 @@ import { environment } from '../../environments/environment';
     <div class="admin-page" [class.sidebar-closed]="!layoutService.isSidebarOpen()">
       <div class="header-row">
         <div>
-           <h2 class="title">SOPORTE AL CLIENTE</h2>
-           <p class="subtitle">Gestiona mensajes e incidencias de los usuarios</p>
+           <h2 class="title">SOPORTE TÉCNICO</h2>
+           <p class="subtitle">Gestiona los tickets de ayuda de los usuarios</p>
         </div>
-        <div class="header-actions">
-          <button class="export-btn secondary" (click)="exportToCSV()">
-            <span class="icon">📥</span> <span class="btn-text">Exportar CSV</span>
-          </button>
-          <button class="export-btn" (click)="loadTickets()">
-            <span class="icon">🔄</span> <span class="btn-text">Refrescar</span>
-          </button>
+        <div class="stats-row">
+          <div class="stat-card open">
+            <span class="stat-number">{{ stats().open }}</span>
+            <span class="stat-label">Abiertos</span>
+          </div>
+          <div class="stat-card progress">
+            <span class="stat-number">{{ stats().in_progress }}</span>
+            <span class="stat-label">En Proceso</span>
+          </div>
+          <div class="stat-card resolved">
+            <span class="stat-number">{{ stats().resolved }}</span>
+            <span class="stat-label">Resueltos</span>
+          </div>
         </div>
       </div>
 
@@ -35,8 +41,18 @@ import { environment } from '../../environments/environment';
                type="text" 
                [ngModel]="searchTerm()" 
                (ngModelChange)="searchTerm.set($event); currentPage = 1"
-               placeholder="Buscar mensajes..."
+               placeholder="Buscar por ticket, email o asunto..."
              >
+           </div>
+           <div class="filter-buttons">
+             <button 
+               *ngFor="let status of statusFilters" 
+               [class.active]="statusFilter() === status.value"
+               (click)="statusFilter.set(status.value); currentPage = 1"
+               class="filter-btn"
+             >
+               {{ status.label }}
+             </button>
            </div>
         </div>
 
@@ -44,31 +60,32 @@ import { environment } from '../../environments/environment';
           <table class="admin-table">
             <thead>
               <tr>
+                <th>Ticket</th>
                 <th>Usuario</th>
-                <th class="hide-mobile">Asunto</th>
-                <th>Mensaje</th>
+                <th>Asunto</th>
+                <th class="hide-mobile">Prioridad</th>
                 <th class="hide-mobile">Estado</th>
                 <th class="text-right">Fecha</th>
               </tr>
             </thead>
             <tbody>
               <tr *ngFor="let ticket of paginatedTickets()" (click)="selectTicket(ticket)" class="clickable-row">
-                <td class="font-bold">
-                  {{ ticket.user_name }}
-                  <small class="block text-gray">{{ ticket.user_email }}</small>
+                <td class="font-bold ticket-number">{{ ticket.ticket_number }}</td>
+                <td>
+                  <div>{{ ticket.user_name || 'Anónimo' }}</div>
+                  <small class="text-gray">{{ ticket.user_email }}</small>
                 </td>
-                <td class="hide-mobile">{{ ticket.subject }}</td>
-                <td class="message-cell">{{ ticket.message }}</td>
+                <td>{{ ticket.subject }}</td>
                 <td class="hide-mobile">
-                  <span class="status-pill" [class]="ticket.status">{{ 
-                    ticket.status === 'open' ? 'Abierto' : 
-                    ticket.status === 'in_progress' ? 'En Proceso' : 'Cerrado' 
-                  }}</span>
+                  <span class="priority-badge" [class]="ticket.priority">{{ ticket.priority }}</span>
+                </td>
+                <td class="hide-mobile">
+                  <span class="status-pill" [class]="ticket.status">{{ getStatusLabel(ticket.status) }}</span>
                 </td>
                 <td class="text-right text-sm text-gray">{{ ticket.created_at | date:'short' }}</td>
               </tr>
               <tr *ngIf="filteredTickets().length === 0">
-                 <td colspan="5" class="text-center py-8 text-gray">No hay tickets de soporte</td>
+                 <td colspan="6" class="text-center py-8 text-gray">No se encontraron tickets</td>
               </tr>
             </tbody>
           </table>
@@ -87,60 +104,93 @@ import { environment } from '../../environments/environment';
       </div>
 
       <!-- Ticket Detail Modal -->
-      <div class="modal-overlay" *ngIf="selectedTicket()">
-        <div class="admin-modal">
+      <div class="modal-overlay" *ngIf="selectedTicket()" (click)="closeTicketModal($event)">
+        <div class="ticket-modal" (click)="$event.stopPropagation()">
            <div class="modal-header">
-             <h3>Detalle de Ticket #{{ selectedTicket().id }}</h3>
-             <button class="close-btn" (click)="selectedTicket.set(null)">✕</button>
+             <div>
+               <h3>Ticket #{{ selectedTicket().ticket_number }}</h3>
+               <span class="status-pill" [class]="selectedTicket().status">{{ getStatusLabel(selectedTicket().status) }}</span>
+             </div>
+             <button class="close-btn" (click)="closeTicketModal($event)">✕</button>
            </div>
            
-           <div class="modal-body">
-              <div class="info-grid">
-                <div class="info-item">
-                  <label>Usuario</label>
-                  <span>{{ selectedTicket().user_name }}</span>
+           <div class="modal-body" *ngIf="selectedTicket()">
+              <!-- User Info -->
+              <div class="info-section">
+                <h4>Información del Usuario</h4>
+                <div class="info-grid">
+                  <div class="info-item">
+                    <label>Nombre</label>
+                    <span>{{ selectedTicket().user_name || 'Anónimo' }}</span>
+                  </div>
+                  <div class="info-item">
+                    <label>Email</label>
+                    <span>{{ selectedTicket().user_email }}</span>
+                  </div>
+                  <div class="info-item">
+                    <label>Teléfono</label>
+                    <span>{{ selectedTicket().user_phone || 'N/A' }}</span>
+                  </div>
+                  <div class="info-item">
+                    <label>Fecha</label>
+                    <span>{{ selectedTicket().created_at | date:'medium' }}</span>
+                  </div>
                 </div>
-                <div class="info-item">
-                  <label>Email</label>
-                  <span>{{ selectedTicket().user_email }}</span>
-                </div>
-              </div>
-
-              <div class="info-item full mt-4">
-                <label>Asunto</label>
-                <span class="subject-text">{{ selectedTicket().subject }}</span>
-              </div>
-
-              <div class="info-item full mt-4">
-                <label>Mensaje del Usuario</label>
-                <div class="message-box">{{ selectedTicket().message }}</div>
               </div>
 
               <hr class="divider">
 
-              <div class="form-group mt-4">
-                <label>Estado del Ticket</label>
-                <select [(ngModel)]="selectedTicket().status">
+              <!-- Ticket Details -->
+              <div class="info-section">
+                <h4>Detalles del Ticket</h4>
+                <div class="info-item full">
+                  <label>Asunto</label>
+                  <span class="subject-text">{{ selectedTicket().subject }}</span>
+                </div>
+                <div class="info-item full mt-3">
+                  <label>Mensaje</label>
+                  <div class="message-box">{{ selectedTicket().message }}</div>
+                </div>
+              </div>
+
+              <hr class="divider">
+
+              <!-- Admin Controls -->
+              <div class="form-group">
+                <label>Estado</label>
+                <select [(ngModel)]="selectedTicket().status" class="status-select">
                   <option value="open">Abierto</option>
                   <option value="in_progress">En Proceso</option>
+                  <option value="resolved">Resuelto</option>
                   <option value="closed">Cerrado</option>
                 </select>
               </div>
 
-              <div class="form-group mt-4">
-                <label>Comentario Administrativo / Respuesta</label>
+              <div class="form-group mt-3">
+                <label>Prioridad</label>
+                <select [(ngModel)]="selectedTicket().priority" class="status-select">
+                  <option value="low">Baja</option>
+                  <option value="medium">Media</option>
+                  <option value="high">Alta</option>
+                  <option value="urgent">Urgente</option>
+                </select>
+              </div>
+
+              <div class="form-group mt-3">
+                <label>Notas Internas</label>
                 <textarea 
-                  [(ngModel)]="selectedTicket().admin_comment" 
-                  placeholder="Escribe un comentario interno o respuesta..."
-                  rows="4"
+                  [(ngModel)]="selectedTicket().admin_notes" 
+                  placeholder="Notas visibles solo para administradores..."
+                  rows="3"
+                  class="notes-textarea"
                 ></textarea>
               </div>
            </div>
 
            <div class="modal-footer">
-             <button class="btn-cancel" (click)="selectedTicket.set(null)">Cerrar</button>
-             <button class="export-btn" (click)="updateTicketStatus()">
-                <span class="icon">💾</span> {{ saving() ? 'Guardando...' : 'Guardar Cambios' }}
+             <button class="btn-cancel" (click)="closeTicketModal($event)">Cerrar</button>
+             <button class="btn-save" (click)="updateTicket()">
+                <span class="icon">💾</span> {{ savingTicket() ? 'Guardando...' : 'Guardar Cambios' }}
              </button>
            </div>
         </div>
@@ -158,133 +208,185 @@ import { environment } from '../../environments/environment';
     }
     .admin-page.sidebar-closed { margin-left: 0; padding-top: 5rem; }
 
-    .header-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem; gap: 1rem; }
+    .header-row { margin-bottom: 2rem; }
     .title { font-weight: 900; font-size: 2rem; color: #F2E74B; margin: 0; }
-    .subtitle { color: #ccc; margin: 0.5rem 0 0 0; }
+    .subtitle { color: #ccc; margin: 0.5rem 0 1.5rem 0; }
 
-    .export-btn { 
-      background: #6C1DDA; border: none; color: white; padding: 0.75rem 1.5rem; 
-      border-radius: 0.5rem; cursor: pointer; display: flex; align-items: center; 
-      gap: 0.5rem; font-weight: bold; transition: 0.3s;
+    .stats-row { display: flex; gap: 1rem; margin-top: 1rem; }
+    .stat-card { 
+      background: rgba(108, 29, 218, 0.1); 
+      border: 1px solid #6C1DDA; 
+      border-radius: 0.8rem; 
+      padding: 1rem 1.5rem; 
+      display: flex; 
+      flex-direction: column; 
+      align-items: center;
+      min-width: 100px;
     }
-    .export-btn { 
-      background: #6C1DDA; border: none; color: white; padding: 0.75rem 1.5rem; 
-      border-radius: 0.5rem; cursor: pointer; display: flex; align-items: center; 
-      gap: 0.5rem; font-weight: bold; transition: 0.3s;
-    }
-    .export-btn .icon { color: #fff; }
-    .export-btn:hover { background: #F2E74B; color: #1A0B2E; transform: translateY(-2px); }
-    .export-btn:hover .icon { color: inherit; }
+    .stat-card.open { border-color: #ffaa00; }
+    .stat-card.progress { border-color: #6C1DDA; }
+    .stat-card.resolved { border-color: #00cc66; }
+    .stat-number { font-size: 2rem; font-weight: 900; color: #F2E74B; }
+    .stat-label { font-size: 0.75rem; color: #ccc; text-transform: uppercase; margin-top: 0.25rem; }
 
     .table-container { background: rgba(255,255,255,0.05); border: 2px solid #6C1DDA; border-radius: 1.5rem; overflow: hidden; }
     .table-header { padding: 1.5rem; border-bottom: 1px solid rgba(108, 29, 218, 0.2); }
+    .search-box { margin-bottom: 1rem; }
     .search-box input {
       width: 100%; max-width: 400px; background: rgba(0,0,0,0.2); border: 1px solid #6C1DDA;
       color: white; padding: 0.8rem 1.2rem; border-radius: 0.5rem; outline: none;
     }
 
+    .filter-buttons { display: flex; gap: 0.5rem; flex-wrap: wrap; }
+    .filter-btn {
+      background: rgba(108, 29, 218, 0.2); border: 1px solid #6C1DDA; color: white;
+      padding: 0.5rem 1rem; border-radius: 0.5rem; cursor: pointer; font-size: 0.85rem;
+      transition: 0.2s;
+    }
+    .filter-btn:hover { background: rgba(108, 29, 218, 0.4); }
+    .filter-btn.active { background: #6C1DDA; border-color: #F2E74B; }
+
     .table-wrapper { overflow-x: auto; }
     .admin-table { width: 100%; border-collapse: collapse; }
     .admin-table th { background: rgba(108, 29, 218, 0.2); color: #F2E74B; padding: 1.2rem; text-align: left; font-size: 0.85rem; text-transform: uppercase; font-weight: 900; }
     .admin-table td { padding: 1.2rem; border-bottom: 1px solid rgba(108, 29, 218, 0.1); font-size: 0.9rem; }
-    
-    .message-cell { max-width: 300px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: #ccc; }
+    .admin-table tr:hover { background: rgba(242, 231, 75, 0.05); }
     .clickable-row { cursor: pointer; transition: 0.2s; }
-    .clickable-row:hover { background: rgba(108, 29, 218, 0.1) !important; }
+    .clickable-row:hover { background: rgba(242, 231, 75, 0.1) !important; }
 
-    .status-pill { padding: 0.3rem 0.8rem; border-radius: 0.5rem; font-size: 0.75rem; font-weight: bold; text-transform: uppercase; }
-    .status-pill.open { background: #ff4444; color: white; }
-    .status-pill.in_progress { background: #ffaa00; color: #1A0B2E; }
-    .status-pill.closed { background: #00cc66; color: white; }
+    .ticket-number { color: #F2E74B; font-family: monospace; }
+    
+    .priority-badge { 
+      padding: 0.3rem 0.8rem; border-radius: 0.5rem; font-size: 0.75rem; 
+      font-weight: bold; text-transform: uppercase; 
+    }
+    .priority-badge.low { background: #666; color: white; }
+    .priority-badge.medium { background: #ffaa00; color: #1A0B2E; }
+    .priority-badge.high { background: #ff6600; color: white; }
+    .priority-badge.urgent { background: #ff0000; color: white; }
 
-    /* Modal Styles */
+    .status-pill { 
+      padding: 0.3rem 0.8rem; border-radius: 0.5rem; font-size: 0.75rem; 
+      font-weight: bold; text-transform: uppercase; 
+    }
+    .status-pill.open { background: #ffaa00; color: #1A0B2E; }
+    .status-pill.in_progress { background: #6C1DDA; color: white; }
+    .status-pill.resolved { background: #00cc66; color: white; }
+    .status-pill.closed { background: #666; color: white; }
+
+    /* Modal */
     .modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.8); display: flex; align-items: center; justify-content: center; z-index: 1000; padding: 1rem; }
-    .admin-modal { background: #1A0B2E; border: 2px solid #6C1DDA; border-radius: 1.5rem; padding: 2.5rem; width: 100%; max-width: 600px; max-height: 90vh; overflow-y: auto; box-shadow: 0 20px 50px rgba(0,0,0,0.5); }
-    .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem; }
-    .close-btn { background: transparent; border: none; color: white; font-size: 1.5rem; cursor: pointer; }
-    
-    .info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; }
-    .info-item label { display: block; color: #F2E74B; font-size: 0.75rem; font-weight: bold; text-transform: uppercase; margin-bottom: 0.4rem; }
-    .info-item span { color: white; font-size: 1rem; }
+    .ticket-modal { background: #1A0B2E; border: 2px solid #6C1DDA; border-radius: 1.5rem; padding: 2.5rem; width: 100%; max-width: 700px; max-height: 90vh; overflow-y: auto; }
+    .modal-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 2rem; }
+    .modal-header h3 { margin: 0; color: #F2E74B; margin-bottom: 0.5rem; }
+    .close-btn { background: transparent; border: none; color: white; font-size: 1.5rem; cursor: pointer; transition: 0.2s; }
+    .close-btn:hover { color: #F2E74B; transform: rotate(90deg); }
+
+    .info-section { margin-bottom: 1.5rem; }
+    .info-section h4 { color: #F2E74B; font-size: 0.9rem; text-transform: uppercase; margin: 0 0 1rem 0; }
+    .info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+    .info-item { display: flex; flex-direction: column; gap: 0.3rem; }
+    .info-item label { color: #F2E74B; font-size: 0.75rem; font-weight: bold; text-transform: uppercase; }
+    .info-item span { color: white; font-size: 0.95rem; }
+    .info-item.full { grid-column: span 2; }
     .subject-text { font-weight: bold; font-size: 1.1rem !important; }
-    .message-box { background: rgba(255,255,255,0.05); border-radius: 0.8rem; padding: 1rem; border: 1px solid rgba(108, 29, 218, 0.3); line-height: 1.6; max-height: 15rem; overflow-y: auto; }
-    
+    .message-box { 
+      background: rgba(0,0,0,0.3); 
+      border: 1px solid rgba(108, 29, 218, 0.3); 
+      padding: 1rem; 
+      border-radius: 0.5rem; 
+      color: white; 
+      white-space: pre-wrap;
+      line-height: 1.6;
+    }
+
     .divider { border: 0; border-top: 1px solid rgba(108, 29, 218, 0.2); margin: 2rem 0; }
-    
-    .form-group label { display: block; color: #F2E74B; font-size: 0.75rem; font-weight: bold; text-transform: uppercase; margin-bottom: 0.6rem; }
-    .form-group select, .form-group textarea { 
+
+    .form-group { display: flex; flex-direction: column; gap: 0.5rem; }
+    .form-group label { color: #F2E74B; font-size: 0.75rem; font-weight: bold; text-transform: uppercase; }
+    .status-select, .notes-textarea { 
       width: 100%; background: rgba(0,0,0,0.2); border: 1px solid #6C1DDA; color: white; 
       padding: 1rem; border-radius: 0.6rem; outline: none; font-size: 0.95rem; font-family: inherit;
     }
-    .form-group textarea { resize: vertical; }
+    .notes-textarea { resize: vertical; min-height: 80px; }
+    .mt-3 { margin-top: 0.75rem; }
 
     .modal-footer { display: flex; justify-content: flex-end; gap: 1rem; margin-top: 2.5rem; }
     .btn-cancel { background: transparent; border: 1px solid rgba(255,255,255,0.2); color: #ccc; padding: 0.75rem 1.5rem; border-radius: 0.5rem; cursor: pointer; font-weight: bold; }
+    .btn-save { background: #F2E74B; border: none; color: #1A0B2E; padding: 0.75rem 1.5rem; border-radius: 0.5rem; cursor: pointer; font-weight: bold; display: flex; align-items: center; gap: 0.5rem; transition: 0.3s; }
+    .btn-save:hover { background: #6C1DDA; color: white; }
 
     .pagination { padding: 1.5rem; display: flex; justify-content: space-between; align-items: center; }
     .page-controls { display: flex; align-items: center; gap: 1rem; }
     .page-controls button { background: #6C1DDA; border: none; color: white; width: 35px; height: 35px; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; font-weight: bold; }
-    
-    .mt-4 { margin-top: 1rem; }
-    .block { display: block; }
+    .page-controls button:disabled { opacity: 0.3; cursor: not-allowed; }
+    .current-page { font-weight: 900; color: #F2E74B; }
 
     @media (max-width: 1100px) {
       .admin-page { margin-left: 0; padding: 5rem 1rem 2rem 1rem; }
-      .header-row { flex-direction: column; align-items: flex-start; }
+      .stats-row { flex-wrap: wrap; }
       .search-box input { max-width: 100%; }
       .hide-mobile { display: none; }
-      .btn-text { display: none; }
-      .export-btn { border-radius: 50%; width: 45px; height: 45px; padding: 0; justify-content: center; }
+      .info-grid { grid-template-columns: 1fr; }
     }
   `]
 })
 export class AdminSupportComponent implements OnInit {
   tickets = signal<any[]>([]);
+  stats = signal<any>({ total: 0, open: 0, in_progress: 0, resolved: 0, closed: 0 });
   selectedTicket = signal<any>(null);
   searchTerm = signal('');
+  statusFilter = signal('all');
   currentPage = 1;
   pageSize = 10;
-  saving = signal(false);
+  savingTicket = signal(false);
   Math = Math;
+
+  statusFilters = [
+    { value: 'all', label: 'Todos' },
+    { value: 'open', label: 'Abiertos' },
+    { value: 'in_progress', label: 'En Proceso' },
+    { value: 'resolved', label: 'Resueltos' },
+    { value: 'closed', label: 'Cerrados' }
+  ];
 
   private http = inject(HttpClient);
   public layoutService = inject(AdminLayoutService);
 
   ngOnInit() {
     this.loadTickets();
+    this.loadStats();
   }
 
   loadTickets() {
-    const mockData = [
-      { id: 1, user_name: 'Carlos Ruiz', user_email: 'carlos@example.com', subject: 'Seguimiento de envío', message: '¿Cuándo llegará mi sudadera? Ya pasaron 3 días.', status: 'open', admin_comment: '', created_at: new Date(Date.now() - 86400000).toISOString() },
-      { id: 2, user_name: 'Elena Gómez', user_email: 'elena@gmail.com', subject: 'Error en código', message: 'El código TAKI-XX-12 no funciona, dice que ya fue usado.', status: 'in_progress', admin_comment: 'Verificando con IT.', created_at: new Date(Date.now() - 172800000).toISOString() },
-      { id: 3, user_name: 'Marcos Soto', user_email: 'msoto@outlook.com', subject: 'Sugerencia premios', message: 'Me gustaría ver tarjetas de Steam en el catálogo.', status: 'closed', admin_comment: 'Sugerencia tomada en cuenta.', created_at: new Date(Date.now() - 259200000).toISOString() },
-      { id: 4, user_name: 'Lucía Méndez', user_email: 'lucia.m@prodigy.net', subject: 'Problema con perfil', message: 'No puedo actualizar mi dirección de entrega.', status: 'open', admin_comment: '', created_at: new Date(Date.now() - 345600000).toISOString() },
-      { id: 5, user_name: 'Ricardo Paz', user_email: 'rpaz@gmail.com', subject: 'Felicitaciones', message: 'Me encantó la dinámica, ¡gracias por los audífonos!', status: 'closed', admin_comment: '', created_at: new Date(Date.now() - 432000000).toISOString() }
-    ];
-
     this.http.get(`${environment.apiUrl}/admin/support`).subscribe({
-      next: (res: any) => {
-        if (Array.isArray(res) && res.length > 0) {
-          this.tickets.set(res);
-        } else {
-          this.tickets.set(mockData);
-        }
-      },
-      error: (e: any) => {
-        console.error('API support error, using mock data:', e);
-        this.tickets.set(mockData);
-      }
+      next: (res: any) => this.tickets.set(res),
+      error: (e: any) => console.error(e)
+    });
+  }
+
+  loadStats() {
+    this.http.get(`${environment.apiUrl}/admin/support/stats`).subscribe({
+      next: (res: any) => this.stats.set(res),
+      error: (e: any) => console.error(e)
     });
   }
 
   filteredTickets = computed(() => {
     const term = this.searchTerm().toLowerCase();
-    return this.tickets().filter((t: any) =>
-      t.user_name?.toLowerCase().includes(term) ||
-      t.subject?.toLowerCase().includes(term) ||
-      t.message?.toLowerCase().includes(term)
-    );
+    const status = this.statusFilter();
+
+    return this.tickets().filter((t: any) => {
+      const matchesSearch =
+        t.ticket_number?.toLowerCase().includes(term) ||
+        t.user_email?.toLowerCase().includes(term) ||
+        t.user_name?.toLowerCase().includes(term) ||
+        t.subject?.toLowerCase().includes(term);
+
+      const matchesStatus = status === 'all' || t.status === status;
+
+      return matchesSearch && matchesStatus;
+    });
   });
 
   paginatedTickets = computed(() => {
@@ -298,37 +400,40 @@ export class AdminSupportComponent implements OnInit {
     this.selectedTicket.set({ ...ticket });
   }
 
-  updateTicketStatus() {
-    this.saving.set(true);
-    const updated = this.selectedTicket();
-
-    // Simulate API update
-    setTimeout(() => {
-      this.tickets.update(list => list.map(t => t.id === updated.id ? updated : t));
-      this.saving.set(false);
-      this.selectedTicket.set(null);
-    }, 1000);
+  closeTicketModal(event: Event) {
+    event.stopPropagation();
+    this.selectedTicket.set(null);
   }
 
-  exportToCSV() {
-    const headers = ['ID', 'Usuario', 'Email', 'Asunto', 'Estado', 'Fecha'];
-    const rows = this.filteredTickets().map((t: any) => [
-      t.id,
-      `"${t.user_name}"`,
-      t.user_email,
-      `"${t.subject}"`,
-      t.status,
-      new Date(t.created_at).toLocaleString('es-MX')
-    ]);
+  updateTicket() {
+    this.savingTicket.set(true);
+    const updated = this.selectedTicket();
 
-    const csvContent = "\ufeff" + [headers.join(","), ...rows.map((e: any) => e.join(","))].join("\n");
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement("a");
-    link.setAttribute("href", url);
-    link.setAttribute("download", "soporte_takis.csv");
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+    this.http.post(`${environment.apiUrl}/admin/support/${updated.id}/update`, {
+      status: updated.status,
+      priority: updated.priority,
+      admin_notes: updated.admin_notes
+    }).subscribe({
+      next: () => {
+        this.tickets.update(list => list.map(t => t.id === updated.id ? updated : t));
+        this.savingTicket.set(false);
+        this.selectedTicket.set(null);
+        this.loadStats(); // Refresh stats
+      },
+      error: (err) => {
+        console.error('Error al actualizar ticket:', err);
+        this.savingTicket.set(false);
+      }
+    });
+  }
+
+  getStatusLabel(status: string): string {
+    const labels: any = {
+      'open': 'Abierto',
+      'in_progress': 'En Proceso',
+      'resolved': 'Resuelto',
+      'closed': 'Cerrado'
+    };
+    return labels[status] || status;
   }
 }
