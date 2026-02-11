@@ -9,6 +9,7 @@ import { ToastService } from '../services/toast.service';
 import { AuthService } from '../services/auth.service';
 import { AnalyticsService } from '../services/analytics.service';
 import { environment } from '../../environments/environment';
+import Swal from 'sweetalert2';
 
 @Component({
   selector: 'app-redeem-rewards',
@@ -650,23 +651,60 @@ export class RedeemRewardsComponent implements OnInit {
   redeem(reward: any) {
     if (this.processingId) return;
     if (reward.cost > this.userPoints()) {
-      this.toast.show(`Te faltan ${reward.cost - this.userPoints()} puntos.`, 'info');
+      Swal.fire({
+        title: 'Puntos insuficientes',
+        text: `Te faltan ${reward.cost - this.userPoints()} puntos para canjear este premio.`,
+        icon: 'warning',
+        confirmButtonColor: '#6C1DDA'
+      });
       return;
     }
     if (reward.stock <= 0) {
-      this.toast.show('Producto agotado.', 'error');
+      Swal.fire({
+        title: 'Agotado',
+        text: 'Lo sentimos, este producto ya no tiene existencias.',
+        icon: 'error',
+        confirmButtonColor: '#6C1DDA'
+      });
       return;
     }
 
-    if (!confirm(`Canjear ${reward.title} por ${reward.cost} puntos?`)) return;
+    Swal.fire({
+      title: '¿CONFIRMAR CANJE?',
+      text: `¿Deseas canjear ${reward.title} por ${reward.cost} puntos?`,
+      icon: 'question',
+      showCancelButton: true,
+      confirmButtonText: 'SÍ, CANJEAR',
+      cancelButtonText: 'CANCELAR',
+      confirmButtonColor: '#6C1DDA',
+      cancelButtonColor: '#ff4444',
+      background: '#1A0B2E',
+      color: '#fff',
+      customClass: {
+        popup: 'takis-swal-popup'
+      }
+    }).then((result) => {
+      if (result.isConfirmed) {
+        this.executeRedemption(reward);
+      }
+    });
+  }
 
+  private executeRedemption(reward: any) {
     this.processingId = reward.id;
 
     this.http.post(`${environment.apiUrl}/redeem`, { reward_id: reward.id }).subscribe({
       next: (res: any) => {
         // Optimistic update
         this.userPoints.update(p => p - reward.cost);
-        this.toast.show('Canje exitoso! Disfruta tu premio.', 'success');
+
+        Swal.fire({
+          title: '¡CANJE EXITOSO!',
+          text: 'Disfruta tu premio. Se ha generado tu comprobante.',
+          icon: 'success',
+          confirmButtonColor: '#6C1DDA'
+        });
+
         this.processingId = null;
         this.analytics.trackConversion('redemption', res.order_id || reward.id, {
           rewardTitle: reward.title,
@@ -684,23 +722,25 @@ export class RedeemRewardsComponent implements OnInit {
         this.processingId = null;
         console.error('Redeem Error', err);
 
-        // Check for specific error code
         const errorCode = err.error?.error || err.error?.code || err.error?.messages?.code;
         if (errorCode === 'PROFILE_INCOMPLETE') {
           this.pendingReward.set(reward);
           this.showAddressModal.set(true);
-          // No redirect needed now
           return;
         }
 
-        // CodeIgniter .fail() often returns { messages: { error: "X" } } or plain { message: "X" }
         let msg = err.error?.message;
         if (!msg && err.error?.messages) {
           msg = typeof err.error.messages === 'object' ? err.error.messages.error : err.error.messages;
         }
         if (!msg) msg = 'Error al canjear. Intenta de nuevo.';
 
-        this.toast.show(msg, 'error');
+        Swal.fire({
+          title: 'ERROR',
+          text: msg,
+          icon: 'error',
+          confirmButtonColor: '#6C1DDA'
+        });
       }
     });
   }
