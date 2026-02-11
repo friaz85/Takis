@@ -44,33 +44,50 @@ import { environment } from '../../environments/environment';
                   </tr>
                 </thead>
                 <tbody>
-                  <tr *ngFor="let reward of rewards()">
-                    <td class="reward-cell">
-                      <div class="reward-mini">
-                        <img [src]="reward.image_url ? environment.uploadsUrl + '/rewards/' + reward.image_url : 'assets/takis-piece.png'" alt="Img">
-                        <span>{{ reward.title }}</span>
-                      </div>
-                    </td>
-                    <td class="points-cell">-{{ reward.cost }}</td>
-                    <td>
-                      <span class="status-badge" [class]="reward.status">
-                        {{ getStatusText(reward.status) }}
-                      </span>
-                    </td>
-                    <td>{{ reward.created_at | date:'dd/MM/yyyy HH:mm' }}</td>
-                    <td>
-                      <button 
-                        *ngIf="reward.pdf_path && reward.status === 'completed'" 
-                        (click)="reprintCoupon(reward)"
-                        class="reprint-btn"
-                        title="Reimprimir cupón">
-                        🖨️ REIMPRIMIR
-                      </button>
-                      <span *ngIf="!reward.pdf_path || reward.status !== 'completed'" class="no-action">-</span>
-                    </td>
-                  </tr>
+                  <ng-container *ngFor="let reward of rewards()">
+                    <tr>
+                      <td class="reward-cell">
+                        <div class="reward-mini">
+                          <img [src]="reward.image_url ? environment.uploadsUrl + '/rewards/' + reward.image_url : 'assets/takis-piece.png'" alt="Img">
+                          <span>{{ reward.title }}</span>
+                        </div>
+                      </td>
+                      <td class="points-cell">-{{ reward.cost }}</td>
+                      <td>
+                        <span class="status-badge" [class]="reward.status">
+                          {{ getStatusText(reward.status) }}
+                        </span>
+                      </td>
+                      <td>{{ reward.created_at | date:'dd/MM/yyyy HH:mm' }}</td>
+                      <td>
+                        <button 
+                          *ngIf="reward.pdf_path && reward.status === 'completed'" 
+                          (click)="reprintCoupon(reward)"
+                          class="reprint-btn"
+                          title="Reimprimir cupon">
+                          🖨️ REIMPRIMIR
+                        </button>
+                        <span *ngIf="!reward.pdf_path || reward.status !== 'completed'" class="no-action">-</span>
+                      </td>
+                    </tr>
+                    <!-- Tracking Row -->
+                    <tr *ngIf="reward.tracking_number || reward.delivery_date" class="tracking-row">
+                      <td colspan="5">
+                        <div class="tracking-info">
+                          <span *ngIf="reward.tracking_number">
+                            📦 <strong>Guia:</strong> 
+                            <a *ngIf="reward.tracking_url" [href]="reward.tracking_url" target="_blank">{{ reward.tracking_number }}</a>
+                            <span *ngIf="!reward.tracking_url">{{ reward.tracking_number }}</span>
+                          </span>
+                          <span *ngIf="reward.delivery_date" class="delivery-date">
+                            📅 <strong>Fecha estimada:</strong> {{ reward.delivery_date | date:'dd/MM/yyyy' }}
+                          </span>
+                        </div>
+                      </td>
+                    </tr>
+                  </ng-container>
                   <tr *ngIf="rewards().length === 0">
-                    <td colspan="5" class="empty-cell">No has canjeado recompensas aún.</td>
+                    <td colspan="5" class="empty-cell">No has canjeado recompensas aun.</td>
                   </tr>
                 </tbody>
               </table>
@@ -277,6 +294,25 @@ import { environment } from '../../environments/environment';
       font-style: italic;
     }
 
+    .tracking-row td {
+      background: rgba(242, 231, 75, 0.1) !important;
+      padding: 0.5rem 1rem !important;
+      border-top: 1px solid rgba(242, 231, 75, 0.2);
+    }
+    .tracking-info {
+      display: flex;
+      gap: 2rem;
+      font-size: 0.9rem;
+      color: #F2E74B;
+    }
+    .tracking-info a {
+      color: white;
+      text-decoration: underline;
+    }
+    .delivery-date {
+      color: #00cc66;
+    }
+
     /* Scroll */
     .custom-scroll::-webkit-scrollbar { width: 6px; }
     .custom-scroll::-webkit-scrollbar-thumb { background: #560E8C; border-radius: 3px; }
@@ -331,8 +367,16 @@ export class HistoryComponent implements OnInit {
 
   reprintCoupon(reward: any) {
     if (reward.pdf_path) {
-      const pdfUrl = `${environment.uploadsUrl}/redeemed/${reward.pdf_path}`;
-      window.open(pdfUrl, '_blank');
+      const ext = reward.pdf_path.split('.').pop()?.toLowerCase();
+      let path = 'redeemed';
+
+      // If it's an image, it's a wallpaper and it's in templates
+      if (['jpg', 'jpeg', 'png', 'gif'].includes(ext || '')) {
+        path = 'templates';
+      }
+
+      const fileUrl = `${environment.uploadsUrl}/${path}/${reward.pdf_path}`;
+      window.open(fileUrl, '_blank');
     }
   }
 

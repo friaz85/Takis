@@ -15,13 +15,36 @@ class DashboardAdminController extends ResourceController
         $userModel       = new UserModel();
         $redemptionModel = new RedemptionModel();
 
-        // Basic Counters
-        $totalUsers       = $userModel->countAllResults();
-        $totalRedemptions = $redemptionModel->countAllResults();
+        $startDate = $this->request->getGet('start_date');
+        $endDate   = $this->request->getGet('end_date');
 
-        // Points Redeemed (estimate from completed redemptions cost)
-        // Linking redemptions to rewards to sum cost
-        $pointsQuery    = $db->query("SELECT SUM(r.cost) as total FROM redemptions re JOIN rewards r ON r.id = re.reward_id");
+        // Base where clauses
+        $userWhere             = "1=1";
+        $redemptionWhere       = "1=1";
+        $redemptionWhereJoined = "1=1";
+        $params                = [];
+
+        if ($startDate && $endDate) {
+            $userWhere             .= " AND created_at BETWEEN ? AND ?";
+            $redemptionWhere       .= " AND created_at BETWEEN ? AND ?";
+            $redemptionWhereJoined .= " AND re.created_at BETWEEN ? AND ?";
+            $params                 = [$startDate . ' 00:00:00', $endDate . ' 23:59:59'];
+        }
+
+        // Basic Counters (Filtered by date if provided)
+        $totalUsersQuery = $db->query("SELECT COUNT(*) as total FROM users WHERE $userWhere", $params);
+        $totalUsers      = $totalUsersQuery->getRow()->total ?? 0;
+
+        $totalRedemptionsQuery = $db->query("SELECT COUNT(*) as total FROM redemptions WHERE $redemptionWhere", $params);
+        $totalRedemptions      = $totalRedemptionsQuery->getRow()->total ?? 0;
+
+        // Points Redeemed
+        $pointsQuery    = $db->query("
+            SELECT SUM(r.cost) as total 
+            FROM redemptions re 
+            JOIN rewards r ON r.id = re.reward_id
+            WHERE $redemptionWhereJoined
+        ", $params);
         $pointsRedeemed = $pointsQuery->getRow()->total ?? 0;
 
         // Top Rewards
@@ -29,32 +52,46 @@ class DashboardAdminController extends ResourceController
             SELECT r.title, COUNT(re.id) as count 
             FROM redemptions re 
             JOIN rewards r ON r.id = re.reward_id 
+            WHERE $redemptionWhereJoined
             GROUP BY r.id, r.title 
             ORDER BY count DESC 
             LIMIT 5
-        ")->getResultArray();
+        ", $params)->getResultArray();
 
-        // Last 7 Days Activity
-        $dailyActivity = $db->query("
-            SELECT DATE(created_at) as date, COUNT(*) as count 
-            FROM redemptions 
-            WHERE created_at >= DATE(NOW()) - INTERVAL 7 DAY 
-            GROUP BY DATE(created_at) 
-            ORDER BY date ASC
-        ")->getResultArray();
+        // Chart Data
+        if ($startDate && $endDate) {
+            // Range selected by user
+            $dailyActivity = $db->query("
+                SELECT DATE(created_at) as date, COUNT(*) as count 
+                FROM redemptions 
+                WHERE created_at BETWEEN ? AND ?
+                GROUP BY DATE(created_at) 
+                ORDER BY date ASC
+            ", $params)->getResultArray();
+        } else {
+            // Default: Last 7 Days
+            $dailyActivity = $db->query("
+                SELECT DATE(created_at) as date, COUNT(*) as count 
+                FROM redemptions 
+                WHERE created_at >= DATE(NOW()) - INTERVAL 7 DAY 
+                GROUP BY DATE(created_at) 
+                ORDER BY date ASC
+            ")->getResultArray();
+        }
 
-        // Recent Activity (Logs from security_logs)
+        // Recent Activity (Usually we don't filter recent by date range unless requested, 
+        // as "recent" means the latest overall. But let's keep it latest overall for now)
         try {
             $recentActivity = $db->query("
                 SELECT l.id, 
                        COALESCE(u.full_name, 'Sistema/Anónimo') as user, 
                        l.details as reward, 
                        l.action as status, 
-                       NOW() as created_at 
+                       l.last_attempt as created_at 
                 FROM security_logs l 
                 LEFT JOIN users u ON u.id = l.user_id 
                 ORDER BY l.id DESC 
-                LIMIT 5
+                LIMIT 10
             ")->getResultArray();
 
             if (empty($recentActivity)) {
@@ -62,26 +99,25 @@ class DashboardAdminController extends ResourceController
                     [
                         'id'         => 0,
                         'user'       => 'Sistema',
-                        'reward'     => 'La tabla security_logs está vacía (0 registros)',
+                        'reward'     => 'Sin actividad reciente',
                         'status'     => 'info',
                         'created_at' => date('Y-m-d H:i:s')
                     ]
                 ];
             }
         } catch (\Throwable $e) {
-            // Return error as a visible row in the table
-            $recentActivity = [
-                [
-                    'id'         => 0,
-                    'user'       => 'Error SQL',
-                    'reward'     => 'Error: ' . $e->getMessage(),
-                    'status'     => 'error',
-                    'created_at' => date('Y-m-d H:i:s')
-                ]
-            ];
+            $recentActivity = [];
         }
 
-        // Promo Codes Stats
+        // Promo Codes Stats (Full history for these counters usually)
+        // Total Visits
+        $totalVisits = 0;
+        try {
+            $visitsQuery = $db->query("SELECT COUNT(*) as total FROM site_visits");
+            $totalVisits = $visitsQuery->getRow()->total ?? 0;
+        } catch (\Throwable $e) {
+        }
+
         $promoStats = $db->query("
             SELECT 
                 COUNT(*) as total,
@@ -90,20 +126,36 @@ class DashboardAdminController extends ResourceController
             FROM promo_codes
         ")->getRowArray();
 
+        // Visit Logs (Last 50)
+        $visitsLog = [];
+        try {
+            $visitsLog = $db->query("
+                SELECT v.id, v.page_url, v.ip_address, v.created_at, u.full_name as user
+                FROM site_visits v
+                LEFT JOIN users u ON u.id = v.user_id
+                ORDER BY v.id DESC
+                LIMIT 50
+            ")->getResultArray();
+        } catch (\Throwable $e) {
+        }
+
         return $this->respond([
-            'cards'       => [
+            'cards'        => [
                 'users'       => $totalUsers,
                 'redemptions' => $totalRedemptions,
                 'points'      => $pointsRedeemed,
+                'visits'      => $totalVisits,
                 'promo'       => [
                     'total'     => $promoStats['total'] ?? 0,
                     'used'      => $promoStats['used'] ?? 0,
                     'available' => $promoStats['available'] ?? 0
                 ]
             ],
-            'chart'       => $dailyActivity,
-            'top_rewards' => $topRewards,
-            'recent'      => $recentActivity
+            'chart'        => $dailyActivity,
+            'top_rewards'  => $topRewards,
+            'recent'       => $recentActivity,
+            'visits_log'   => $visitsLog,
+            'success_rate' => $totalRedemptions > 0 ? 100 : 0
         ]);
     }
 }

@@ -83,7 +83,7 @@ import Swal from 'sweetalert2';
 
             <!-- Empty State -->
             <div class="empty-state" *ngIf="visibleRewards().length === 0 && !loading()">
-              <h2>{{ activeFilter() === 'redeemable' ? 'Aún no te alcanzan recompensas. ¡Sigue participando!' : 'Proximamente...' }}</h2>
+              <h2>{{ activeFilter() === 'redeemable' ? 'Aun no te alcanzan recompensas. Sigue participando!' : 'Proximamente...' }}</h2>
             </div>
             
              <!-- Corner Logo (Desktop Only) -->
@@ -174,6 +174,7 @@ import Swal from 'sweetalert2';
         text-shadow: 0 4px 10px rgba(0, 0, 0, .5);
         letter-spacing: 2px;
         background: url(/assets/img/texture-gold.jpg);
+        background-size: cover;
         -webkit-background-clip: text;
     }
 

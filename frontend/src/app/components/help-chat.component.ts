@@ -21,8 +21,8 @@ import Swal from 'sweetalert2';
         <div class="chat-body">
             <div class="faq">
                 <p><strong>FAQs:</strong></p>
-                <button (click)="msg='¿Cómo canjeo mi premio?'">¿Cómo canjeo?</button>
-                <button (click)="msg='Mi código no funciona'">Código no funciona</button>
+                <button (click)="msg='Como canjeo mi premio?'">Como canjeo?</button>
+                <button (click)="msg='Mi codigo no funciona'">Codigo no funciona</button>
             </div>
             <textarea [(ngModel)]="msg" placeholder="Escribe tu duda intensa..."></textarea>
             <button (click)="send()" class="send-btn">ENVIAR TICKET</button>

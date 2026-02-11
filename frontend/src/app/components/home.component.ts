@@ -6,6 +6,7 @@ import { HttpClient } from '@angular/common/http';
 import { UserNavbarComponent } from './user-navbar.component';
 import { WhatsappBubbleComponent } from './whatsapp-bubble.component';
 import { ToastService } from '../services/toast.service';
+import { AuthService } from '../services/auth.service';
 import { environment } from '../../environments/environment';
 
 @Component({
@@ -31,7 +32,7 @@ import { environment } from '../../environments/environment';
           <!-- Right: Home Card -->
           <div class="hero-right home-card" [style.backgroundImage]="'linear-gradient(rgba(86, 14, 140, 0.8), rgba(86, 14, 140, 0.6)), url(/assets/img/BG_soccer.jpg)'">
             
-            <h1 class="welcome-title">¡HOLA {{ userName }}!</h1>
+            <h1 class="welcome-title">HOLA {{ userName }}!</h1>
             
             <!-- Scoreboard Points Display -->
             <div class="scoreboard">
@@ -150,6 +151,7 @@ import { environment } from '../../environments/environment';
         text-shadow: 0 4px 10px rgba(0, 0, 0, .5);
         letter-spacing: 2px;
         background: url(/assets/img/texture-gold.jpg);
+        background-size: cover;
         -webkit-background-clip: text;
         margin-top: 0px;
     }
@@ -378,18 +380,27 @@ export class HomeComponent implements OnInit {
   code = '';
   submitting = signal(false);
   userPoints = signal(0);
-  userName = 'TAKIS FÁN'; // Default
+  userName = 'TAKIS FAN'; // Default
 
   private router = inject(Router);
   private http = inject(HttpClient);
   private toastService = inject(ToastService);
+  private auth = inject(AuthService);
 
   ngOnInit() {
-    const user = JSON.parse(localStorage.getItem('takis_session') || '{}')?.user;
+    // Sync with auth user signal
+    const user = this.auth.user();
     if (user) {
-      this.userName = user.name ? user.name.split(' ')[0].toUpperCase() : 'TAKIS FAN'; // Get first name
+      this.setUserName(user);
     }
+
+    // Effect-like behavior: update name if signal changes
     this.loadUserPoints();
+  }
+
+  private setUserName(user: any) {
+    const rawName = user.full_name || user.name || 'TAKIS FAN';
+    this.userName = rawName.split(' ')[0].toUpperCase();
   }
 
   loadUserPoints() {
@@ -424,7 +435,7 @@ export class HomeComponent implements OnInit {
       user_id: user.id
     }).subscribe({
       next: (res: any) => {
-        this.toastService.show(`¡Codigo canjeado! +${res.points} puntos`, 'success', 5000);
+        this.toastService.show(`Codigo canjeado! +${res.points} puntos`, 'success', 5000);
         this.code = '';
         this.loadUserPoints();
         this.submitting.set(false);

@@ -88,54 +88,60 @@ import { environment } from '../../environments/environment';
 
     <!-- Address Modal -->
     <div class="modal-overlay" *ngIf="showAddressModal()">
-      <div class="modal-card">
-        <div class="modal-header">
-          <h3>COMPLETA TU DIRECCIÓN</h3>
-          <button class="close-btn" (click)="closeModal()">×</button>
-        </div>
+      <div class="modal-card" [style.backgroundImage]="'linear-gradient(rgba(86, 14, 140, 0.9), rgba(86, 14, 140, 0.8)), url(/assets/img/BG_soccer.jpg)'">
+        <button class="close-btn-round" (click)="closeModal()">X</button>
         <div class="modal-body">
-          <p class="modal-intro">Para enviarte tu <strong>{{ pendingReward()?.title }}</strong> necesitamos completar tus datos de envío.</p>
+          <h2 class="modal-title-yellow">ENVIO DE PREMIO</h2>
+          <p class="modal-subtitle-white">Para enviarte tu <strong>{{ pendingReward()?.title }}</strong> necesitamos completar tus datos de envio.</p>
           
           <form (ngSubmit)="submitAddress()">
             <div class="form-grid">
               <div class="form-group full">
-                <label>NOMBRE DEL DESTINATARIO</label>
-                <input type="text" [(ngModel)]="addressForm.recipient_name" name="recipient_name" required placeholder="Nombre completo de quien recibirá el paquete">
+                <label>NOMBRE COMPLETO</label>
+                <input type="text" [(ngModel)]="addressForm.full_name" name="full_name" required placeholder="NOMBRE COMPLETO">
               </div>
 
               <div class="form-group full">
-                <label>Calle y Número</label>
-                <input type="text" [(ngModel)]="addressForm.address" name="address" required placeholder="Ej. Av. Reforma 123">
+                <label>NOMBRE DE QUIEN RECIBE</label>
+                <input type="text" [(ngModel)]="addressForm.recipient_name" name="recipient_name" placeholder="NOMBRE QUIEN RECIBE">
+              </div>
+
+              <div class="form-group full">
+                <label>CALLE Y NUMERO</label>
+                <input type="text" [(ngModel)]="addressForm.address" name="address" required placeholder="CALLE Y NUMERO">
               </div>
               
               <div class="form-group">
-                <label>Colonia</label>
-                <input type="text" [(ngModel)]="addressForm.colonia" name="colonia" required placeholder="Colonia">
+                <label>COLONIA</label>
+                <input type="text" [(ngModel)]="addressForm.colonia" name="colonia" required placeholder="COLONIA">
               </div>
               
               <div class="form-group">
-                <label>Alcaldía / Municipio</label>
-                <input type="text" [(ngModel)]="addressForm.municipio" name="municipio" required placeholder="Municipio">
+                <label>ALCALDIA / MUNICIPIO</label>
+                <input type="text" [(ngModel)]="addressForm.municipio" name="municipio" required placeholder="MUNICIPIO">
               </div>
 
               <div class="form-group">
-                <label>Ciudad</label>
-                <input type="text" [(ngModel)]="addressForm.city" name="city" required placeholder="Ciudad">
+                <label>ESTADO</label>
+                <select [(ngModel)]="addressForm.state" name="state" required class="select-flat-modal">
+                    <option value="" disabled selected>SELECCIONA UN ESTADO</option>
+                    <option *ngFor="let st of mexicoStates" [value]="st">{{ st | uppercase }}</option>
+                </select>
               </div>
 
               <div class="form-group">
-                <label>Estado</label>
-                <input type="text" [(ngModel)]="addressForm.state" name="state" required placeholder="Estado">
+                <label>CODIGO POSTAL</label>
+                <input type="text" [(ngModel)]="addressForm.zip_code" name="zip_code" required maxlength="5" placeholder="CP">
               </div>
 
               <div class="form-group">
-                <label>Código Postal</label>
-                <input type="text" [(ngModel)]="addressForm.zip_code" name="zip_code" required placeholder="CP">
+                <label>TELEFONO DE CONTACTO</label>
+                <input type="text" [(ngModel)]="addressForm.phone" name="phone" required maxlength="10" placeholder="10 DIGITOS">
               </div>
 
-              <div class="form-group">
-                <label>Teléfono de Contacto</label>
-                <input type="text" [(ngModel)]="addressForm.phone" name="phone" required placeholder="10 dígitos">
+              <div class="form-group full">
+                <label>INSTRUCCIONES DE ENTREGA</label>
+                <textarea [(ngModel)]="addressForm.delivery_instructions" name="delivery_instructions" class="textarea-flat-modal" placeholder="INSTRUCCIONES ADICIONALES PARA LA ENTREGA"></textarea>
               </div>
             </div>
 
@@ -417,32 +423,97 @@ import { environment } from '../../environments/environment';
     }
     .modal-card {
       background: #1A0B2E;
+      background-size: cover;
+      background-position: center;
       border: 2px solid #F2E74B;
       border-radius: 1.5rem;
-      padding: 2rem;
-      width: 90%; max-width: 600px;
+      padding: 3rem 2rem;
+      width: 90%; max-width: 650px;
       position: relative;
-      box-shadow: 0 0 50px rgba(108, 29, 218, 0.5);
+      box-shadow: 0 0 50px rgba(0,0,0,0.8);
+      overflow: visible;
     }
-    .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 1rem; }
-    .modal-header h3 { color: #F2E74B; margin: 0; font-weight: 900; text-transform: uppercase; }
-    .close-btn { background: none; border: none; color: white; font-size: 2rem; cursor: pointer; }
+    .modal-title-yellow {
+        color: #F2E74B;
+        font-weight: 900;
+        text-transform: uppercase;
+        font-size: 2.2rem;
+        margin-bottom: 0.5rem;
+        text-align: center;
+    }
+    .modal-subtitle-white {
+        color: white;
+        text-align: center;
+        margin-bottom: 2rem;
+        font-size: 1rem;
+        opacity: 0.9;
+    }
+    .close-btn-round {
+        position: absolute;
+        top: -15px;
+        right: -15px;
+        width: 40px;
+        height: 40px;
+        background: #F2E74B;
+        border: none;
+        border-radius: 50%;
+        color: #560E8C;
+        font-weight: 900;
+        font-size: 1.2rem;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+        z-index: 1001;
+        transition: 0.2s;
+    }
+    .close-btn-round:hover { transform: scale(1.1); background: white; }
     
-    .modal-intro { color: white; margin-bottom: 1.5rem; font-size: 0.95rem; line-height: 1.5; }
-    
-    .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1.5rem; }
+    .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 2rem; }
     .form-group { display: flex; flex-direction: column; }
     .form-group.full { grid-column: 1 / -1; }
-    .form-group label { color: #F2E74B; font-size: 0.8rem; font-weight: 700; margin-bottom: 0.4rem; text-transform: uppercase; }
-    .form-group input { background: rgba(255,255,255,0.05); border: 2px solid rgba(255,255,255,0.1); color: white; padding: 0.8rem; border-radius: 0.8rem; transition: 0.3s; outline: none; }
-    .form-group input:focus { border-color: #F2E74B; background: rgba(255,255,255,0.1); }
+    .form-group label { color: white; font-size: 0.85rem; font-weight: 900; margin-bottom: 0.5rem; text-transform: uppercase; }
+    .form-group input, .select-flat-modal, .textarea-flat-modal { 
+        background: rgba(255,255,255,0.15); 
+        border: 2px solid rgba(255,255,255,0.1); 
+        color: white; 
+        padding: 0.8rem; 
+        border-radius: 0.8rem; 
+        transition: 0.3s; 
+        outline: none; 
+        font-weight: bold;
+    }
+    .form-group input::placeholder { color: rgba(255,255,255,0.4); }
+    .form-group input:focus, .select-flat-modal:focus, .textarea-flat-modal:focus { 
+        border-color: #F2E74B; 
+        background: rgba(255,255,255,0.2); 
+    }
+
+    .select-flat-modal {
+        cursor: pointer;
+        appearance: none;
+        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%23F2E74B' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+        background-repeat: no-repeat;
+        background-position: right 1rem center;
+        background-size: 1rem;
+        padding-right: 2.5rem;
+        font-family: inherit;
+    }
+
+    .textarea-flat-modal {
+        min-height: 80px;
+        resize: none;
+        font-family: inherit;
+    }
     
     .takis-btn-primary { 
       background: #F2E74B; color: #5d1f87; border: none; 
-      padding: 1rem; border-radius: 0.8rem; 
-      font-weight: 900; font-size: 1.1rem; width: 100%; 
+      padding: 1.2rem; border-radius: 0.8rem; 
+      font-weight: 900; font-size: 1.3rem; width: 100%; 
       cursor: pointer; text-transform: uppercase; transition: 0.3s;
       font-family: 'TakisVeneer', 'Inter', sans-serif;
+      box-shadow: 0 5px 15px rgba(0,0,0,0.3);
     }
     .takis-btn-primary:hover { transform: scale(1.02); box-shadow: 0 0 20px rgba(242, 231, 75, 0.4); }
     .takis-btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
@@ -482,19 +553,28 @@ export class RedeemRewardsComponent implements OnInit {
   loading = signal(true);
   processingId: number | null = null;
 
+  mexicoStates = [
+    'Aguascalientes', 'Baja California', 'Baja California Sur', 'Campeche', 'Chiapas',
+    'Chihuahua', 'Ciudad de Mexico', 'Coahuila', 'Colima', 'Durango', 'Estado de Mexico',
+    'Guanajuato', 'Guerrero', 'Hidalgo', 'Jalisco', 'Michoacan', 'Morelos', 'Nayarit',
+    'Nuevo Leon', 'Oaxaca', 'Puebla', 'Queretaro', 'Quintana Roo', 'San Luis Potosi',
+    'Sinaloa', 'Sonora', 'Tabasco', 'Tamaulipas', 'Tlaxcala', 'Veracruz', 'Yucatan', 'Zacatecas'
+  ];
+
   // Modal State
   showAddressModal = signal(false);
   submittingAddress = signal(false);
   pendingReward = signal<any>(null);
   addressForm: any = {
+    full_name: '',
     recipient_name: '',
     address: '',
     colonia: '',
     municipio: '',
-    city: '',
     state: '',
     zip_code: '',
-    phone: ''
+    phone: '',
+    delivery_instructions: ''
   };
 
   environment = environment;
@@ -531,14 +611,15 @@ export class RedeemRewardsComponent implements OnInit {
 
         // Pre-fill form just in case
         this.addressForm = {
-          recipient_name: user.full_name || user.name || '',
+          full_name: user.full_name || user.name || '',
+          recipient_name: user.recipient_name || '',
           address: user.address || '',
           colonia: user.colonia || '',
           municipio: user.municipio || '',
-          city: user.city || '',
           state: user.state || '',
           zip_code: user.zip_code || '',
-          phone: user.phone || ''
+          phone: user.phone || '',
+          delivery_instructions: user.delivery_instructions || ''
         };
 
         this.http.get(`${environment.apiUrl}/rewards`).subscribe({
@@ -573,7 +654,7 @@ export class RedeemRewardsComponent implements OnInit {
       return;
     }
 
-    if (!confirm(`¿Canjear ${reward.title} por ${reward.cost} puntos?`)) return;
+    if (!confirm(`Canjear ${reward.title} por ${reward.cost} puntos?`)) return;
 
     this.processingId = reward.id;
 
@@ -581,7 +662,7 @@ export class RedeemRewardsComponent implements OnInit {
       next: (res: any) => {
         // Optimistic update
         this.userPoints.update(p => p - reward.cost);
-        this.toast.show('¡Canje exitoso! Disfruta tu premio.', 'success');
+        this.toast.show('Canje exitoso! Disfruta tu premio.', 'success');
         this.processingId = null;
         this.analytics.trackConversion('redemption', res.order_id || reward.id, {
           rewardTitle: reward.title,
@@ -629,7 +710,7 @@ export class RedeemRewardsComponent implements OnInit {
     if (this.submittingAddress()) return;
 
     // Basic validation
-    if (!this.addressForm.address || !this.addressForm.phone || !this.addressForm.zip_code) {
+    if (!this.addressForm.full_name || !this.addressForm.address || !this.addressForm.phone || !this.addressForm.zip_code || !this.addressForm.state) {
       this.toast.show('Por favor completa los campos requeridos', 'info');
       return;
     }
@@ -639,7 +720,7 @@ export class RedeemRewardsComponent implements OnInit {
     // Update Profile First
     this.http.post(`${environment.apiUrl}/profile`, this.addressForm).subscribe({
       next: (res: any) => {
-        this.toast.show('Dirección guardada exitosamente', 'success');
+        this.toast.show('Direccion guardada exitosamente', 'success');
         this.submittingAddress.set(false);
         this.showAddressModal.set(false);
 
@@ -652,7 +733,7 @@ export class RedeemRewardsComponent implements OnInit {
       error: (err) => {
         console.error('Update Profile Error', err);
         this.submittingAddress.set(false);
-        this.toast.show('Error al guardar la dirección. Intenta de nuevo.', 'error');
+        this.toast.show('Error al guardar la direccion. Intenta de nuevo.', 'error');
       }
     });
   }

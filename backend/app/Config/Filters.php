@@ -25,6 +25,7 @@ class Filters extends BaseConfig
         'secureheaders' => SecureHeaders::class,
         'auth'          => \App\Filters\AuthFilter::class,
         'admin_auth'    => \App\Filters\AdminAuthFilter::class,
+        'timezone'      => \App\Filters\TimezoneFilter::class,
     ];
 
     /**
@@ -35,6 +36,7 @@ class Filters extends BaseConfig
      */
     public array $globals = [
         'before' => [
+            'timezone',
             // 'honeypot',
             // 'csrf',
             // 'invalidchars',

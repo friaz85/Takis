@@ -54,8 +54,18 @@ class AuthFilter implements FilterInterface
 
             if (!isset($payload->role) || $payload->role !== 'system_admin') {
                 $userModel = new \App\Models\UserModel();
-                if (!$userModel->find($payload->id ?? $payload->uid ?? 0)) {
+                $user      = $userModel->find($payload->id ?? $payload->uid ?? 0);
+                if (!$user) {
                     return Services::response()->setJSON(['message' => 'User not found'])->setStatusCode(401);
+                }
+
+                if (isset($user['is_blocked']) && (int) $user['is_blocked'] === 1) {
+                    return Services::response()->setJSON([
+                        'status'  => 'blocked',
+                        'message' => 'Tu cuenta ha sido bloqueada. Contacta a soporte para mas informacion.',
+                        'reason'  => $user['blocked_reason'] ?? 'Actividad sospechosa',
+                        'blocked' => true
+                    ])->setStatusCode(403);
                 }
             }
 

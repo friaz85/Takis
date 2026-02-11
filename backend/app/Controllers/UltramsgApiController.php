@@ -43,17 +43,8 @@ class UltramsgApiController extends ResourceController
         unset($user['password']);
 
         return $this->respond([
-            'error' => 0,
-            'user'  => [
-                'id'         => $user['id'],
-                'full_name'  => $user['full_name'],
-                'email'      => $user['email'],
-                'phone'      => $user['phone'],
-                'points'     => $user['points'],
-                'city'       => $user['city'],
-                'state'      => $user['state'],
-                'created_at' => $user['created_at']
-            ]
+            'error'     => 0,
+            'idUsuario' => (int) $user['id']
         ]);
     }
 
@@ -74,7 +65,7 @@ class UltramsgApiController extends ResourceController
         $data = $this->request->getJSON(true);
 
         // Validate required fields
-        $requiredFields = ['email', 'subject', 'message'];
+        $requiredFields = ['idUsuario', 'message'];
         foreach ($requiredFields as $field) {
             if (!isset($data[$field]) || empty($data[$field])) {
                 return $this->respond([
@@ -88,7 +79,14 @@ class UltramsgApiController extends ResourceController
         $ticketModel = new SupportTicketModel();
 
         // Check if user exists
-        $user = $userModel->where('email', $data['email'])->first();
+        $user = $userModel->find($data['idUsuario']);
+
+        if (!$user) {
+            return $this->respond([
+                'error'   => 1,
+                'message' => 'Usuario no encontrado'
+            ]);
+        }
 
         // Generate ticket number
         $ticketNumber = $ticketModel->generateTicketNumber();
@@ -96,14 +94,15 @@ class UltramsgApiController extends ResourceController
         // Prepare ticket data
         $ticketData = [
             'ticket_number' => $ticketNumber,
-            'user_id'       => $user ? $user['id'] : null,
-            'user_email'    => $data['email'],
-            'user_name'     => $data['name'] ?? ($user ? $user['full_name'] : 'Usuario Anónimo'),
-            'user_phone'    => $data['phone'] ?? ($user ? $user['phone'] : null),
-            'subject'       => $data['subject'],
+            'user_id'       => $user['id'],
+            'user_email'    => $user['email'],
+            'user_name'     => $user['full_name'],
+            'user_phone'    => $user['phone'],
+            'subject'       => 'Ticket desde WhatsApp',
+            'category'      => $data['category'] ?? 'general',
             'message'       => $data['message'],
             'status'        => 'open',
-            'priority'      => $data['priority'] ?? 'medium'
+            'priority'      => 'medium'
         ];
 
         // Create ticket
@@ -111,13 +110,11 @@ class UltramsgApiController extends ResourceController
             $ticketModel->insert($ticketData);
 
             // Log the ticket creation
-            log_message('info', "Support ticket created via Ultramsg API: {$ticketNumber} for {$data['email']}");
+            log_message('info', "Support ticket created via Ultramsg API: {$ticketNumber} for {$user['email']}");
 
             return $this->respond([
                 'error'         => 0,
-                'ticket_number' => $ticketNumber,
-                'message'       => 'Ticket creado exitosamente',
-                'ticket_id'     => $ticketModel->insertID()
+                'ticket_number' => $ticketNumber
             ]);
         } catch (\Exception $e) {
             log_message('error', 'Error creating support ticket: ' . $e->getMessage());

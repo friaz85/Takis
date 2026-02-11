@@ -15,6 +15,7 @@ class SupportTicketModel extends Model
         'user_name',
         'user_phone',
         'subject',
+        'category',
         'message',
         'status',
         'priority',

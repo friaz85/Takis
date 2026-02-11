@@ -31,24 +31,27 @@ import { AdminLayoutService } from '../services/admin-layout.service';
         <a routerLink="/admin/dashboard" routerLinkActive="active" class="nav-item" (click)="onNavItemClick()">
           <span class="icon">📊</span> Dashboard
         </a>
-        <a routerLink="/admin/orders" routerLinkActive="active" class="nav-item" (click)="onNavItemClick()">
-          <span class="icon">📦</span> Pedidos
-        </a>
-        <a routerLink="/admin/users" routerLinkActive="active" class="nav-item" (click)="onNavItemClick()">
-          <span class="icon">👥</span> Usuarios
-        </a>
-        <a routerLink="/admin/rewards" routerLinkActive="active" class="nav-item" (click)="onNavItemClick()">
-          <span class="icon">🎁</span> Recompensas
-        </a>
-        <a routerLink="/admin/support" routerLinkActive="active" class="nav-item" (click)="onNavItemClick()">
-          <span class="icon">💬</span> Soporte
-        </a>
-        <a routerLink="/admin/promo-codes" routerLinkActive="active" class="nav-item" (click)="onNavItemClick()">
-          <span class="icon">🎫</span> Códigos Promocionales
-        </a>
-        <a routerLink="/admin/entry-codes" routerLinkActive="active" class="nav-item" (click)="onNavItemClick()">
-          <span class="icon">🎟️</span> Recompensas Canjeadas
-        </a>
+        
+        <ng-container *ngIf="getRole() !== 'takis'">
+          <a routerLink="/admin/orders" routerLinkActive="active" class="nav-item" (click)="onNavItemClick()">
+            <span class="icon">📦</span> Pedidos
+          </a>
+          <a routerLink="/admin/users" routerLinkActive="active" class="nav-item" (click)="onNavItemClick()">
+            <span class="icon">👥</span> Usuarios
+          </a>
+          <a routerLink="/admin/rewards" routerLinkActive="active" class="nav-item" (click)="onNavItemClick()">
+            <span class="icon">🎁</span> Recompensas
+          </a>
+          <a routerLink="/admin/support" routerLinkActive="active" class="nav-item" (click)="onNavItemClick()">
+            <span class="icon">💬</span> Soporte
+          </a>
+          <a routerLink="/admin/promo-codes" routerLinkActive="active" class="nav-item" (click)="onNavItemClick()">
+            <span class="icon">🎫</span> Códigos Promocionales
+          </a>
+          <a routerLink="/admin/entry-codes" routerLinkActive="active" class="nav-item" (click)="onNavItemClick()">
+            <span class="icon">🎟️</span> Recompensas Canjeadas
+          </a>
+        </ng-container>
       </nav>
 
       <div class="user-footer">
@@ -179,6 +182,10 @@ export class AdminNavbarComponent {
   logout() {
     this.auth.logout();
     this.router.navigate(['/admin/login']);
+  }
+
+  getRole() {
+    return this.auth.user()?.role;
   }
 
   clearCache() {

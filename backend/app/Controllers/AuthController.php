@@ -42,6 +42,10 @@ class AuthController extends ResourceController
 
         $existingUser = $userModel->where('email', $email)->first();
 
+        if ($existingUser && isset($existingUser['is_blocked']) && (int) $existingUser['is_blocked'] === 1) {
+            return $this->fail("Esta cuenta ha sido bloqueada. Razón: " . ($existingUser['blocked_reason'] ?? 'Actividad sospechosa') . ". Contacta a soporte.", 403);
+        }
+
         if ($existingUser) {
             $userModel->update($existingUser['id'], [
                 'otp'        => $otp,
@@ -86,6 +90,10 @@ class AuthController extends ResourceController
             return $this->failNotFound('Correo no registrado. Regístrate primero.');
         }
 
+        if (isset($user['is_blocked']) && (int) $user['is_blocked'] === 1) {
+            return $this->fail("Esta cuenta ha sido bloqueada. Razón: " . ($user['blocked_reason'] ?? 'Actividad sospechosa') . ". Contacta a soporte.", 403);
+        }
+
         $otp = rand(100000, 999999);
         $userModel->update($user['id'], [
             'otp'        => $otp,
@@ -110,7 +118,7 @@ class AuthController extends ResourceController
         }
 
         // Check if user is blocked
-        if (isset($user['is_blocked']) && $user['is_blocked'] == 1) {
+        if (isset($user['is_blocked']) && (int) $user['is_blocked'] === 1) {
             $reason = $user['blocked_reason'] ?? 'Actividad sospechosa detectada';
 
             // Log blocked login attempt

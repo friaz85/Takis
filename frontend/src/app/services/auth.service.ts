@@ -84,7 +84,31 @@ export class AuthService {
   }
 
   updateProfile(data: any): Observable<any> {
-    return this.http.post(`${this.apiUrl}/profile`, data);
+    return this.http.post(`${this.apiUrl}/profile`, data).pipe(
+      tap((res: any) => {
+        if (res.status === 'success') {
+          this.refreshUserFromProfile();
+        }
+      })
+    );
+  }
+
+  private refreshUserFromProfile() {
+    this.getProfile().subscribe({
+      next: (user: any) => {
+        const session = JSON.parse(localStorage.getItem('takis_session') || '{}');
+        if (session.token) {
+          // Normalize user object if needed (API returns full_name, session expects name for some reason)
+          const normalizedUser = {
+            ...user,
+            name: user.full_name || user.name
+          };
+          session.user = normalizedUser;
+          localStorage.setItem('takis_session', JSON.stringify(session));
+          this._user.set(normalizedUser);
+        }
+      }
+    });
   }
 
   private saveSession(res: any) {
@@ -135,7 +159,10 @@ export const jwtInterceptor: HttpInterceptorFn = (req: HttpRequest<unknown>, nex
   const auth = inject(AuthService);
   return next(req).pipe(
     catchError((error: HttpErrorResponse) => {
-      if (error.status === 401 && error.error?.message?.includes('Sesión expirada')) {
+      const isBlocked = error.error?.message?.toLowerCase().includes('bloqueada');
+      const isExpired = error.error?.message?.includes('Sesion expirada');
+
+      if (error.status === 401 && (isExpired || isBlocked)) {
         auth.logout();
       }
       return throwError(() => error);

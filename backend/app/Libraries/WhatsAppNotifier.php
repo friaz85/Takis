@@ -2,7 +2,7 @@
 
 namespace App\Libraries;
 
-use Ultramsg\WhatsAppApi;
+use UltraMsg\WhatsAppApi;
 
 class WhatsAppNotifier
 {
@@ -22,17 +22,22 @@ class WhatsAppNotifier
     public static function sendLowStockAlert($rewardTitle, $currentStock)
     {
         try {
-            $client = self::getClient();
-            $phone  = '5215540297872'; // Número de destino
+            $client      = self::getClient();
+            $adminPhones = [
+                '5215540297872', // Admin 1
+                '5215564166398'  // Admin 2
+            ];
 
             $message  = "🚨 *ALERTA DE STOCK BAJO*\n\n";
             $message .= "Recompensa: *{$rewardTitle}*\n";
             $message .= "Stock actual: *{$currentStock} unidades*\n\n";
             $message .= "⚠️ Se recomienda reabastecer pronto.";
 
-            $response = $client->sendChatMessage($phone, $message);
+            foreach ($adminPhones as $phone) {
+                $client->sendChatMessage($phone, $message);
+            }
 
-            log_message('info', 'WhatsApp Low Stock Alert sent: ' . json_encode($response));
+            log_message('info', 'WhatsApp Low Stock Alerts sent to ' . count($adminPhones) . ' recipients');
             return true;
         } catch (\Exception $e) {
             log_message('error', 'WhatsApp notification failed: ' . $e->getMessage());

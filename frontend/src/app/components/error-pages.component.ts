@@ -2,20 +2,20 @@ import { Component } from '@angular/core';
 import { RouterLink } from '@angular/router';
 
 @Component({
-    selector: 'app-not-found',
-    standalone: true,
-    imports: [RouterLink],
-    template: `
+  selector: 'app-not-found',
+  standalone: true,
+  imports: [RouterLink],
+  template: `
     <div class="error-page">
       <div class="content">
         <h1>404</h1>
         <h2>TE EXTRAVIASTE EN LO INTENSO</h2>
-        <p>Esta página no existe o no tiene suficiente Takis.</p>
+        <p>Esta pagina no existe o no tiene suficiente Takis.</p>
         <a routerLink="/" class="takis-btn">VOLVER AL INICIO</a>
       </div>
     </div>
   `,
-    styles: [`
+  styles: [`
     .error-page { height: 100vh; background: #1A0B2E; display: flex; align-items: center; justify-content: center; text-align: center; }
     h1 { font-size: 8rem; color: #F2E74B; font-weight: 900; margin: 0; text-shadow: 5px 5px 0 #6C1DDA; }
     h2 { color: white; margin-bottom: 2rem; font-weight: 900; }
@@ -26,20 +26,20 @@ import { RouterLink } from '@angular/router';
 export class NotFoundComponent { }
 
 @Component({
-    selector: 'app-unauthorized',
-    standalone: true,
-    imports: [RouterLink],
-    template: `
+  selector: 'app-unauthorized',
+  standalone: true,
+  imports: [RouterLink],
+  template: `
     <div class="error-page">
       <div class="content">
         <h1>403</h1>
         <h2>ACCESO NO PERMITIDO</h2>
-        <p>No tienes los permisos necesarios para estar aquí.</p>
+        <p>No tienes los permisos necesarios para estar aqui.</p>
         <a routerLink="/" class="takis-btn">VOLVER A SALVO</a>
       </div>
     </div>
   `,
-    styles: [`
+  styles: [`
     .error-page { height: 100vh; background: #1A0B2E; display: flex; align-items: center; justify-content: center; text-align: center; }
     h1 { font-size: 8rem; color: #ff4444; font-weight: 900; margin: 0; }
     h2 { color: white; margin-bottom: 2rem; font-weight: 900; }

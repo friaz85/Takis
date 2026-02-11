@@ -67,6 +67,8 @@ class AdminSupportController extends ResourceController
         $updateData = [];
         if (isset($data['status']))
             $updateData['status'] = $data['status'];
+        if (isset($data['category']))
+            $updateData['category'] = $data['category'];
         if (isset($data['priority']))
             $updateData['priority'] = $data['priority'];
         if (isset($data['admin_notes']))
@@ -132,11 +134,11 @@ class AdminSupportController extends ResourceController
         $ticketModel = new SupportTicketModel();
 
         $stats = [
-            'total'       => $ticketModel->countAll(),
-            'open'        => $ticketModel->where('status', 'open')->countAllResults(false),
-            'in_progress' => $ticketModel->where('status', 'in_progress')->countAllResults(false),
-            'resolved'    => $ticketModel->where('status', 'resolved')->countAllResults(false),
-            'closed'      => $ticketModel->where('status', 'closed')->countAllResults(false)
+            'total'       => $ticketModel->countAllResults(),
+            'open'        => $ticketModel->where('status', 'open')->countAllResults(),
+            'in_progress' => $ticketModel->where('status', 'in_progress')->countAllResults(),
+            'resolved'    => $ticketModel->where('status', 'resolved')->countAllResults(),
+            'closed'      => $ticketModel->where('status', 'closed')->countAllResults()
         ];
 
         return $this->respond($stats);

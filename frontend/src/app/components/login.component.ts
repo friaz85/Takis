@@ -25,20 +25,20 @@ import { ToastService } from '../services/toast.service';
 
           <!-- Right Column: Login Form -->
           <div class="hero-right login-card">
-            <h2 class="form-title">INICIAR SESIÓN</h2>
+            <h2 class="form-title">INICIAR SESION</h2>
             
             <form (submit)="onSubmit()" class="login-form">
               <div class="field">
-                <label>CORREO ELECTRÓNICO</label>
+                <label>CORREO ELECTRONICO</label>
                 <input type="email" [(ngModel)]="email" name="email" required class="input-flat" placeholder="tu@correo.com">
               </div>
 
               <button type="submit" class="submit-btn" [disabled]="loading()">
-                {{ loading() ? 'ENVIANDO...' : 'ENVIAR CÓDIGO DE ACCESO' }}
+                {{ loading() ? 'ENVIANDO...' : 'ENVIAR CODIGO DE ACCESO' }}
               </button>
               
               <div class="register-link">
-                 ¿No tienes cuenta? <a routerLink="/auth/register">Regístrate aquí</a>
+                 No tienes cuenta? <a routerLink="/auth/register">Registrate aqui</a>
               </div>
             </form>
           </div>
@@ -121,6 +121,7 @@ import { ToastService } from '../services/toast.service';
         text-transform: uppercase;
         letter-spacing: 1px;
         background: url('/assets/img/texture-purple.png'), #560E8C;
+        background-size: cover;
         -webkit-background-clip: text;
         background-clip: text;
         color: #560E8C; 
@@ -250,7 +251,7 @@ export class LoginComponent implements OnInit {
 
     const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
     if (!emailRegex.test(this.email)) {
-      this.toast.show('Por favor ingresa un correo electrónico válido.', 'error');
+      this.toast.show('Por favor ingresa un correo electronico valido.', 'error');
       return;
     }
 
@@ -258,7 +259,7 @@ export class LoginComponent implements OnInit {
     this.auth.requestLoginOtp(this.email).subscribe({
       next: (res: any) => {
         this.loading.set(false);
-        this.toast.show(res.message || 'Código enviado.', 'success');
+        this.toast.show(res.message || 'Codigo enviado.', 'success');
         this.router.navigate(['/auth/otp'], { queryParams: { email: this.email } });
       },
       error: (err) => {

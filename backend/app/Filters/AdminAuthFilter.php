@@ -46,8 +46,29 @@ class AdminAuthFilter implements FilterInterface
                 throw new \Exception("Token expired");
             }
 
-            if (!isset($payload->role) || ($payload->role !== 'admin' && $payload->role !== 'system_admin')) {
-                return Services::response()->setJSON(['status' => 403, 'message' => 'Admin required'])->setStatusCode(403);
+            // RBAC
+            $role = $payload->role ?? null;
+
+            if ($role === 'takis') {
+                $uri = $request->getUri()->getPath();
+                // Allow only dashboard stats and visits analytics
+                $isAllowed = (
+                    strpos($uri, 'admin/stats') !== false ||
+                    strpos($uri, 'admin/dashboard') !== false ||
+                    strpos($uri, 'analytics/stats') !== false
+                );
+
+                if (!$isAllowed) {
+                    return Services::response()->setJSON([
+                        'status'  => 403,
+                        'message' => 'Acceso restringido: El rol "' . $role . '" solo tiene permiso para el Dashboard.'
+                    ])->setStatusCode(403);
+                }
+            } else if ($role !== 'admin' && $role !== 'system_admin') {
+                return Services::response()->setJSON([
+                    'status'  => 403,
+                    'message' => 'Se requiere rol administrativo (Admin o System Admin). Rol actual: ' . ($role ?? 'invitado')
+                ])->setStatusCode(403);
             }
 
             $request->admin_user = $payload;

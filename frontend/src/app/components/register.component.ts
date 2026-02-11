@@ -32,7 +32,7 @@ import { AuthService } from '../services/auth.service';
             <form (submit)="onSubmit()" class="register-form">
               <div class="field">
                 <label>NOMBRE</label>
-                <input type="text" [(ngModel)]="form.name" name="name" required class="input-flat" placeholder="Juan Pérez">
+                <input type="text" [(ngModel)]="form.name" name="name" required class="input-flat" placeholder="Juan Perez">
               </div>
 
               <div class="field">
@@ -41,20 +41,14 @@ import { AuthService } from '../services/auth.service';
               </div>
 
               <div class="field">
-                <label>TELÉFONO</label>
-                <input type="tel" [(ngModel)]="form.phone" name="phone" required class="input-flat" placeholder="10 dígitos">
+                <label>TELEFONO</label>
+                <input type="tel" [(ngModel)]="form.phone" name="phone" required class="input-flat" placeholder="10 digitos">
               </div>
 
               <div class="check-group">
                 <label class="checkbox-container">
-                    TÉRMINOS Y CONDICIONES
-                    <input type="checkbox" [(ngModel)]="form.terms" name="terms" required>
-                    <span class="checkmark"></span>
-                </label>
-                
-                <label class="checkbox-container">
-                    HE LEÍDO AVISO DE PRIVACIDAD
-                    <input type="checkbox" [(ngModel)]="form.privacy" name="privacy" required>
+                    HE LEIDO Y ACEPTO <a href="https://takisaficionintensa.com.mx/tyc" target="_blank">TERMINOS Y CONDICIONES Y AVISO DE PRIVACIDAD</a>
+                    <input type="checkbox" [(ngModel)]="form.acceptedLegal" name="acceptedLegal" required>
                     <span class="checkmark"></span>
                 </label>
               </div>
@@ -144,6 +138,7 @@ import { AuthService } from '../services/auth.service';
         letter-spacing: 1px;
         /* Add texture effect if possible, simplified for CSS */
         background: url('/assets/img/texture-purple.png'), #560E8C;
+        background-size: cover;
         -webkit-background-clip: text;
         background-clip: text;
         /* Fallback color */
@@ -204,13 +199,14 @@ import { AuthService } from '../services/auth.service';
     .checkbox-container {
         display: block;
         position: relative;
-        padding-left: 25px;
+        padding-left: 30px;
         cursor: pointer;
         font-size: 1.1rem;
         font-weight: bold;
         color: #aaa;
         user-select: none;
         text-transform: uppercase;
+        text-align: left;
     }
 
     .checkbox-container input {
@@ -221,22 +217,29 @@ import { AuthService } from '../services/auth.service';
         width: 0;
     }
 
+    .checkbox-container a {
+        color: #560E8C;
+        text-decoration: underline;
+    }
+
     .checkmark {
         position: absolute;
-        top: 0;
+        top: 2px;
         left: 0;
-        height: 16px;
-        width: 16px;
-        background-color: #eee;
-        border-radius: 3px;
+        height: 18px;
+        width: 18px;
+        background-color: #fff;
+        border: 2px solid #560E8C;
+        border-radius: 4px;
     }
 
     .checkbox-container:hover input ~ .checkmark {
-        background-color: #ccc;
+        background-color: #f0e6f5;
     }
 
     .checkbox-container input:checked ~ .checkmark {
         background-color: #560E8C;
+        border-color: #560E8C;
     }
 
     .checkmark:after {
@@ -308,7 +311,7 @@ import { AuthService } from '../services/auth.service';
   `]
 })
 export class RegisterComponent implements OnInit {
-  form = { name: '', email: '', phone: '', terms: false, privacy: false };
+  form = { name: '', email: '', phone: '', acceptedLegal: false };
   loading = signal(false);
 
   private http = inject(HttpClient);
@@ -328,14 +331,14 @@ export class RegisterComponent implements OnInit {
       return;
     }
 
-    if (!this.form.terms || !this.form.privacy) {
-      this.toast.show('Debes aceptar los términos y el aviso de privacidad.', 'info');
+    if (!this.form.acceptedLegal) {
+      this.toast.show('Debes aceptar los terminos y el aviso de privacidad.', 'info');
       return;
     }
 
     const phoneRegex = /^[0-9]{10}$/;
     if (!phoneRegex.test(this.form.phone)) {
-      this.toast.show('Por favor, ingresa un número de teléfono de 10 dígitos.', 'error');
+      this.toast.show('Por favor, ingresa un numero de telefono de 10 digitos.', 'error');
       return;
     }
 
@@ -346,7 +349,7 @@ export class RegisterComponent implements OnInit {
     this.http.post(`${environment.apiUrl}/auth/register`, payload).subscribe({
       next: (res: any) => {
         this.loading.set(false);
-        this.toast.show(res.message || 'Código enviado.', 'success');
+        this.toast.show(res.message || 'Codigo enviado.', 'success');
         this.router.navigate(['/auth/otp'], { queryParams: { email: this.form.email } });
       },
       error: (err) => {

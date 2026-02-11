@@ -11,7 +11,11 @@ if ($_SERVER["REQUEST_METHOD"] == "OPTIONS") {
 
 define('FCPATH', __DIR__ . DIRECTORY_SEPARATOR);
 chdir(__DIR__);
-require FCPATH . 'app/Config/Paths.php';
+if (file_exists(FCPATH . 'app/Config/Paths.php')) {
+    require FCPATH . 'app/Config/Paths.php';
+} else {
+    require FCPATH . '../app/Config/Paths.php';
+}
 $paths = new Config\Paths();
 require rtrim($paths->systemDirectory, '\\/ ') . DIRECTORY_SEPARATOR . 'bootstrap.php';
 

@@ -49,9 +49,9 @@ class EmailSender
         // Let's assume messageHtml is mostly text provided by us.
 
         // Re-implementing logic to be cleaner:
-        $cleanTitleText   = $title; // self::removeAccents($title);
-        $cleanMessageHtml = $messageHtml; // self::removeAccents($messageHtml);
-        $cleanActionText  = $actionText; // $actionText ? self::removeAccents($actionText) : null;
+        $cleanTitleText   = self::removeAccents($title);
+        $cleanMessageHtml = self::removeAccents($messageHtml);
+        $cleanActionText  = $actionText ? self::removeAccents($actionText) : null;
 
         $html = self::buildHtml($cleanTitleText, $cleanMessageHtml, $cleanActionText, $actionUrl);
 

@@ -56,6 +56,8 @@ class ProfileController extends ResourceController
             $data = [];
             if (isset($input["full_name"]))
                 $data["full_name"] = $input["full_name"];
+            if (isset($input["recipient_name"]))
+                $data["recipient_name"] = $input["recipient_name"];
             if (isset($input["phone"]))
                 $data["phone"] = $input["phone"];
             if (isset($input["address"]))
@@ -70,6 +72,8 @@ class ProfileController extends ResourceController
                 $data["state"] = $input["state"];
             if (isset($input["zip_code"]))
                 $data["zip_code"] = $input["zip_code"];
+            if (isset($input["delivery_instructions"]))
+                $data["delivery_instructions"] = $input["delivery_instructions"];
 
             if (empty($data)) {
                 return $this->respond(['status' => 'error', 'message' => 'No se recibieron datos para actualizar'], 400);

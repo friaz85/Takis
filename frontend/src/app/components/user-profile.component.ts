@@ -44,13 +44,22 @@ import { ToastService } from '../services/toast.service';
                   </div>
 
                   <div class="field">
-                    <label>TELÉFONO</label>
-                    <input type="tel" [(ngModel)]="profile.phone" name="phone" required maxlength="10" class="input-flat" placeholder="10 DÍGITOS">
+                    <label>TELEFONO</label>
+                    <input type="tel" [(ngModel)]="profile.phone" name="phone" required maxlength="10" class="input-flat" placeholder="10 DIGITOS">
+                  </div>
+
+                  <div class="field full-width section-header">
+                    <h3 class="dir-envio-title">DIRECCION DE ENVIO</h3>
                   </div>
 
                   <div class="field full-width">
-                    <label>CALLE Y NÚMERO</label>
-                    <input type="text" [(ngModel)]="profile.address" name="address" required class="input-flat" placeholder="CALLE Y NÚMERO">
+                    <label>NOMBRE DE QUIEN RECIBE</label>
+                    <input type="text" [(ngModel)]="profile.recipient_name" name="recipient_name" class="input-flat" placeholder="NOMBRE COMPLETO">
+                  </div>
+
+                  <div class="field full-width">
+                    <label>CALLE Y NUMERO</label>
+                    <input type="text" [(ngModel)]="profile.address" name="address" required class="input-flat" placeholder="CALLE Y NUMERO">
                   </div>
 
                   <div class="field">
@@ -59,23 +68,26 @@ import { ToastService } from '../services/toast.service';
                   </div>
 
                   <div class="field">
-                    <label>ALCALDÍA / MUNICIPIO</label>
-                    <input type="text" [(ngModel)]="profile.municipio" name="municipio" required class="input-flat" placeholder="ALCALDÍA">
-                  </div>
-
-                  <div class="field">
-                    <label>CIUDAD</label>
-                    <input type="text" [(ngModel)]="profile.city" name="city" required class="input-flat" placeholder="CIUDAD">
+                    <label>ALCALDIA / MUNICIPIO</label>
+                    <input type="text" [(ngModel)]="profile.municipio" name="municipio" required class="input-flat" placeholder="ALCALDIA">
                   </div>
 
                   <div class="field">
                     <label>ESTADO</label>
-                    <input type="text" [(ngModel)]="profile.state" name="state" required class="input-flat" placeholder="ESTADO">
+                    <select [(ngModel)]="profile.state" name="state" required class="input-flat select-flat">
+                      <option value="" disabled selected>SELECCIONA UN ESTADO</option>
+                      <option *ngFor="let state of mexicoStates" [value]="state">{{ state | uppercase }}</option>
+                    </select>
                   </div>
                   
                   <div class="field">
-                    <label>CÓDIGO POSTAL</label>
+                    <label>CODIGO POSTAL</label>
                     <input type="text" [(ngModel)]="profile.zip_code" name="zip_code" required maxlength="5" class="input-flat" placeholder="CP">
+                  </div>
+
+                  <div class="field full-width">
+                    <label>INSTRUCCIONES DE ENTREGA</label>
+                    <textarea [(ngModel)]="profile.delivery_instructions" name="delivery_instructions" class="input-flat textarea-flat" placeholder="INSTRUCCIONES ADICIONALES PARA LA ENTREGA"></textarea>
                   </div>
               </div>
 
@@ -205,6 +217,36 @@ import { ToastService } from '../services/toast.service';
         font-weight: normal;
     }
 
+    .select-flat {
+        cursor: pointer;
+        -webkit-appearance: none;
+        -moz-appearance: none;
+        appearance: none;
+        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%23560E8C' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+        background-repeat: no-repeat;
+        background-position: right 1rem center;
+        background-size: 1.2rem;
+        padding-right: 3rem;
+        font-family: inherit;
+    }
+
+    .textarea-flat {
+        min-height: 100px;
+        resize: vertical;
+        font-family: inherit;
+    }
+
+    .dir-envio-title {
+        color: #560E8C;
+        font-size: 1.5rem;
+        font-weight: 900;
+        margin: 1.5rem 0 0.5rem 0;
+        text-align: center;
+        width: 100%;
+        border-top: 1px solid rgba(86, 14, 140, 0.1);
+        padding-top: 1.5rem;
+    }
+
     .submit-btn {
         background: #560E8C;
         color: white;
@@ -267,6 +309,14 @@ export class UserProfileComponent implements OnInit {
   profile: any = {};
   loading = signal(false);
 
+  mexicoStates = [
+    'Aguascalientes', 'Baja California', 'Baja California Sur', 'Campeche', 'Chiapas',
+    'Chihuahua', 'Ciudad de Mexico', 'Coahuila', 'Colima', 'Durango', 'Estado de Mexico',
+    'Guanajuato', 'Guerrero', 'Hidalgo', 'Jalisco', 'Michoacan', 'Morelos', 'Nayarit',
+    'Nuevo Leon', 'Oaxaca', 'Puebla', 'Queretaro', 'Quintana Roo', 'San Luis Potosi',
+    'Sinaloa', 'Sonora', 'Tabasco', 'Tamaulipas', 'Tlaxcala', 'Veracruz', 'Yucatan', 'Zacatecas'
+  ];
+
   private auth = inject(AuthService);
   private router = inject(Router);
   private toast = inject(ToastService);
@@ -282,7 +332,7 @@ export class UserProfileComponent implements OnInit {
 
   save() {
     // Validations
-    const requiredFields = ['full_name', 'phone', 'address', 'colonia', 'municipio', 'city', 'state', 'zip_code'];
+    const requiredFields = ['full_name', 'phone', 'address', 'colonia', 'municipio', 'state', 'zip_code'];
     const missing = requiredFields.filter(field => !this.profile[field]);
 
     if (missing.length > 0) {
@@ -290,12 +340,12 @@ export class UserProfileComponent implements OnInit {
       return;
     }
 
-    if (this.profile.phone.length !== 10) {
+    if (this.profile.phone.toString().length !== 10) {
       this.toast.show('El telefono debe tener 10 digitos.', 'info');
       return;
     }
 
-    if (this.profile.zip_code.length !== 5) {
+    if (this.profile.zip_code.toString().length !== 5) {
       this.toast.show('El codigo postal debe tener 5 digitos.', 'info');
       return;
     }
@@ -305,7 +355,7 @@ export class UserProfileComponent implements OnInit {
     this.auth.updateProfile(this.profile).subscribe({
       next: () => {
         this.loading.set(false);
-        this.toast.show('¡Datos actualizados correctamente!', 'success');
+        this.toast.show('Datos actualizados correctamente!', 'success');
         // Update session storage if needed logic is inside auth or just reload from there
       },
       error: (err) => {

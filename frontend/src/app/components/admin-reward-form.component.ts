@@ -44,7 +44,7 @@ interface CodeArea {
              <input 
                type="text" 
                [ngModel]="searchTerm()" 
-               (ngModelChange)="searchTerm.set($event); currentPage = 1"
+               (ngModelChange)="searchTerm.set($event); currentPage.set(1)"
                placeholder="Buscar recompensa..."
              >
            </div>
@@ -94,14 +94,14 @@ interface CodeArea {
           </table>
         </div>
 
-        <div class="pagination" *ngIf="filteredRewards().length > 0">
-          <div class="page-info">
-             {{ (currentPage - 1) * pageSize + 1 }} - {{ Math.min(currentPage * pageSize, filteredRewards().length) }} de {{ filteredRewards().length }}
-          </div>
-          <div class="page-controls">
-            <button [disabled]="currentPage === 1" (click)="currentPage = currentPage - 1">«</button>
-            <span class="current-page">{{ currentPage }}</span>
-            <button [disabled]="currentPage >= totalPages()" (click)="currentPage = currentPage + 1">»</button>
+        <div class="pagination-footer" *ngIf="filteredRewards().length > 0">
+          <span class="page-info">
+             {{ (currentPage() - 1) * pageSize + 1 }} - {{ Math.min(currentPage() * pageSize, filteredRewards().length) }} DE {{ filteredRewards().length }}
+          </span>
+          <div class="pagination-controls">
+            <button [disabled]="currentPage() === 1" (click)="setPage(currentPage() - 1)">«</button>
+            <span class="page-number">{{ currentPage() }}</span>
+            <button [disabled]="currentPage() >= totalPages()" (click)="setPage(currentPage() + 1)">»</button>
           </div>
         </div>
       </div>
@@ -265,8 +265,8 @@ interface CodeArea {
                     <img [src]="selectedImagePreview || environment.uploadsUrl + '/rewards/' + editingReward.image_url" alt="Preview">
                   </div>
 
-                  <!-- PDF Preview with Draggable Areas (ONLY for digital rewards) -->
-                  <div class="pdf-preview-wrapper" *ngIf="editingReward.type === 'digital'">
+                  <!-- PDF Preview with Draggable Areas (ONLY for digital rewards of type PDF) -->
+                  <div class="pdf-preview-wrapper" *ngIf="editingReward.type === 'digital' && digitalSubtype() === 'pdf'">
                     <div class="pdf-canvas-container" #pdfContainer>
                       <canvas #pdfCanvas [style.display]="pdfLoaded() ? 'block' : 'none'"></canvas>
                       
@@ -293,8 +293,12 @@ interface CodeArea {
                     </div>
                   </div>
 
-                  <div class="preview-placeholder" *ngIf="(editingReward.type === 'physical' && !selectedImagePreview && !editingReward.image_url) || (editingReward.type === 'digital' && !selectedPDF && !editingReward.pdf_template)">
+                  <div class="preview-placeholder" *ngIf="(editingReward.type === 'physical' && !selectedImagePreview && !editingReward.image_url) || (editingReward.type === 'digital' && digitalSubtype() === 'pdf' && !selectedPDF && !editingReward.pdf_template)">
                     <p>{{ editingReward.type === 'digital' ? '📄 Sube un PDF para ver la vista previa' : '📸 Sube una imagen para ver la vista previa' }}</p>
+                  </div>
+
+                  <div class="preview-placeholder" *ngIf="editingReward.type === 'digital' && digitalSubtype() === 'wallpaper'">
+                    <p>🖼️ Vista previa no disponible para Wallpapers.<br><small>El archivo se cargará directamente.</small></p>
                   </div>
                 </div>
               </div>
@@ -315,7 +319,7 @@ interface CodeArea {
       padding: 5rem 2rem 2rem 2rem; 
       margin-left: 260px;
       min-height: 100vh;
-      background: #0D0221;
+      background: #0d0221d6;
       color: white; 
       transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     }
@@ -360,11 +364,16 @@ interface CodeArea {
     .icon-btn { background: transparent; border: 1px solid rgba(255,255,255,0.2); padding: 0.4rem 0.6rem; border-radius: 0.3rem; cursor: pointer; transition: 0.2s; }
     .icon-btn:hover { background: rgba(108, 29, 218, 0.3); }
 
-    .pagination { padding: 1.5rem; display: flex; justify-content: space-between; align-items: center; }
-    .page-controls { display: flex; align-items: center; gap: 1rem; }
-    .page-controls button { background: #6C1DDA; border: none; color: white; width: 35px; height: 35px; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; font-weight: bold; }
-    .page-controls button:disabled { opacity: 0.3; cursor: not-allowed; }
-    .current-page { font-weight: 900; color: #F2E74B; }
+    .pagination-footer { padding: 1.5rem; display: flex; justify-content: space-between; align-items: center; border-top: 1px solid rgba(108, 29, 218, 0.2); }
+    .page-info { font-weight: 900; color: white; font-size: 0.85rem; text-transform: uppercase; }
+    .pagination-controls { display: flex; align-items: center; gap: 0.75rem; }
+    .pagination-controls button { 
+      width: 35px; height: 35px; border-radius: 50%; background: #3A1A5E; border: none; color: #F2E74B; 
+      display: flex; align-items: center; justify-content: center; cursor: pointer; font-size: 1.1rem; transition: 0.3s; 
+    }
+    .pagination-controls button:not(:disabled):hover { background: #6C1DDA; color: white; transform: scale(1.1); }
+    .pagination-controls button:disabled { opacity: 0.3; cursor: not-allowed; }
+    .page-number { font-weight: 900; color: #F2E74B; font-size: 1.1rem; margin: 0 0.5rem; }
 
     /* ADVANCED MODAL */
     .modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.9); display: flex; align-items: center; justify-content: center; z-index: 1000; padding: 1rem; }
@@ -514,9 +523,16 @@ export class AdminRewardFormComponent implements OnInit, AfterViewInit {
   @ViewChild('pdfCanvas') pdfCanvas!: ElementRef<HTMLCanvasElement>;
   rewards = signal<any[]>([]);
   searchTerm = signal('');
-  currentPage = 1;
+  currentPage = signal(1);
   pageSize = 10;
   Math = Math;
+  dataVersion = signal(0);
+
+  setPage(page: number) {
+    if (page >= 1 && page <= this.totalPages()) {
+      this.currentPage.set(page);
+    }
+  }
   showCreateModal = false;
   editingReward: any = null;
   selectedImagePreview: string | null = null;
@@ -581,6 +597,7 @@ export class AdminRewardFormComponent implements OnInit, AfterViewInit {
   }
 
   filteredRewards = computed(() => {
+    this.dataVersion();
     const term = this.searchTerm().toLowerCase();
     return this.rewards().filter((r: any) =>
       r.title?.toLowerCase().includes(term) ||
@@ -589,8 +606,9 @@ export class AdminRewardFormComponent implements OnInit, AfterViewInit {
   });
 
   paginatedRewards = computed(() => {
-    const start = (this.currentPage - 1) * this.pageSize;
-    return this.filteredRewards().slice(start, start + this.pageSize);
+    const data = this.filteredRewards();
+    const start = (this.currentPage() - 1) * this.pageSize;
+    return data.slice(start, start + this.pageSize);
   });
 
   totalPages = computed(() => Math.ceil(this.filteredRewards().length / this.pageSize));

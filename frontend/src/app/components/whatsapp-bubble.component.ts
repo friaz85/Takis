@@ -6,7 +6,7 @@ import { Component } from '@angular/core';
   template: `
     <a href="https://wa.me/5215500000000?text=Hola,%20necesito%20ayuda%20con%20Takis%20Aficion%20Intensa" target="_blank" class="wa-bubble">
       <img src="https://upload.wikimedia.org/wikipedia/commons/6/6b/WhatsApp.svg" alt="Support">
-      <span class="tooltip">¿Necesitas ayuda?</span>
+      <span class="tooltip">Necesitas ayuda?</span>
     </a>
   `,
   styles: [`

@@ -25,6 +25,12 @@ class RedemptionController extends ResourceController
         $userId = $this->request->user->id ?? $this->request->user->uid;
         $code   = $this->request->getVar('code');
 
+        // Verify if user is blocked
+        $currentUser = $userModel->find($userId);
+        if ($currentUser && isset($currentUser['is_blocked']) && (int) $currentUser['is_blocked'] === 1) {
+            return $this->fail('Tu cuenta ha sido bloqueada. No puedes realizar esta accion.', 403);
+        }
+
         /*
          * Rate limiting to prevent bruteforce:
          * - Per User: Max 20 failed attempts per day
@@ -135,7 +141,13 @@ class RedemptionController extends ResourceController
         $userId   = $this->request->user->id;
         $rewardId = $this->request->getVar('reward_id');
 
-        $user   = $userModel->find($userId);
+        $user = $userModel->find($userId);
+
+        // Verify if user is blocked
+        if ($user && isset($user['is_blocked']) && (int) $user['is_blocked'] === 1) {
+            return $this->fail('Tu cuenta ha sido bloqueada. No puedes realizar esta accion.', 403);
+        }
+
         $reward = $rewardModel->find($rewardId);
 
         if (!$reward || $reward['stock'] <= 0) {
@@ -464,7 +476,7 @@ class RedemptionController extends ResourceController
     public function rewardsHistory($userId = null)
     {
         $redemptionModel = new \App\Models\RedemptionModel();
-        $history         = $redemptionModel->select('redemptions.*, rewards.title, rewards.image_url, rewards.cost')
+        $history         = $redemptionModel->select('redemptions.*, rewards.title, rewards.image_url, rewards.cost, rewards.type')
             ->join('rewards', 'rewards.id = redemptions.reward_id')
             ->where('user_id', $userId)
             ->orderBy('redemptions.created_at', 'DESC')

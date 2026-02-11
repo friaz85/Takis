@@ -38,6 +38,7 @@ mkdir -p $DEPLOY_DIR/api
 cp -r backend/app $DEPLOY_DIR/api/
 cp -a backend/public/. $DEPLOY_DIR/api/
 cp backend/composer.json $DEPLOY_DIR/api/
+cp backend/composer.lock $DEPLOY_DIR/api/
 cp backend/database/schema.sql $DEPLOY_DIR/api/
 # Use dev database config
 cp deploy/dev/Database.php $DEPLOY_DIR/api/app/Config/Database.php

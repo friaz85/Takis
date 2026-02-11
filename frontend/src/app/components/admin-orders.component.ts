@@ -23,13 +23,52 @@ import { environment } from '../../environments/environment';
         </button>
       </div>
 
+      <!-- Order Stats Grid -->
+      <div class="stats-grid">
+        <div class="stat-card">
+          <div class="stat-icon">📦</div>
+          <div class="stat-info">
+            <span class="stat-label">Total Pedidos</span>
+            <span class="stat-value">{{ orders().length }}</span>
+          </div>
+        </div>
+        <div class="stat-card pending">
+          <div class="stat-icon">⏳</div>
+          <div class="stat-info">
+            <span class="stat-label">Pendientes</span>
+            <span class="stat-value">{{ pendingStats() }}</span>
+          </div>
+        </div>
+        <div class="stat-card processing">
+          <div class="stat-icon">⚙️</div>
+          <div class="stat-info">
+            <span class="stat-label">En Proceso</span>
+            <span class="stat-value">{{ processingStats() }}</span>
+          </div>
+        </div>
+        <div class="stat-card shipped">
+          <div class="stat-icon">🚚</div>
+          <div class="stat-info">
+            <span class="stat-label">Enviados</span>
+            <span class="stat-value">{{ shippedStats() }}</span>
+          </div>
+        </div>
+        <div class="stat-card delivered">
+          <div class="stat-icon">✅</div>
+          <div class="stat-info">
+            <span class="stat-label">Entregados</span>
+            <span class="stat-value">{{ deliveredStats() }}</span>
+          </div>
+        </div>
+      </div>
+
       <div class="table-container">
         <div class="table-header">
            <div class="search-box">
              <input 
                type="text" 
                [ngModel]="searchTerm()" 
-               (ngModelChange)="searchTerm.set($event); currentPage = 1"
+               (ngModelChange)="searchTerm.set($event); currentPage.set(1)"
                placeholder="Buscar por usuario o recompensa..."
              >
            </div>
@@ -61,14 +100,14 @@ import { environment } from '../../environments/environment';
           </table>
         </div>
 
-        <div class="pagination" *ngIf="filteredOrders().length > 0">
-          <div class="page-info">
-             {{ (currentPage - 1) * pageSize + 1 }} - {{ Math.min(currentPage * pageSize, filteredOrders().length) }} de {{ filteredOrders().length }}
-          </div>
-          <div class="page-controls">
-            <button [disabled]="currentPage === 1" (click)="currentPage = currentPage - 1">«</button>
-            <span class="current-page">{{ currentPage }}</span>
-            <button [disabled]="currentPage >= totalPages()" (click)="currentPage = currentPage + 1">»</button>
+        <div class="pagination-footer" *ngIf="filteredOrders().length > 0">
+          <span class="page-info">
+             {{ (currentPage() - 1) * pageSize + 1 }} - {{ Math.min(currentPage() * pageSize, filteredOrders().length) }} DE {{ filteredOrders().length }}
+          </span>
+          <div class="pagination-controls">
+            <button [disabled]="currentPage() === 1" (click)="setPage(currentPage() - 1)">«</button>
+            <span class="page-number">{{ currentPage() }}</span>
+            <button [disabled]="currentPage() >= totalPages()" (click)="setPage(currentPage() + 1)">»</button>
           </div>
         </div>
       </div>
@@ -181,7 +220,7 @@ import { environment } from '../../environments/environment';
       padding: 5rem 2rem 2rem 2rem; 
       margin-left: 260px;
       min-height: 100vh;
-      background: #0D0221;
+      background: #0d0221d6;
       color: white; 
       transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     }
@@ -199,6 +238,26 @@ import { environment } from '../../environments/environment';
     .export-btn .icon { color: #fff; }
     .export-btn:hover { background: #F2E74B; color: #1A0B2E; transform: translateY(-2px); }
     .export-btn:hover .icon { color: inherit; }
+
+    .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1.5rem; margin-bottom: 2rem; }
+    .stat-card { background: rgba(108, 29, 218, 0.1); border: 2px solid rgba(108, 29, 218, 0.3); border-radius: 1.5rem; padding: 1.5rem; display: flex; align-items: center; gap: 1.2rem; transition: 0.3s; }
+    .stat-card:hover { transform: translateY(-5px); border-color: #6C1DDA; background: rgba(108, 29, 218, 0.2); }
+    .stat-card.pending { border-color: rgba(255, 170, 0, 0.3); }
+    .stat-card.pending:hover { border-color: #ffaa00; }
+    .stat-card.processing { border-color: rgba(108, 29, 218, 0.3); }
+    .stat-card.processing:hover { border-color: #6C1DDA; }
+    .stat-card.delivered { border-color: rgba(0, 204, 102, 0.3); }
+    .stat-card.delivered:hover { border-color: #00cc66; }
+    .stat-card.shipped { border-color: rgba(0, 170, 255, 0.3); }
+    .stat-card.shipped:hover { border-color: #00aaff; }
+
+    .stat-icon { font-size: 2.5rem; }
+    .stat-info { display: flex; flex-direction: column; }
+    .stat-label { color: rgba(255,255,255,0.6); font-size: 0.85rem; font-weight: bold; text-transform: uppercase; }
+    .stat-value { color: #F2E74B; font-size: 2.2rem; font-weight: 900; }
+    .stat-card.pending .stat-value { color: #ffaa00; }
+    .stat-card.delivered .stat-value { color: #00cc66; }
+    .stat-card.shipped .stat-value { color: #00aaff; }
 
     .table-container { background: rgba(255,255,255,0.05); border: 2px solid #6C1DDA; border-radius: 1.5rem; overflow: hidden; }
     .table-header { padding: 1.5rem; border-bottom: 1px solid rgba(108, 29, 218, 0.2); }
@@ -285,11 +344,16 @@ import { environment } from '../../environments/environment';
 
     .mt-4 { margin-top: 1rem; }
 
-    .pagination { padding: 1.5rem; display: flex; justify-content: space-between; align-items: center; }
-    .page-controls { display: flex; align-items: center; gap: 1rem; }
-    .page-controls button { background: #6C1DDA; border: none; color: white; width: 35px; height: 35px; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; font-weight: bold; }
-    .page-controls button:disabled { opacity: 0.3; cursor: not-allowed; }
-    .current-page { font-weight: 900; color: #F2E74B; }
+    .pagination-footer { padding: 1.5rem; display: flex; justify-content: space-between; align-items: center; border-top: 1px solid rgba(108, 29, 218, 0.2); }
+    .page-info { font-weight: 900; color: white; font-size: 0.85rem; text-transform: uppercase; }
+    .pagination-controls { display: flex; align-items: center; gap: 0.75rem; }
+    .pagination-controls button { 
+      width: 35px; height: 35px; border-radius: 50%; background: #3A1A5E; border: none; color: #F2E74B; 
+      display: flex; align-items: center; justify-content: center; cursor: pointer; font-size: 1.1rem; transition: 0.3s; 
+    }
+    .pagination-controls button:not(:disabled):hover { background: #6C1DDA; color: white; transform: scale(1.1); }
+    .pagination-controls button:disabled { opacity: 0.3; cursor: not-allowed; }
+    .page-number { font-weight: 900; color: #F2E74B; font-size: 1.1rem; margin: 0 0.5rem; }
 
     @media (max-width: 1100px) {
       .admin-page { margin-left: 0; padding: 5rem 1rem 2rem 1rem; }
@@ -305,10 +369,17 @@ export class AdminOrdersComponent implements OnInit {
   orders = signal<any[]>([]);
   selectedOrder = signal<any>(null);
   searchTerm = signal('');
-  currentPage = 1;
+  currentPage = signal(1);
   pageSize = 10;
   savingOrder = signal(false);
   Math = Math;
+  dataVersion = signal(0);
+
+  setPage(page: number) {
+    if (page >= 1 && page <= this.totalPages()) {
+      this.currentPage.set(page);
+    }
+  }
 
   private http = inject(HttpClient);
   public layoutService = inject(AdminLayoutService);
@@ -318,30 +389,23 @@ export class AdminOrdersComponent implements OnInit {
   }
 
   loadOrders() {
-    const mockData = [
-      { id: 1, user_name: 'Juan Pérez', user_email: 'juan.perez@gmail.com', reward_title: 'Audífonos Bluetooth Pro', points_cost: 5000, status: 'delivered', admin_notes: '', tracking_number: 'FDX987654321', tracking_url: 'https://fedex.com/track/987654321', delivery_date: '2026-02-08', created_at: new Date(Date.now() - 86400000).toISOString() },
-      { id: 2, user_name: 'María García', user_email: 'maria.garcia@outlook.com', reward_title: 'Mochila Takis Edición Especial', points_cost: 3500, status: 'shipped', admin_notes: 'Guía: 123456789', tracking_number: '123456789', tracking_url: 'https://dhl.com/track/123456789', delivery_date: '2026-02-12', created_at: new Date(Date.now() - 172800000).toISOString() },
-      { id: 3, user_name: 'Roberto Sánchez', user_email: 'roberto.s@prodigy.net', reward_title: 'Sudadera Takis Limited', points_cost: 7500, status: 'processing', admin_notes: '', tracking_number: null, tracking_url: null, delivery_date: null, created_at: new Date(Date.now() - 259200000).toISOString() },
-      { id: 4, user_name: 'Ana Martínez', user_email: 'ana.mtz@yahoo.com', reward_title: 'Gorra Takis Flare', points_cost: 2000, status: 'pending', admin_notes: '', tracking_number: null, tracking_url: null, delivery_date: null, created_at: new Date(Date.now() - 345600000).toISOString() },
-      { id: 5, user_name: 'Carlos López', user_email: 'clopez@gmail.com', reward_title: 'Tarjeta Amazon $500', points_cost: 10000, status: 'delivered', admin_notes: 'Código enviado por email', tracking_number: null, tracking_url: null, delivery_date: null, created_at: new Date(Date.now() - 432000000).toISOString() }
-    ];
-
     this.http.get(`${environment.apiUrl}/admin/orders`).subscribe({
       next: (res: any) => {
-        if (Array.isArray(res) && res.length > 0) {
+        if (Array.isArray(res)) {
           this.orders.set(res);
         } else {
-          this.orders.set(mockData);
+          this.orders.set([]);
         }
       },
       error: (e: any) => {
-        console.error('API orders error, using mock data:', e);
-        this.orders.set(mockData);
+        console.error('API orders error:', e);
+        this.orders.set([]);
       }
     });
   }
 
   filteredOrders = computed(() => {
+    this.dataVersion();
     const term = this.searchTerm().toLowerCase();
     return this.orders().filter((o: any) =>
       o.user_name?.toLowerCase().includes(term) ||
@@ -351,11 +415,17 @@ export class AdminOrdersComponent implements OnInit {
   });
 
   paginatedOrders = computed(() => {
-    const start = (this.currentPage - 1) * this.pageSize;
-    return this.filteredOrders().slice(start, start + this.pageSize);
+    const data = this.filteredOrders();
+    const start = (this.currentPage() - 1) * this.pageSize;
+    return data.slice(start, start + this.pageSize);
   });
 
   totalPages = computed(() => Math.ceil(this.filteredOrders().length / this.pageSize));
+
+  pendingStats = computed(() => this.orders().filter(o => o.status === 'pending').length);
+  processingStats = computed(() => this.orders().filter(o => o.status === 'processing').length);
+  shippedStats = computed(() => this.orders().filter(o => o.status === 'shipped').length);
+  deliveredStats = computed(() => this.orders().filter(o => o.status === 'delivered').length);
 
   selectOrder(order: any) {
     this.selectedOrder.set({

@@ -5,6 +5,7 @@ import { FormsModule } from '@angular/forms';
 import { AdminNavbarComponent } from './admin-navbar.component';
 import { Chart, registerables } from 'chart.js';
 import { AdminLayoutService } from '../services/admin-layout.service';
+import { AuthService } from '../services/auth.service';
 import { environment } from '../../environments/environment';
 
 Chart.register(...registerables);
@@ -15,11 +16,13 @@ Chart.register(...registerables);
   imports: [CommonModule, FormsModule, AdminNavbarComponent],
   template: `
     <app-admin-navbar></app-admin-navbar>
-    <div class="dashboard-page" [class.sidebar-closed]="!layoutService.isSidebarOpen()">
+    <div class="dashboard-page" 
+         [class.sidebar-closed]="!layoutService.isSidebarOpen()"
+         [class.role-takis]="getRole() === 'takis'">
       <div class="header-row">
         <div>
-           <h2 class="title">DASHBOARD</h2>
-           <p class="subtitle">Visión general del rendimiento de la promoción</p>
+           <h2 class="title">DASHBOARD DE RENDIMIENTO</h2>
+           <p class="subtitle">Takis Aficion Intensa | {{ stats?.cards?.users | number }} Usuarios Registrados</p>
         </div>
         
         <div class="actions-group">
@@ -48,6 +51,14 @@ Chart.register(...registerables);
            <div class="kpi-info">
              <h3>Usuarios</h3>
              <span class="value">{{ stats?.cards?.users | number }}</span>
+           </div>
+        </div>
+        <div class="kpi-card visits">
+           <div class="kpi-icon">🌐</div>
+           <div class="kpi-info">
+             <h3>Visitas</h3>
+             <span class="value">{{ stats?.cards?.visits | number }}</span>
+             <small>Vistas de página</small>
            </div>
         </div>
         <div class="kpi-card redemptions">
@@ -98,7 +109,62 @@ Chart.register(...registerables);
         </div>
       </div>
 
-      <div class="content-grid">
+
+      <!-- Secondary Row: Visits (8/12) and Rewards (4/12) -->
+      <div class="secondary-grid">
+        <!-- Visits Log Table -->
+        <div class="panel visits-panel" *ngIf="stats?.visits_log?.length">
+           <div class="panel-header">
+              <h3>🌐 Registro de Visitas Recientes</h3>
+              <div class="header-actions">
+                <div class="search-box miniature">
+                  <input 
+                    type="text" 
+                    [ngModel]="visitsSearchTerm()" 
+                    (ngModelChange)="visitsSearchTerm.set($event); visitsCurrentPage.set(1)"
+                    placeholder="Filtrar visitas..."
+                  >
+                </div>
+                <button class="mini-btn" (click)="exportVisits()" title="Exportar CSV">📥 CSV</button>
+              </div>
+           </div>
+
+           <div class="table-wrapper">
+               <table class="simple-table">
+                   <thead>
+                       <tr>
+                           <th>Página</th>
+                           <th>Usuario</th>
+                           <th>IP</th>
+                           <th class="text-right">Fecha</th>
+                       </tr>
+                   </thead>
+                   <tbody>
+                       <tr *ngFor="let v of paginatedVisits()">
+                           <td class="text-xs truncate" style="max-width: 250px;" [title]="v.page_url">{{ v.page_url }}</td>
+                           <td>{{ v.user || 'Anónimo' }}</td>
+                           <td class="text-xs">{{ v.ip_address }}</td>
+                           <td class="text-right text-xs text-gray">{{ v.created_at | date:'d MMM y, h:mm a' }}</td>
+                       </tr>
+                       <tr *ngIf="!filteredVisits().length" class="empty-row">
+                         <td colspan="4">No se encontraron visitas</td>
+                       </tr>
+                   </tbody>
+               </table>
+           </div>
+
+           <div class="pagination-footer" *ngIf="filteredVisits().length > 0">
+              <span class="page-info">
+                {{ (visitsCurrentPage()-1)*visitsPageSize + 1 }} - {{ Math.min(visitsCurrentPage()*visitsPageSize, filteredVisits().length) }} DE {{ filteredVisits().length }}
+              </span>
+              <div class="pagination-controls">
+                <button [disabled]="visitsCurrentPage() === 1" (click)="setVisitsPage(visitsCurrentPage() - 1)">«</button>
+                <span class="page-number">{{ visitsCurrentPage() }}</span>
+                <button [disabled]="visitsCurrentPage() >= visitsTotalPages()" (click)="setVisitsPage(visitsCurrentPage() + 1)">»</button>
+              </div>
+           </div>
+        </div>
+
         <!-- Top Rewards Ranking -->
         <div class="panel top-rewards">
           <h3>📈 Ranking de Recompensas</h3>
@@ -111,8 +177,10 @@ Chart.register(...registerables);
              <li *ngIf="!stats?.top_rewards?.length" class="empty">Sin datos</li>
           </ul>
         </div>
+      </div>
 
-        <!-- Recent Activity Table -->
+      <!-- Activity Row (Full Width) -->
+      <div class="activity-row" *ngIf="canSeeActivity()">
         <div class="panel activity">
            <div class="panel-header">
               <h3>⏱️ Últimos Movimientos</h3>
@@ -120,7 +188,7 @@ Chart.register(...registerables);
                 <input 
                   type="text" 
                   [ngModel]="searchTerm()" 
-                  (ngModelChange)="searchTerm.set($event); currentPage = 1"
+                  (ngModelChange)="searchTerm.set($event); currentPage.set(1)"
                   placeholder="Buscar actividad..."
                 >
               </div>
@@ -152,17 +220,6 @@ Chart.register(...registerables);
              </table>
            </div>
 
-           <!-- Pagination -->
-           <div class="pagination-footer" *ngIf="filteredActivity().length > 0">
-              <span class="page-info">
-                {{ (currentPage-1)*pageSize + 1 }} - {{ Math.min(currentPage*pageSize, filteredActivity().length) }} de {{ filteredActivity().length }}
-              </span>
-              <div class="page-controls">
-                <button [disabled]="currentPage === 1" (click)="currentPage = currentPage - 1">«</button>
-                <span class="current-page">{{ currentPage }}</span>
-                <button [disabled]="currentPage >= totalPages()" (click)="currentPage = currentPage + 1">»</button>
-              </div>
-           </div>
         </div>
       </div>
     </div>
@@ -171,7 +228,7 @@ Chart.register(...registerables);
     .dashboard-page { 
       padding: 5rem 2rem 2rem 2rem; 
       margin-left: 260px;
-      background: #0D0221; 
+      background: #0d0221d6; 
       min-height: 100vh; 
       color: white; 
       transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
@@ -203,7 +260,7 @@ Chart.register(...registerables);
     .export-btn:hover { background: #F2E74B; color: #1A0B2E; transform: translateY(-2px); }
 
     /* KPI CARDS */
-    .kpi-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 1.5rem; margin-bottom: 2rem; }
+    .kpi-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 1.5rem; margin-bottom: 2rem; }
     .kpi-card { 
       background: rgba(108, 29, 218, 0.1); border: 2px solid #6C1DDA; border-radius: 1rem;
       padding: 1.5rem; display: flex; align-items: center; gap: 1.5rem; transition: 0.3s;
@@ -232,10 +289,19 @@ Chart.register(...registerables);
     .chart-toggles button:hover { background: rgba(108, 29, 218, 0.3); }
     .chart-toggles button.active { background: #6C1DDA; color: white; border-color: #F2E74B; }
 
-    /* CONTENT GRID */
-    .content-grid { display: grid; grid-template-columns: 350px 1fr; gap: 1.5rem; margin-bottom: 2rem; }
+    .secondary-grid { display: grid; grid-template-columns: 2fr 1fr; gap: 1.5rem; margin-bottom: 2rem; }
+    .activity-row { margin-bottom: 2rem; }
+    
     .panel { background: rgba(255,255,255,0.05); border-radius: 1.5rem; padding: 1.5rem; border: 2px solid #6C1DDA; overflow: hidden; }
-    .panel h3 { margin: 0 0 1rem 0; font-size: 1.2rem; color: #F2E74B; font-weight: 900; padding-bottom: 0.5rem; border-bottom: 1px solid rgba(108, 29, 218, 0.2); }
+    .panel h3 { margin: 0; font-size: 1.2rem; color: #F2E74B; font-weight: 900; padding-bottom: 0.5rem; border-bottom: 1px solid rgba(108, 29, 218, 0.2); }
+    .header-actions { display: flex; align-items: center; gap: 0.5rem; }
+    .mini-btn { 
+      background: #6C1DDA; color: white; border: none; padding: 0.4rem 0.8rem; 
+      border-radius: 0.4rem; font-size: 0.75rem; font-weight: bold; cursor: pointer; transition: 0.2s;
+    }
+    .mini-btn:hover { background: #F2E74B; color: #1A0B2E; }
+    .search-box.miniature input { padding: 0.4rem 0.8rem; font-size: 0.8rem; width: 150px; }
+
     .panel-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; gap: 1rem; flex-wrap: wrap; }
 
     /* LISTS & TABLES */
@@ -263,16 +329,23 @@ Chart.register(...registerables);
     .status-pill.cancelled { background: #ff4444; color: white; }
 
     .pagination-footer { display: flex; justify-content: space-between; align-items: center; margin-top: 1.5rem; border-top: 1px solid rgba(108, 29, 218, 0.2); padding-top: 1rem; }
-    .page-controls { display: flex; align-items: center; gap: 0.5rem; }
-    .page-controls button { background: #6C1DDA; border: none; color: white; width: 32px; height: 32px; border-radius: 0.4rem; cursor: pointer; display: flex; align-items: center; justify-content: center; }
-    .page-controls button:disabled { opacity: 0.5; cursor: not-allowed; }
+    
+    .page-info { font-weight: 900; color: white; font-size: 0.9rem; text-transform: uppercase; }
+    .pagination-controls { display: flex; align-items: center; gap: 0.75rem; }
+    .pagination-controls button { 
+      width: 36px; height: 36px; border-radius: 50%; background: #3A1A5E; border: none; color: #F2E74B; 
+      display: flex; align-items: center; justify-content: center; cursor: pointer; font-size: 1.2rem; transition: 0.3s; 
+    }
+    .pagination-controls button:not(:disabled):hover { background: #6C1DDA; color: white; transform: scale(1.1); }
+    .pagination-controls button:disabled { opacity: 0.3; cursor: not-allowed; }
+    .page-number { font-weight: 900; color: #F2E74B; font-size: 1.1rem; margin: 0 0.5rem; }
 
     /* RESPONSIVE */
     @media (max-width: 900px) {
       .dashboard-page { margin-left: 0; padding: 5rem 1.5rem 2rem 1.5rem; }
       .header-row { flex-direction: row; flex-wrap: wrap; }
       .kpi-grid { grid-template-columns: repeat(2, 1fr); }
-      .charts-row, .content-grid { grid-template-columns: 1fr; }
+      .charts-row, .secondary-grid, .activity-row { grid-template-columns: 1fr; }
       .hide-mobile { display: none; }
     }
 
@@ -302,8 +375,14 @@ Chart.register(...registerables);
       .search-box, 
       .chart-toggles,
       .date-filter, 
+      .pagination,
       .actions-group { 
         display: none !important; 
+      }
+
+      /* Hide restricted sections for takis role in report */
+      .dashboard-page.role-takis .panel.activity {
+        display: none !important;
       }
 
       /* Clean Header */
@@ -330,20 +409,21 @@ Chart.register(...registerables);
       /* KPI Grid - Compact */
       .kpi-grid { 
         display: grid !important;
-        grid-template-columns: repeat(4, 1fr) !important; 
+        grid-template-columns: repeat(5, 1fr) !important; 
         gap: 15px !important; 
         margin-bottom: 30px !important; 
         page-break-inside: avoid;
       }
       
       .kpi-card { 
-        border: 1px solid #ccc !important; 
-        background: #f8f9fa !important; 
+        border: 2px solid #000 !important; 
+        background: #fff !important; 
         color: black !important; 
         box-shadow: none !important;
-        padding: 10px 15px !important;
-        border-radius: 8px !important;
+        padding: 12px 18px !important;
+        border-radius: 12px !important;
         break-inside: avoid;
+        text-align: center;
       }
       
       .kpi-icon { display: none !important; }
@@ -374,14 +454,17 @@ Chart.register(...registerables);
       }
       
       .panel { 
-        border: 1px solid #eee !important;
-        border-radius: 8px !important;
-        background: #fff !important; 
+        border: 1px solid #ddd !important;
+        border-radius: 12px !important;
+        background: #fdfdfd !important; 
         color: black !important; 
         box-shadow: none !important;
         page-break-inside: avoid; 
-        margin-bottom: 20px !important; 
-        padding: 15px !important;
+        margin-bottom: 25px !important; 
+        padding: 20px !important;
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+        box-shadow: 0 4px 6px rgba(0,0,0,0.05) !important;
       }
       
       .panel h3 { 
@@ -400,11 +483,15 @@ Chart.register(...registerables);
       }
       .canvas-wrapper {
         min-height: auto !important;
-        height: 200px !important; /* Fixed height for consistency */
+        height: 250px !important; /* Increased height for better visibility */
         width: 100% !important;
+        background: #fff !important; /* White background for the chart itself */
+        border-radius: 8px;
+        padding: 10px;
+        border: 1px solid #eee;
       }
       canvas { 
-        max-height: 200px !important; 
+        max-height: 250px !important; 
         width: 100% !important;
       }
 
@@ -436,23 +523,45 @@ Chart.register(...registerables);
       
       /* Layout Adjustments */
       .content-grid { 
-        display: grid !important;
-        grid-template-columns: 1fr 1.5fr !important; /* Ranking smaller */
-        gap: 20px !important;
+        display: block !important; /* Stack columns on print if needed or keep grid */
       }
       
-      .top-rewards { break-inside: avoid; }
+      .top-rewards { 
+        width: 100% !important;
+        break-inside: avoid; 
+      }
+
+      .activity {
+        width: 100% !important;
+        break-inside: avoid;
+      }
     }
   `]
 })
 export class AdminDashboardComponent implements OnInit, AfterViewInit {
   stats: any = null;
   searchTerm = signal('');
-  currentPage = 1;
+  currentPage = signal(1);
   pageSize = 5;
+
+  // Visits Table Pagination & Filter
+  visitsSearchTerm = signal('');
+  visitsCurrentPage = signal(1);
+  visitsPageSize = 10;
 
   Math = Math;
   dataVersion = signal(0);
+
+  setVisitsPage(page: number) {
+    if (page >= 1 && page <= this.visitsTotalPages()) {
+      this.visitsCurrentPage.set(page);
+    }
+  }
+
+  canSeeActivity = computed(() => {
+    const role = this.auth.user()?.role;
+    return role === 'quantum' || role === 'system_admin' || !role; // Default to see if no role or quantum
+  });
 
   // Date Filters
   startDate: string = '';
@@ -463,6 +572,7 @@ export class AdminDashboardComponent implements OnInit, AfterViewInit {
   showUsers = false;
 
   private http = inject(HttpClient);
+  private auth = inject(AuthService);
   public layoutService = inject(AdminLayoutService);
 
   @ViewChild('activityChart') activityChartCanvas!: ElementRef<HTMLCanvasElement>;
@@ -526,14 +636,16 @@ export class AdminDashboardComponent implements OnInit, AfterViewInit {
       next: (res: any) => {
         this.stats = {
           cards: {
-            users: res.cards?.users || mockData.cards.users,
-            redemptions: res.cards?.redemptions || mockData.cards.redemptions,
-            points: res.cards?.points || mockData.cards.points,
-            promo: res.cards?.promo || mockData.cards.promo
+            users: res.cards?.users ?? mockData.cards.users,
+            redemptions: res.cards?.redemptions ?? mockData.cards.redemptions,
+            points: res.cards?.points ?? mockData.cards.points,
+            visits: res.cards?.visits ?? 0, // Ensure visits is mapped
+            promo: res.cards?.promo ?? mockData.cards.promo
           },
-          success_rate: res.success_rate || mockData.success_rate,
+          success_rate: res.success_rate ?? mockData.success_rate,
           top_rewards: res.top_rewards?.length ? res.top_rewards : mockData.top_rewards,
           recent: res.recent || [],
+          visits_log: res.visits_log || [],
           chart: res.chart?.length ? res.chart : mockData.chart
         };
         this.dataVersion.update(v => v + 1); // Force computed update
@@ -541,7 +653,8 @@ export class AdminDashboardComponent implements OnInit, AfterViewInit {
       },
       error: (e: any) => {
         console.error('API Error, using full mock data:', e);
-        this.stats = mockData;
+        this.stats = mockData; // Mock data doesn't have visits in the original code, maybe add it?
+        (this.stats.cards as any).visits = 0;
         this.dataVersion.update(v => v + 1);
         setTimeout(() => this.initCharts(), 0);
       }
@@ -649,13 +762,60 @@ export class AdminDashboardComponent implements OnInit, AfterViewInit {
 
   paginatedActivity = computed(() => {
     const data = this.filteredActivity();
-    const start = (this.currentPage - 1) * this.pageSize;
+    const start = (this.currentPage() - 1) * this.pageSize;
     return data.slice(start, start + this.pageSize);
   });
 
   totalPages = computed(() => Math.ceil(this.filteredActivity().length / this.pageSize));
 
+  filteredVisits = computed(() => {
+    this.dataVersion();
+    if (!this.stats?.visits_log) return [];
+    const term = this.visitsSearchTerm().toLowerCase();
+    return this.stats.visits_log.filter((v: any) =>
+      (v.page_url?.toLowerCase() || '').includes(term) ||
+      (v.user?.toLowerCase() || '').includes(term) ||
+      (v.ip_address?.toLowerCase() || '').includes(term)
+    );
+  });
+
+  paginatedVisits = computed(() => {
+    const data = this.filteredVisits();
+    const start = (this.visitsCurrentPage() - 1) * this.visitsPageSize;
+    return data.slice(start, start + this.visitsPageSize);
+  });
+
+  visitsTotalPages = computed(() => Math.ceil(this.filteredVisits().length / this.visitsPageSize));
+
+  exportVisits() {
+    const data = this.filteredVisits();
+    if (!data.length) return;
+
+    const headers = ['Página', 'Usuario', 'IP', 'Fecha'];
+    const csvContent = [
+      headers.join(','),
+      ...data.map((v: any) => {
+        const date = new Date(v.created_at).toLocaleString('es-MX');
+        return `"${v.page_url}","${v.user || 'Anónimo'}","${v.ip_address}","${date}"`;
+      })
+    ].join('\n');
+
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    const url = URL.createObjectURL(blob);
+    link.setAttribute('href', url);
+    link.setAttribute('download', `visitas_${new Date().toISOString().split('T')[0]}.csv`);
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  }
+
   exportFullReport() {
     window.print();
+  }
+
+  getRole() {
+    return this.auth.user()?.role;
   }
 }

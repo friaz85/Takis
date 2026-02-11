@@ -15,7 +15,7 @@ import { environment } from '../../environments/environment';
     <div class="admin-page" [class.sidebar-closed]="!layoutService.isSidebarOpen()">
       <div class="header-row">
         <div>
-           <h2 class="title">GESTIÓN DE USUARIOS</h2>
+           <h2 class="title">GESTION DE USUARIOS</h2>
            <p class="subtitle">Administra los participantes registrados</p>
         </div>
         <button class="export-btn" (click)="exportToCSV()">
@@ -30,7 +30,7 @@ import { environment } from '../../environments/environment';
              <input 
                type="text" 
                [ngModel]="searchTerm()" 
-               (ngModelChange)="searchTerm.set($event); currentPage = 1"
+               (ngModelChange)="searchTerm.set($event); currentPage.set(1)"
                placeholder="Buscar por nombre o correo..."
              >
            </div>
@@ -42,8 +42,8 @@ import { environment } from '../../environments/environment';
               <tr>
                 <th>Nombre</th>
                 <th>Correo</th>
-                <th class="hide-mobile">Teléfono</th>
-                <th class="hide-mobile">Ubicación</th>
+                <th class="hide-mobile">Telefono</th>
+                <th class="hide-mobile">Ubicacion</th>
                 <th>Estado</th>
                 <th class="text-right">Acciones</th>
               </tr>
@@ -80,14 +80,14 @@ import { environment } from '../../environments/environment';
         </div>
 
         <!-- Pagination -->
-        <div class="pagination" *ngIf="filteredUsers().length > 0">
-          <div class="page-info">
-             {{ (currentPage - 1) * pageSize + 1 }} - {{ Math.min(currentPage * pageSize, filteredUsers().length) }} de {{ filteredUsers().length }}
-          </div>
-          <div class="page-controls">
-            <button [disabled]="currentPage === 1" (click)="currentPage = currentPage - 1">«</button>
-            <span class="current-page">{{ currentPage }}</span>
-            <button [disabled]="currentPage >= totalPages()" (click)="currentPage = currentPage + 1">»</button>
+        <div class="pagination-footer" *ngIf="filteredUsers().length > 0">
+          <span class="page-info">
+             {{ (currentPage() - 1) * pageSize + 1 }} - {{ Math.min(currentPage() * pageSize, filteredUsers().length) }} DE {{ filteredUsers().length }}
+          </span>
+          <div class="pagination-controls">
+            <button [disabled]="currentPage() === 1" (click)="setPage(currentPage() - 1)">«</button>
+            <span class="page-number">{{ currentPage() }}</span>
+            <button [disabled]="currentPage() >= totalPages()" (click)="setPage(currentPage() + 1)">»</button>
           </div>
         </div>
       </div>
@@ -107,21 +107,21 @@ import { environment } from '../../environments/environment';
             </div>
 
             <div class="form-group" *ngIf="!selectedUser().is_blocked">
-              <label>Razón del Bloqueo</label>
+              <label>Razon del Bloqueo</label>
               <textarea 
                 [(ngModel)]="blockReason" 
-                placeholder="Ej: Actividad sospechosa, múltiples intentos fallidos, etc."
+                placeholder="Ej: Actividad sospechosa, multiples intentos fallidos, etc."
                 rows="3"
                 class="reason-textarea"
               ></textarea>
             </div>
 
             <div class="warning-box" *ngIf="!selectedUser().is_blocked">
-              <p>⚠️ El usuario no podrá acceder a su cuenta hasta que sea desbloqueado.</p>
+              <p>⚠️ El usuario no podra acceder a su cuenta hasta que sea desbloqueado.</p>
             </div>
 
             <div class="info-box" *ngIf="selectedUser().is_blocked">
-              <p><strong>Razón del bloqueo:</strong> {{ selectedUser().blocked_reason || 'No especificada' }}</p>
+              <p><strong>Razon del bloqueo:</strong> {{ selectedUser().blocked_reason || 'No especificada' }}</p>
               <p><strong>Bloqueado el:</strong> {{ selectedUser().blocked_at | date:'medium' }}</p>
             </div>
           </div>
@@ -146,7 +146,7 @@ import { environment } from '../../environments/environment';
       padding: 5rem 2rem 2rem 2rem; 
       margin-left: 260px;
       min-height: 100vh;
-      background: #0D0221;
+      background: #0d0221d6;
       color: white; 
       transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     }
@@ -183,11 +183,16 @@ import { environment } from '../../environments/environment';
     .admin-table td { padding: 1.2rem; border-bottom: 1px solid rgba(108, 29, 218, 0.1); font-size: 0.9rem; }
     .admin-table tr:hover { background: rgba(242, 231, 75, 0.05); }
 
-    .pagination { padding: 1.5rem; display: flex; justify-content: space-between; align-items: center; }
-    .page-controls { display: flex; align-items: center; gap: 1rem; }
-    .page-controls button { background: #6C1DDA; border: none; color: white; width: 35px; height: 35px; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; font-weight: bold; }
-    .page-controls button:disabled { opacity: 0.3; cursor: not-allowed; }
-    .current-page { font-weight: 900; color: #F2E74B; }
+    .pagination-footer { padding: 1.5rem; display: flex; justify-content: space-between; align-items: center; border-top: 1px solid rgba(108, 29, 218, 0.2); }
+    .page-info { font-weight: 900; color: white; font-size: 0.85rem; text-transform: uppercase; }
+    .pagination-controls { display: flex; align-items: center; gap: 0.75rem; }
+    .pagination-controls button { 
+      width: 35px; height: 35px; border-radius: 50%; background: #3A1A5E; border: none; color: #F2E74B; 
+      display: flex; align-items: center; justify-content: center; cursor: pointer; font-size: 1.1rem; transition: 0.3s; 
+    }
+    .pagination-controls button:not(:disabled):hover { background: #6C1DDA; color: white; transform: scale(1.1); }
+    .pagination-controls button:disabled { opacity: 0.3; cursor: not-allowed; }
+    .page-number { font-weight: 900; color: #F2E74B; font-size: 1.1rem; margin: 0 0.5rem; }
 
     .block { display: block; }
 
@@ -255,9 +260,16 @@ export class AdminUsersComponent implements OnInit {
   selectedUser = signal<any>(null);
   blockReason = '';
   searchTerm = signal('');
-  currentPage = 1;
+  currentPage = signal(1);
   pageSize = 10;
   Math = Math;
+  dataVersion = signal(0);
+
+  setPage(page: number) {
+    if (page >= 1 && page <= this.totalPages()) {
+      this.currentPage.set(page);
+    }
+  }
 
   private http = inject(HttpClient);
   public layoutService = inject(AdminLayoutService);
@@ -317,6 +329,7 @@ export class AdminUsersComponent implements OnInit {
   }
 
   filteredUsers = computed(() => {
+    this.dataVersion();
     const term = this.searchTerm().toLowerCase();
     return this.users().filter((u: any) =>
       u.full_name?.toLowerCase().includes(term) ||
@@ -326,8 +339,9 @@ export class AdminUsersComponent implements OnInit {
   });
 
   paginatedUsers = computed(() => {
-    const start = (this.currentPage - 1) * this.pageSize;
-    return this.filteredUsers().slice(start, start + this.pageSize);
+    const data = this.filteredUsers();
+    const start = (this.currentPage() - 1) * this.pageSize;
+    return data.slice(start, start + this.pageSize);
   });
 
   totalPages = computed(() => Math.ceil(this.filteredUsers().length / this.pageSize));

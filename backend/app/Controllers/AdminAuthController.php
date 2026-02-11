@@ -45,7 +45,7 @@ class AdminAuthController extends ResourceController
             'id'       => $admin['id'],
             'username' => $admin['username'],
             'email'    => $admin['email'],
-            'role'     => 'system_admin'
+            'role'     => $admin['role'] ?? 'quantum'
         ];
 
         $token = JWT::encode($payload, $this->key, 'HS256');
@@ -58,7 +58,7 @@ class AdminAuthController extends ResourceController
                 'id'       => $admin['id'],
                 'username' => $admin['username'],
                 'email'    => $admin['email'],
-                'role'     => 'system_admin'
+                'role'     => $admin['role'] ?? 'quantum'
             ]
         ]);
     }

@@ -62,7 +62,7 @@ import { environment } from '../../environments/environment';
             <input 
               type="text" 
               [ngModel]="searchTerm()" 
-              (ngModelChange)="searchTerm.set($event)"
+              (ngModelChange)="searchTerm.set($event); currentPage.set(1)"
               placeholder="🔍 Buscar código..."
             >
           </div>
@@ -97,11 +97,11 @@ import { environment } from '../../environments/environment';
             <tbody>
               <tr *ngFor="let code of paginatedCodes()">
                 <td>{{ code.id }}</td>
-                <td class="font-bold code-masked">***{{ getLastDigits(code.code) }}</td>
+                <td class="font-bold code-display">{{ code.code }}</td>
                 <td><span class="points-badge">{{ code.points }} pts</span></td>
                 <td>
-                  <span class="status-pill" [class.used]="code.is_used" [class.available]="!code.is_used">
-                    {{ code.is_used ? 'Usado' : 'Disponible' }}
+                  <span class="status-pill" [class.used]="Number(code.is_used) === 1" [class.available]="Number(code.is_used) === 0">
+                    {{ Number(code.is_used) === 1 ? 'Usado' : 'Disponible' }}
                   </span>
                 </td>
                 <td>{{ code.user_name || '-' }}</td>
@@ -111,16 +111,14 @@ import { environment } from '../../environments/environment';
           </table>
         </div>
 
-        <div class="pagination">
-          <div class="page-info">
-            Mostrando {{ (currentPage - 1) * pageSize + 1 }} - 
-            {{ Math.min(currentPage * pageSize, filteredCodes().length) }} 
-            de {{ filteredCodes().length }}
-          </div>
-          <div class="page-controls">
-            <button [disabled]="currentPage === 1" (click)="currentPage = currentPage - 1">Anterior</button>
-            <span>Página {{ currentPage }} de {{ totalPages() }}</span>
-            <button [disabled]="currentPage >= totalPages()" (click)="currentPage = currentPage + 1">Siguiente</button>
+        <div class="pagination-footer" *ngIf="filteredCodes().length > 0">
+          <span class="page-info">
+             {{ (currentPage() - 1) * pageSize + 1 }} - {{ Math.min(currentPage() * pageSize, filteredCodes().length) }} DE {{ filteredCodes().length }}
+          </span>
+          <div class="pagination-controls">
+            <button [disabled]="currentPage() === 1" (click)="setPage(currentPage() - 1)">«</button>
+            <span class="page-number">{{ currentPage() }}</span>
+            <button [disabled]="currentPage() >= totalPages()" (click)="setPage(currentPage() + 1)">»</button>
           </div>
         </div>
       </div>
@@ -130,7 +128,7 @@ import { environment } from '../../environments/environment';
   styles: [`
     .admin-page { 
       padding: 2rem; 
-      background: #0D0221; 
+      background: #0d0221d6; 
       min-height: 100vh; 
       color: white; 
       margin-left: 250px;
@@ -175,10 +173,16 @@ import { environment } from '../../environments/environment';
     .status-pill.available { background: #00cc66; color: white; }
     .status-pill.used { background: #666; color: white; }
 
-    .pagination { padding: 1.5rem; display: flex; justify-content: space-between; align-items: center; }
-    .page-controls { display: flex; align-items: center; gap: 1rem; }
-    .page-controls button { background: rgba(108, 29, 218, 0.2); border: 1px solid #6C1DDA; color: white; padding: 0.5rem 1rem; border-radius: 0.5rem; cursor: pointer; }
-    .page-controls button:disabled { opacity: 0.3; cursor: not-allowed; }
+    .pagination-footer { padding: 1.5rem; display: flex; justify-content: space-between; align-items: center; border-top: 1px solid rgba(108, 29, 218, 0.2); }
+    .page-info { font-weight: 900; color: white; font-size: 0.85rem; text-transform: uppercase; }
+    .pagination-controls { display: flex; align-items: center; gap: 0.75rem; }
+    .pagination-controls button { 
+      width: 35px; height: 35px; border-radius: 50%; background: #3A1A5E; border: none; color: #F2E74B; 
+      display: flex; align-items: center; justify-content: center; cursor: pointer; font-size: 1.1rem; transition: 0.3s; 
+    }
+    .pagination-controls button:not(:disabled):hover { background: #6C1DDA; color: white; transform: scale(1.1); }
+    .pagination-controls button:disabled { opacity: 0.3; cursor: not-allowed; }
+    .page-number { font-weight: 900; color: #F2E74B; font-size: 1.1rem; margin: 0 0.5rem; }
 
     @media (max-width: 768px) {
       .hide-mobile { display: none; }
@@ -190,9 +194,17 @@ export class AdminPromoCodesComponent implements OnInit {
   codes = signal<any[]>([]);
   searchTerm = signal('');
   filterStatus = signal<'all' | 'available' | 'used'>('all');
-  currentPage = 1;
+  currentPage = signal(1);
   pageSize = 20;
   Math = Math;
+  Number = Number;
+  dataVersion = signal(0);
+
+  setPage(page: number) {
+    if (page >= 1 && page <= this.totalPages()) {
+      this.currentPage.set(page);
+    }
+  }
 
   private http = inject(HttpClient);
   public layoutService = inject(AdminLayoutService);
@@ -213,13 +225,14 @@ export class AdminPromoCodesComponent implements OnInit {
   }
 
   filteredCodes = computed(() => {
+    this.dataVersion();
     let filtered = this.codes();
 
     // Filter by status
     if (this.filterStatus() === 'available') {
-      filtered = filtered.filter(c => !c.is_used);
+      filtered = filtered.filter(c => Number(c.is_used) === 0);
     } else if (this.filterStatus() === 'used') {
-      filtered = filtered.filter(c => c.is_used);
+      filtered = filtered.filter(c => Number(c.is_used) === 1);
     }
 
     // Filter by search
@@ -235,13 +248,14 @@ export class AdminPromoCodesComponent implements OnInit {
   });
 
   paginatedCodes = computed(() => {
-    const start = (this.currentPage - 1) * this.pageSize;
-    return this.filteredCodes().slice(start, start + this.pageSize);
+    const data = this.filteredCodes();
+    const start = (this.currentPage() - 1) * this.pageSize;
+    return data.slice(start, start + this.pageSize);
   });
 
   totalPages = computed(() => Math.ceil(this.filteredCodes().length / this.pageSize));
-  availableCodes = computed(() => this.codes().filter(c => !c.is_used).length);
-  usedCodes = computed(() => this.codes().filter(c => c.is_used).length);
+  availableCodes = computed(() => this.codes().filter(c => Number(c.is_used) === 0).length);
+  usedCodes = computed(() => this.codes().filter(c => Number(c.is_used) === 1).length);
 
   getLastDigits(code: string): string {
     if (!code) return '';

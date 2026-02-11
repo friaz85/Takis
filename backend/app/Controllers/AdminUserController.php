@@ -98,9 +98,9 @@ class AdminUserController extends ResourceController
         $userModel = new UserModel();
 
         $stats = [
-            'total'    => $userModel->countAll(),
-            'verified' => $userModel->where('is_verified', 1)->countAllResults(false),
-            'blocked'  => $userModel->where('is_blocked', 1)->countAllResults(false),
+            'total'    => $userModel->countAllResults(),
+            'verified' => $userModel->where('is_verified', 1)->countAllResults(),
+            'blocked'  => $userModel->where('is_blocked', 1)->countAllResults(),
             'active'   => $userModel->where('is_verified', 1)->where('is_blocked', 0)->countAllResults()
         ];
 

@@ -24,6 +24,7 @@ class AdminOrdersController extends ResourceController
             ->select('redemptions.*, users.full_name as user_name, users.email as user_email, rewards.title as reward_title, rewards.cost as points_cost')
             ->join('users', 'users.id = redemptions.user_id')
             ->join('rewards', 'rewards.id = redemptions.reward_id')
+            ->where('rewards.type', 'physical')
             ->orderBy('redemptions.created_at', 'DESC')
             ->findAll();
 
@@ -105,7 +106,9 @@ class AdminOrdersController extends ResourceController
                 'subject' => '¡Tu pedido ha sido entregado!',
                 'title'   => '✅ PEDIDO ENTREGADO',
                 'message' => "Hola {$user['full_name']},<br><br>¡Felicidades! Tu pedido #{$order['id']} ha sido entregado.<br><br>" .
-                    "<img src='" . base_url('uploads/email_templates/delivered_social.jpg') . "' style='max-width: 100%; margin: 20px 0; border-radius: 10px;'><br>" .
+                    "<div style='text-align: center;'>" .
+                    "<img src='" . base_url('uploads/email_templates/delivered_winner.jpg') . "' style='max-width: 100%; border-radius: 15px; margin: 20px 0;'>" .
+                    "</div>" .
                     "No olvides etiquetarnos en redes sociales <strong>@takis_mx</strong> 🌶️"
             ]
         ];

@@ -50,9 +50,10 @@ abstract class BaseController extends Controller
     {
         // Do Not Edit This Line
         parent::initController($request, $response, $logger);
-
-        // Preload any models, libraries, etc, here.
-
-        // E.g.: $this->session = \Config\Services::session();
+        // Set database timezone to match Mexico City (-06:00)
+        $db = \Config\Database::connect();
+        if ($db->getPlatform() === 'MySQLi') {
+            $db->query("SET time_zone = '-06:00'");
+        }
     }
 }

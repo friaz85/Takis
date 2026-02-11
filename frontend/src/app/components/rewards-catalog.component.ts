@@ -14,7 +14,7 @@ import { environment } from '../../environments/environment';
       <a routerLink="/" class="back-btn">← Volver al Inicio</a>
 
       <header>
-        <h2 class="title">CATÁLOGO DE <span class="highlight">PREMIOS</span></h2>
+        <h2 class="title">CATALOGO DE <span class="highlight">PREMIOS</span></h2>
       </header>
       
       <!-- Loading State -->
@@ -40,7 +40,7 @@ import { environment } from '../../environments/environment';
         }
         @if (rewards().length === 0 && !loading()) {
            <div class="empty-state">
-              <p>Pronto tendremos recompensas increíbles para ti.</p>
+              <p>Pronto tendremos recompensas increibles para ti.</p>
            </div>
         }
       </div>

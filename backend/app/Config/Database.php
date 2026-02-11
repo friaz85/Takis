@@ -59,6 +59,12 @@ class Database extends Config
             $this->default['password'] = env('database.default.password') ?? '';
             $this->default['database'] = env('database.default.database') ?? '';
             $this->default['port']     = (int) (env('database.default.port') ?? 3306);
+
+            // Set session timezone for MySQL
+            if (isset($this->default['DBDriver']) && strpos($this->default['DBDriver'], 'MySQL') !== false) {
+                // We can't easily run a query here without a connection, 
+                // but we can ensure appTimezone is used by CI4 models.
+            }
         }
 
         // Ensure that we always set the database group to 'tests' if

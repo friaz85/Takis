@@ -4,13 +4,13 @@ import { FormsModule } from '@angular/forms';
 import { CommonModule } from '@angular/common';
 
 @Component({
-    selector: 'app-code-input',
-    standalone: true,
-    imports: [CommonModule, FormsModule],
-    template: `
+  selector: 'app-code-input',
+  standalone: true,
+  imports: [CommonModule, FormsModule],
+  template: `
     <div class="code-page">
       <div class="intensity-card">
-        <h2 class="title">REGISTRA TU <span class="highlight">CÓDIGO</span></h2>
+        <h2 class="title">REGISTRA TU <span class="highlight">CODIGO</span></h2>
         <div class="input-wrapper">
           <input type="text" [(ngModel)]="code" placeholder="TKS-000000" maxlength="10">
         </div>
@@ -26,7 +26,7 @@ import { CommonModule } from '@angular/common';
       </div>
     </div>
   `,
-    styles: [`
+  styles: [`
     .code-page { min-height: 100vh; background: #1A0B2E; display: flex; align-items: center; justify-content: center; padding: 2rem; }
     .intensity-card { background: rgba(108, 29, 218, 0.1); backdrop-filter: blur(20px); border: 2px solid #6C1DDA; padding: 4rem; border-radius: 2rem; text-align: center; max-width: 500px; width: 100%; box-shadow: 0 0 30px rgba(108, 29, 218, 0.3); }
     .title { color: white; font-weight: 900; font-size: 2rem; margin-bottom: 2rem; }
@@ -38,23 +38,23 @@ import { CommonModule } from '@angular/common';
   `]
 })
 export class CodeInputComponent {
-    code = '';
-    loading = signal(false);
-    message = signal('');
-    private http = inject(HttpClient);
+  code = '';
+  loading = signal(false);
+  message = signal('');
+  private http = inject(HttpClient);
 
-    redeem() {
-        this.loading.set(true);
-        this.http.post('https://takis.qrewards.com.mx/api/index.php/redeem', { code: this.code }).subscribe({
-            next: (res: any) => {
-                this.loading.set(false);
-                this.message.set(res.message);
-                this.code = '';
-            },
-            error: (err) => {
-                this.loading.set(false);
-                this.message.set('Error: ' + (err.error?.message || 'Código inválido.'));
-            }
-        });
-    }
+  redeem() {
+    this.loading.set(true);
+    this.http.post('https://takis.qrewards.com.mx/api/index.php/redeem', { code: this.code }).subscribe({
+      next: (res: any) => {
+        this.loading.set(false);
+        this.message.set(res.message);
+        this.code = '';
+      },
+      error: (err) => {
+        this.loading.set(false);
+        this.message.set('Error: ' + (err.error?.message || 'Codigo invalido.'));
+      }
+    });
+  }
 }

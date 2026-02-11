@@ -73,15 +73,31 @@ class UpdatePromoSchemaController extends Controller
             }
 
             // Update Redemptions Table
-            $rFields       = $db->getFieldData('redemptions');
-            $hasUpdatedAtR = false;
+            $rFields   = $db->getFieldData('redemptions');
+            $existingR = [];
             foreach ($rFields as $f) {
-                if ($f->name === 'updated_at')
-                    $hasUpdatedAtR = true;
+                $existingR[] = $f->name;
             }
-            if (!$hasUpdatedAtR) {
+
+            if (!in_array('updated_at', $existingR)) {
                 $db->query("ALTER TABLE redemptions ADD COLUMN updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP");
                 $output[] = "Added column 'updated_at' to redemptions.";
+            }
+            if (!in_array('admin_notes', $existingR)) {
+                $db->query("ALTER TABLE redemptions ADD COLUMN admin_notes TEXT DEFAULT NULL");
+                $output[] = "Added column 'admin_notes' to redemptions.";
+            }
+            if (!in_array('tracking_number', $existingR)) {
+                $db->query("ALTER TABLE redemptions ADD COLUMN tracking_number VARCHAR(255) DEFAULT NULL");
+                $output[] = "Added column 'tracking_number' to redemptions.";
+            }
+            if (!in_array('tracking_url', $existingR)) {
+                $db->query("ALTER TABLE redemptions ADD COLUMN tracking_url TEXT DEFAULT NULL");
+                $output[] = "Added column 'tracking_url' to redemptions.";
+            }
+            if (!in_array('delivery_date', $existingR)) {
+                $db->query("ALTER TABLE redemptions ADD COLUMN delivery_date DATE DEFAULT NULL");
+                $output[] = "Added column 'delivery_date' to redemptions.";
             }
 
             // Update Security Logs Table
@@ -103,6 +119,57 @@ class UpdatePromoSchemaController extends Controller
                 $output[] = "Added column 'details' to security_logs.";
             }
 
+            // Update Support Tickets Table
+            $stFields    = $db->getFieldData('support_tickets');
+            $hasCategory = false;
+            foreach ($stFields as $f) {
+                if ($f->name === 'category')
+                    $hasCategory = true;
+            }
+            if (!$hasCategory) {
+                $db->query("ALTER TABLE support_tickets ADD COLUMN category VARCHAR(100) DEFAULT 'general' AFTER subject");
+                $output[] = "Added column 'category' to support_tickets.";
+            }
+
+            // Update Users Table for Delivery Instructions
+            $userFields      = $db->getFieldData('users');
+            $hasInstructions = false;
+            foreach ($userFields as $f) {
+                if ($f->name === 'delivery_instructions')
+                    $hasInstructions = true;
+            }
+            if (!$hasInstructions) {
+                $db->query("ALTER TABLE users ADD COLUMN delivery_instructions TEXT DEFAULT NULL AFTER state");
+                $output[] = "Added column 'delivery_instructions' to users.";
+            }
+
+            // Block status columns
+            $hasBlockedStatus = false;
+            foreach ($userFields as $f) {
+                if ($f->name === 'is_blocked')
+                    $hasBlockedStatus = true;
+            }
+            if (!$hasBlockedStatus) {
+                $db->query("ALTER TABLE users 
+                    ADD COLUMN is_blocked TINYINT(1) DEFAULT 0,
+                    ADD COLUMN blocked_reason TEXT DEFAULT NULL,
+                    ADD COLUMN blocked_at DATETIME DEFAULT NULL");
+                $output[] = "Added block status columns to users.";
+            }
+
+            // Site Visits Table
+            $tables = $db->listTables();
+            if (!in_array('site_visits', $tables)) {
+                $db->query("CREATE TABLE site_visits (
+                    id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+                    ip_address VARCHAR(45),
+                    user_agent TEXT,
+                    page_url VARCHAR(255),
+                    user_id INT UNSIGNED NULL,
+                    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+                )");
+                $output[] = "Created table 'site_visits'.";
+            }
         } catch (\Exception $e) {
             $output[] = "Error: " . $e->getMessage();
         }

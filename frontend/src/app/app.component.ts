@@ -1,7 +1,9 @@
 import { Component, inject } from '@angular/core';
-import { RouterOutlet } from '@angular/router';
+import { RouterOutlet, Router, NavigationEnd } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { AuthService } from './services/auth.service';
+import { AnalyticsService } from './services/analytics.service';
+import { filter } from 'rxjs';
 import { DynamicBackgroundComponent } from './components/dynamic-background.component';
 
 @Component({
@@ -25,4 +27,14 @@ import { DynamicBackgroundComponent } from './components/dynamic-background.comp
 })
 export class AppComponent {
   auth = inject(AuthService);
+  private analytics = inject(AnalyticsService);
+  private router = inject(Router);
+
+  constructor() {
+    this.router.events.pipe(
+      filter(event => event instanceof NavigationEnd)
+    ).subscribe((event: any) => {
+      this.analytics.logVisit(event.urlAfterRedirects);
+    });
+  }
 }

@@ -40,7 +40,7 @@ import { environment } from '../../environments/environment';
              <input 
                type="text" 
                [ngModel]="searchTerm()" 
-               (ngModelChange)="searchTerm.set($event); currentPage = 1"
+               (ngModelChange)="searchTerm.set($event); currentPage.set(1)"
                placeholder="Buscar por ticket, email o asunto..."
              >
            </div>
@@ -48,7 +48,7 @@ import { environment } from '../../environments/environment';
              <button 
                *ngFor="let status of statusFilters" 
                [class.active]="statusFilter() === status.value"
-               (click)="statusFilter.set(status.value); currentPage = 1"
+               (click)="statusFilter.set(status.value); currentPage.set(1)"
                class="filter-btn"
              >
                {{ status.label }}
@@ -63,7 +63,7 @@ import { environment } from '../../environments/environment';
                 <th>Ticket</th>
                 <th>Usuario</th>
                 <th>Asunto</th>
-                <th class="hide-mobile">Prioridad</th>
+                <th class="hide-mobile">Categoría</th>
                 <th class="hide-mobile">Estado</th>
                 <th class="text-right">Fecha</th>
               </tr>
@@ -77,7 +77,7 @@ import { environment } from '../../environments/environment';
                 </td>
                 <td>{{ ticket.subject }}</td>
                 <td class="hide-mobile">
-                  <span class="priority-badge" [class]="ticket.priority">{{ ticket.priority }}</span>
+                  <span class="category-badge">{{ getCategoryLabel(ticket.category) }}</span>
                 </td>
                 <td class="hide-mobile">
                   <span class="status-pill" [class]="ticket.status">{{ getStatusLabel(ticket.status) }}</span>
@@ -91,14 +91,14 @@ import { environment } from '../../environments/environment';
           </table>
         </div>
 
-        <div class="pagination" *ngIf="filteredTickets().length > 0">
-          <div class="page-info">
-             {{ (currentPage - 1) * pageSize + 1 }} - {{ Math.min(currentPage * pageSize, filteredTickets().length) }} de {{ filteredTickets().length }}
-          </div>
-          <div class="page-controls">
-            <button [disabled]="currentPage === 1" (click)="currentPage = currentPage - 1">«</button>
-            <span class="current-page">{{ currentPage }}</span>
-            <button [disabled]="currentPage >= totalPages()" (click)="currentPage = currentPage + 1">»</button>
+        <div class="pagination-footer" *ngIf="filteredTickets().length > 0">
+          <span class="page-info">
+             {{ (currentPage() - 1) * pageSize + 1 }} - {{ Math.min(currentPage() * pageSize, filteredTickets().length) }} DE {{ filteredTickets().length }}
+          </span>
+          <div class="pagination-controls">
+            <button [disabled]="currentPage() === 1" (click)="setPage(currentPage() - 1)">«</button>
+            <span class="page-number">{{ currentPage() }}</span>
+            <button [disabled]="currentPage() >= totalPages()" (click)="setPage(currentPage() + 1)">»</button>
           </div>
         </div>
       </div>
@@ -167,12 +167,9 @@ import { environment } from '../../environments/environment';
               </div>
 
               <div class="form-group mt-3">
-                <label>Prioridad</label>
-                <select [(ngModel)]="selectedTicket().priority" class="status-select">
-                  <option value="low">Baja</option>
-                  <option value="medium">Media</option>
-                  <option value="high">Alta</option>
-                  <option value="urgent">Urgente</option>
+                <label>Categoría</label>
+                <select [(ngModel)]="selectedTicket().category" class="status-select">
+                  <option *ngFor="let cat of categories" [value]="cat.value">{{ cat.label }}</option>
                 </select>
               </div>
 
@@ -202,7 +199,7 @@ import { environment } from '../../environments/environment';
       padding: 5rem 2rem 2rem 2rem; 
       margin-left: 260px;
       min-height: 100vh;
-      background: #0D0221;
+      background: #0d0221d6;
       color: white; 
       transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     }
@@ -256,14 +253,13 @@ import { environment } from '../../environments/environment';
 
     .ticket-number { color: #F2E74B; font-family: monospace; }
     
-    .priority-badge { 
-      padding: 0.3rem 0.8rem; border-radius: 0.5rem; font-size: 0.75rem; 
-      font-weight: bold; text-transform: uppercase; 
+    .category-badge {
+      padding: 0.3rem 0.8rem; border-radius: 0.5rem; font-size: 0.75rem;
+      font-weight: bold; text-transform: uppercase;
+      border: 1px solid #6C1DDA;
+      color: #F2E74B;
+      background: rgba(108, 29, 218, 0.1);
     }
-    .priority-badge.low { background: #666; color: white; }
-    .priority-badge.medium { background: #ffaa00; color: #1A0B2E; }
-    .priority-badge.high { background: #ff6600; color: white; }
-    .priority-badge.urgent { background: #ff0000; color: white; }
 
     .status-pill { 
       padding: 0.3rem 0.8rem; border-radius: 0.5rem; font-size: 0.75rem; 
@@ -316,11 +312,16 @@ import { environment } from '../../environments/environment';
     .btn-save { background: #F2E74B; border: none; color: #1A0B2E; padding: 0.75rem 1.5rem; border-radius: 0.5rem; cursor: pointer; font-weight: bold; display: flex; align-items: center; gap: 0.5rem; transition: 0.3s; }
     .btn-save:hover { background: #6C1DDA; color: white; }
 
-    .pagination { padding: 1.5rem; display: flex; justify-content: space-between; align-items: center; }
-    .page-controls { display: flex; align-items: center; gap: 1rem; }
-    .page-controls button { background: #6C1DDA; border: none; color: white; width: 35px; height: 35px; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; font-weight: bold; }
-    .page-controls button:disabled { opacity: 0.3; cursor: not-allowed; }
-    .current-page { font-weight: 900; color: #F2E74B; }
+    .pagination-footer { padding: 1.5rem; display: flex; justify-content: space-between; align-items: center; border-top: 1px solid rgba(108, 29, 218, 0.2); }
+    .page-info { font-weight: 900; color: white; font-size: 0.85rem; text-transform: uppercase; }
+    .pagination-controls { display: flex; align-items: center; gap: 0.75rem; }
+    .pagination-controls button { 
+      width: 35px; height: 35px; border-radius: 50%; background: #3A1A5E; border: none; color: #F2E74B; 
+      display: flex; align-items: center; justify-content: center; cursor: pointer; font-size: 1.1rem; transition: 0.3s; 
+    }
+    .pagination-controls button:not(:disabled):hover { background: #6C1DDA; color: white; transform: scale(1.1); }
+    .pagination-controls button:disabled { opacity: 0.3; cursor: not-allowed; }
+    .page-number { font-weight: 900; color: #F2E74B; font-size: 1.1rem; margin: 0 0.5rem; }
 
     @media (max-width: 1100px) {
       .admin-page { margin-left: 0; padding: 5rem 1rem 2rem 1rem; }
@@ -337,8 +338,15 @@ export class AdminSupportComponent implements OnInit {
   selectedTicket = signal<any>(null);
   searchTerm = signal('');
   statusFilter = signal('all');
-  currentPage = 1;
+  currentPage = signal(1);
   pageSize = 10;
+  dataVersion = signal(0);
+
+  setPage(page: number) {
+    if (page >= 1 && page <= this.totalPages()) {
+      this.currentPage.set(page);
+    }
+  }
   savingTicket = signal(false);
   Math = Math;
 
@@ -348,6 +356,14 @@ export class AdminSupportComponent implements OnInit {
     { value: 'in_progress', label: 'En Proceso' },
     { value: 'resolved', label: 'Resueltos' },
     { value: 'closed', label: 'Cerrados' }
+  ];
+
+  categories = [
+    { value: 'general', label: 'General' },
+    { value: 'puntos', label: 'Puntos' },
+    { value: 'canje', label: 'Canje de Premios' },
+    { value: 'tecnico', label: 'Problema Técnico' },
+    { value: 'otro', label: 'Otro' }
   ];
 
   private http = inject(HttpClient);
@@ -373,6 +389,7 @@ export class AdminSupportComponent implements OnInit {
   }
 
   filteredTickets = computed(() => {
+    this.dataVersion();
     const term = this.searchTerm().toLowerCase();
     const status = this.statusFilter();
 
@@ -390,8 +407,9 @@ export class AdminSupportComponent implements OnInit {
   });
 
   paginatedTickets = computed(() => {
-    const start = (this.currentPage - 1) * this.pageSize;
-    return this.filteredTickets().slice(start, start + this.pageSize);
+    const data = this.filteredTickets();
+    const start = (this.currentPage() - 1) * this.pageSize;
+    return data.slice(start, start + this.pageSize);
   });
 
   totalPages = computed(() => Math.ceil(this.filteredTickets().length / this.pageSize));
@@ -411,6 +429,7 @@ export class AdminSupportComponent implements OnInit {
 
     this.http.post(`${environment.apiUrl}/admin/support/${updated.id}/update`, {
       status: updated.status,
+      category: updated.category,
       priority: updated.priority,
       admin_notes: updated.admin_notes
     }).subscribe({
@@ -431,9 +450,13 @@ export class AdminSupportComponent implements OnInit {
     const labels: any = {
       'open': 'Abierto',
       'in_progress': 'En Proceso',
-      'resolved': 'Resuelto',
+      'resolved': 'Resueltos',
       'closed': 'Cerrado'
     };
     return labels[status] || status;
+  }
+
+  getCategoryLabel(val: string): string {
+    return this.categories.find(c => c.value === val)?.label || val;
   }
 }

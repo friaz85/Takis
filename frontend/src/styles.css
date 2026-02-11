@@ -19,15 +19,35 @@
 body {
   margin: 0;
   padding: 0;
-  background-image: url('assets/img/BG_takis.jpg');
-  background-size: cover;
-  background-position: center;
-  background-attachment: fixed;
   background-color: var(--takis-dark-purple);
   color: white;
   font-family: 'TakisVeneer', 'Inter', sans-serif;
   overflow-x: hidden;
   min-height: 100vh;
+}
+
+/* Base background for all sections */
+body::before {
+  content: "";
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-image: url('assets/img/BG_takis.jpg');
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  z-index: -1;
+}
+
+/* Mobile specific fixes to prevent stretching */
+@media (max-width: 1024px) {
+  body::before {
+    height: 100vh;
+    /* Re-lock for mobile */
+    height: -webkit-fill-available;
+  }
 }
 
 .takis-title {

@@ -25,7 +25,7 @@ import { WhatsappBubbleComponent } from './whatsapp-bubble.component';
           
           <!-- Right: Mecanica Card -->
           <div class="hero-right mecanica-card">
-            <h1 class="takis-title"><span class="highlight">MECÁNICA</span></h1>
+            <h1 class="takis-title"><span class="highlight">MECANICA</span></h1>
             
             <div class="steps">
               <div class="step">
@@ -41,7 +41,7 @@ import { WhatsappBubbleComponent } from './whatsapp-bubble.component';
               <div class="step">
                 <img src="/assets/img/03.png" class="step-number-img" alt="Paso 3">
                 <h3>Gana</h3>
-                <p>Visita nuestro catalogo de recompensas y elige el que mas te guste. ¡Es asi de sencillo!</p>
+                <p>Visita nuestro catalogo de recompensas y elige el que mas te guste. Es asi de sencillo!</p>
               </div>
             </div>
 
@@ -266,27 +266,27 @@ export class HowItWorksComponent {
 
   faqs = [
     {
-      question: '¿Como puedo registrarme?',
+      question: 'Como puedo registrarme?',
       answer: 'Puedes registrarte haciendo clic en el boton "REGISTRATE" en la pagina principal. Solo necesitas tu correo electronico y crear una contrasena segura.'
     },
     {
-      question: '¿Donde encuentro los codigos?',
+      question: 'Donde encuentro los codigos?',
       answer: 'Los codigos participantes se encuentran dentro del empaque de tus Takis favoritos. Busca el codigo impreso en el interior de la bolsa.'
     },
     {
-      question: '¿Cuantos puntos vale cada codigo?',
+      question: 'Cuantos puntos vale cada codigo?',
       answer: 'Cada codigo tiene un valor en puntos que se acredita automaticamente a tu cuenta al momento de canjearlo. El valor puede variar segun la promocion.'
     },
     {
-      question: '¿Como canjeo mis puntos por premios?',
+      question: 'Como canjeo mis puntos por premios?',
       answer: 'Ve a la seccion "RECOMPENSAS" en el menu, selecciona el premio que desees y haz clic en "CANJEAR". Asegurate de tener suficientes puntos acumulados.'
     },
     {
-      question: '¿Que hago si mi codigo no funciona?',
+      question: 'Que hago si mi codigo no funciona?',
       answer: 'Verifica que hayas ingresado el codigo correctamente. Si el problema persiste, contacta a nuestro equipo de soporte a traves del boton de WhatsApp.'
     },
     {
-      question: '¿Cuanto tiempo tardan en llegar los premios fisicos?',
+      question: 'Cuanto tiempo tardan en llegar los premios fisicos?',
       answer: 'Los premios fisicos se procesan en un plazo de 5 a 10 dias habiles. Recibiras un correo electronico con la informacion de seguimiento de tu envio.'
     }
   ];

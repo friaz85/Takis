@@ -41,6 +41,7 @@ $routes->get('setup-db', 'SetupController::index');
 
 // Debug
 $routes->get('debug-codes', 'DebugController::index');
+$routes->get('debug-status', 'DebugController::testStatus');
 
 // Public Catalog
 $routes->get('rewards', 'RewardAdminController::publicCatalog');
@@ -105,7 +106,13 @@ $routes->group('admin', ['filter' => 'admin_auth'], function ($routes) {
     // Uploads
     $routes->post('upload/reward-image', 'UploadController::uploadRewardImage');
     $routes->post('upload/template', 'UploadController::uploadTemplate');
+
+    // Analytics
+    $routes->get('analytics/stats', 'AnalyticsController::getVisitStats');
 });
+
+// Analytics Public
+$routes->post('analytics/log', 'AnalyticsController::logVisit');
 
 // Ultramsg API Routes (Public - No auth required)
 $routes->group('api/ultramsg', function ($routes) {

@@ -31,7 +31,7 @@ import { environment } from '../../environments/environment';
              <input 
                type="text" 
                [ngModel]="searchTerm()" 
-               (ngModelChange)="searchTerm.set($event); currentPage = 1"
+               (ngModelChange)="searchTerm.set($event); currentPage.set(1)"
                placeholder="Buscar por usuario o recompensa..."
              >
            </div>
@@ -76,14 +76,14 @@ import { environment } from '../../environments/environment';
           </table>
         </div>
 
-        <div class="pagination" *ngIf="filteredRedemptions().length > 0">
-          <div class="page-info">
-             {{ (currentPage - 1) * pageSize + 1 }} - {{ Math.min(currentPage * pageSize, filteredRedemptions().length) }} de {{ filteredRedemptions().length }}
-          </div>
-          <div class="page-controls">
-            <button [disabled]="currentPage === 1" (click)="currentPage = currentPage - 1">«</button>
-            <span class="current-page">{{ currentPage }}</span>
-            <button [disabled]="currentPage >= totalPages()" (click)="currentPage = currentPage + 1">»</button>
+        <div class="pagination-footer" *ngIf="filteredRedemptions().length > 0">
+          <span class="page-info">
+             {{ (currentPage() - 1) * pageSize + 1 }} - {{ Math.min(currentPage() * pageSize, filteredRedemptions().length) }} DE {{ filteredRedemptions().length }}
+          </span>
+          <div class="pagination-controls">
+            <button [disabled]="currentPage() === 1" (click)="setPage(currentPage() - 1)">«</button>
+            <span class="page-number">{{ currentPage() }}</span>
+            <button [disabled]="currentPage() >= totalPages()" (click)="setPage(currentPage() + 1)">»</button>
           </div>
         </div>
       </div>
@@ -94,7 +94,7 @@ import { environment } from '../../environments/environment';
       padding: 5rem 2rem 2rem 2rem; 
       margin-left: 260px;
       min-height: 100vh;
-      background: #0D0221;
+      background: #0d0221d6;
       color: white; 
       transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     }
@@ -149,10 +149,17 @@ import { environment } from '../../environments/environment';
     .status-badge.shipped { background: rgba(33, 150, 243, 0.2); color: #2196f3; }
     .status-badge.cancelled { background: rgba(244, 67, 54, 0.2); color: #f44336; }
 
-    .pagination { padding: 1.5rem; display: flex; justify-content: space-between; align-items: center; }
-    .page-controls { display: flex; align-items: center; gap: 1rem; }
-    .page-controls button { background: #6C1DDA; border: none; color: white; width: 35px; height: 35px; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; font-weight: bold; }
-    
+    .pagination-footer { padding: 1.5rem; display: flex; justify-content: space-between; align-items: center; border-top: 1px solid rgba(108, 29, 218, 0.2); }
+    .page-info { font-weight: 900; color: white; font-size: 0.85rem; text-transform: uppercase; }
+    .pagination-controls { display: flex; align-items: center; gap: 0.75rem; }
+    .pagination-controls button { 
+      width: 35px; height: 35px; border-radius: 50%; background: #3A1A5E; border: none; color: #F2E74B; 
+      display: flex; align-items: center; justify-content: center; cursor: pointer; font-size: 1.1rem; transition: 0.3s; 
+    }
+    .pagination-controls button:not(:disabled):hover { background: #6C1DDA; color: white; transform: scale(1.1); }
+    .pagination-controls button:disabled { opacity: 0.3; cursor: not-allowed; }
+    .page-number { font-weight: 900; color: #F2E74B; font-size: 1.1rem; margin: 0 0.5rem; }
+
     .text-gold { color: #F2E74B; }
     .block { display: block; }
 
@@ -169,9 +176,16 @@ import { environment } from '../../environments/environment';
 export class AdminEntryCodesComponent implements OnInit {
   redemptions = signal<any[]>([]);
   searchTerm = signal('');
-  currentPage = 1;
+  currentPage = signal(1);
   pageSize = 10;
   Math = Math;
+  dataVersion = signal(0);
+
+  setPage(page: number) {
+    if (page >= 1 && page <= this.totalPages()) {
+      this.currentPage.set(page);
+    }
+  }
 
   private http = inject(HttpClient);
   public layoutService = inject(AdminLayoutService);
@@ -197,6 +211,7 @@ export class AdminEntryCodesComponent implements OnInit {
   }
 
   filteredRedemptions = computed(() => {
+    this.dataVersion(); // Register dependency
     const term = this.searchTerm().toLowerCase();
     return this.redemptions().filter((r: any) =>
       r.user_name?.toLowerCase().includes(term) ||
@@ -206,8 +221,9 @@ export class AdminEntryCodesComponent implements OnInit {
   });
 
   paginatedRedemptions = computed(() => {
-    const start = (this.currentPage - 1) * this.pageSize;
-    return this.filteredRedemptions().slice(start, start + this.pageSize);
+    const data = this.filteredRedemptions();
+    const start = (this.currentPage() - 1) * this.pageSize;
+    return data.slice(start, start + this.pageSize);
   });
 
   totalPages = computed(() => Math.ceil(this.filteredRedemptions().length / this.pageSize));
