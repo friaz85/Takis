@@ -582,7 +582,11 @@ export class RedeemRewardsComponent implements OnInit {
   filteredRewards = computed(() => {
     const filter = this.activeFilter();
     const pts = this.userPoints();
-    const all = this.rewards();
+    const all = [...this.rewards()]; // Create shallow copy for sorting
+
+    // Sort by cost ASC
+    all.sort((a, b) => a.cost - b.cost);
+
     if (filter === 'redeemable') {
       return all.filter(r => r.cost <= pts && r.stock > 0);
     }
@@ -629,7 +633,7 @@ export class RedeemRewardsComponent implements OnInit {
               ...r,
               cost: Number(r.cost),
               stock: Number(r.stock)
-            })) : [];
+            })).sort((a: any, b: any) => a.cost - b.cost) : [];
 
             this.rewards.set(formattedRewards);
             this.loading.set(false);
