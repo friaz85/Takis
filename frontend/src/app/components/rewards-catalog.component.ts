@@ -93,7 +93,9 @@ export class RewardsCatalogComponent implements OnInit {
   ngOnInit() {
     this.http.get(`${environment.apiUrl}/rewards`).subscribe({
       next: (res: any) => {
-        this.rewards.set(res);
+        // Sort by cost ASC
+        const sorted = res.sort((a: any, b: any) => (a.cost || 0) - (b.cost || 0));
+        this.rewards.set(sorted);
         this.loading.set(false);
       },
       error: () => this.loading.set(false)
