@@ -58,25 +58,77 @@ class DashboardAdminController extends ResourceController
             LIMIT 5
         ", $params)->getResultArray();
 
-        // Chart Data
+        // Chart Data (Last 7 Days)
+        $dates = [];
+        for ($i = 6; $i >= 0; $i--) {
+            $date         = date('Y-m-d', strtotime("-$i days"));
+            $dates[$date] = [
+                'date'  => $date,
+                'count' => 0, // Redemptions
+                'users' => 0  // New Users
+            ];
+        }
+
         if ($startDate && $endDate) {
             // Range selected by user
-            $dailyActivity = $db->query("
+            $redemptionsByDay = $db->query("
                 SELECT DATE(created_at) as date, COUNT(*) as count 
                 FROM redemptions 
                 WHERE created_at BETWEEN ? AND ?
-                GROUP BY DATE(created_at) 
-                ORDER BY date ASC
+                GROUP BY DATE(created_at)
             ", $params)->getResultArray();
+
+            $usersByDay = $db->query("
+                SELECT DATE(created_at) as date, COUNT(*) as count 
+                FROM users 
+                WHERE created_at BETWEEN ? AND ?
+                GROUP BY DATE(created_at)
+            ", $params)->getResultArray();
+
+            // For custom range, we might want to rebuild the dates array if it's large,
+            // but for simplicity let's just use the results.
+            $customActivity = [];
+            foreach ($redemptionsByDay as $row) {
+                $customActivity[$row['date']]['date']  = $row['date'];
+                $customActivity[$row['date']]['count'] = (int) $row['count'];
+                $customActivity[$row['date']]['users'] = 0;
+            }
+            foreach ($usersByDay as $row) {
+                if (!isset($customActivity[$row['date']])) {
+                    $customActivity[$row['date']]['date']  = $row['date'];
+                    $customActivity[$row['date']]['count'] = 0;
+                }
+                $customActivity[$row['date']]['users'] = (int) $row['count'];
+            }
+            ksort($customActivity);
+            $dailyActivity = array_values($customActivity);
         } else {
-            // Default: Last 7 Days
-            $dailyActivity = $db->query("
+            // Default: Last 7 Days (Structured with zeros)
+            $redemptionsByDay = $db->query("
                 SELECT DATE(created_at) as date, COUNT(*) as count 
                 FROM redemptions 
                 WHERE created_at >= DATE(NOW()) - INTERVAL 7 DAY 
-                GROUP BY DATE(created_at) 
-                ORDER BY date ASC
+                GROUP BY DATE(created_at)
             ")->getResultArray();
+
+            $usersByDay = $db->query("
+                SELECT DATE(created_at) as date, COUNT(*) as count 
+                FROM users 
+                WHERE created_at >= DATE(NOW()) - INTERVAL 7 DAY 
+                GROUP BY DATE(created_at)
+            ")->getResultArray();
+
+            foreach ($redemptionsByDay as $row) {
+                if (isset($dates[$row['date']])) {
+                    $dates[$row['date']]['count'] = (int) $row['count'];
+                }
+            }
+            foreach ($usersByDay as $row) {
+                if (isset($dates[$row['date']])) {
+                    $dates[$row['date']]['users'] = (int) $row['count'];
+                }
+            }
+            $dailyActivity = array_values($dates);
         }
 
         // Recent Activity (Usually we don't filter recent by date range unless requested, 

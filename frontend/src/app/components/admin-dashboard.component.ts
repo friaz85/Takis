@@ -569,7 +569,7 @@ export class AdminDashboardComponent implements OnInit, AfterViewInit {
 
   // Chart Toggles
   showRedemptions = true;
-  showUsers = false;
+  showUsers = true;
 
   private http = inject(HttpClient);
   private auth = inject(AuthService);
