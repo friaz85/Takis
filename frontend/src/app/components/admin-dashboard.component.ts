@@ -46,13 +46,6 @@ Chart.register(...registerables);
 
       <!-- KPI Cards -->
       <div class="kpi-grid">
-        <div class="kpi-card users">
-           <div class="kpi-icon">👥</div>
-           <div class="kpi-info">
-             <h3>Usuarios</h3>
-             <span class="value">{{ stats?.cards?.users | number }}</span>
-           </div>
-        </div>
         <div class="kpi-card visits">
            <div class="kpi-icon">🌐</div>
            <div class="kpi-info">
@@ -61,19 +54,26 @@ Chart.register(...registerables);
              <small>Vistas de página</small>
            </div>
         </div>
-        <div class="kpi-card redemptions">
-           <div class="kpi-icon">🎟️</div>
+        <div class="kpi-card users">
+           <div class="kpi-icon">👥</div>
            <div class="kpi-info">
-             <h3>Canjes Totales</h3>
-             <span class="value">{{ stats?.cards?.redemptions | number }}</span>
+             <h3>Usuarios</h3>
+             <span class="value">{{ stats?.cards?.users | number }}</span>
            </div>
         </div>
         <div class="kpi-card promo">
            <div class="kpi-icon">🎫</div>
            <div class="kpi-info">
-             <h3>Códigos Promo</h3>
+             <h3>Códigos Registrados</h3>
              <span class="value">{{ stats?.cards?.promo?.total | number }}</span>
              <small>{{ stats?.cards?.promo?.used }} usados</small>
+           </div>
+        </div>
+        <div class="kpi-card redemptions">
+           <div class="kpi-icon">🎟️</div>
+           <div class="kpi-info">
+             <h3>Canjes</h3>
+             <span class="value">{{ stats?.cards?.redemptions | number }}</span>
            </div>
         </div>
         <!-- Success Rate Card -->
