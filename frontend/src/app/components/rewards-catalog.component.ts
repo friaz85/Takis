@@ -15,6 +15,7 @@ import { environment } from '../../environments/environment';
 
       <header>
         <h2 class="title">CATALOGO DE <span class="highlight">PREMIOS</span></h2>
+        <p class="disclaimer">*Imágenes de referencia, los productos pueden variar en color, tamaño, modelo y marca.</p>
       </header>
       
       <!-- Loading State -->
@@ -58,7 +59,8 @@ import { environment } from '../../environments/environment';
     }
     .back-btn:hover { color: #F2E74B; background: rgba(0,0,0,0.4); }
 
-    .title { color: white; font-weight: 900; font-size: 2.5rem; text-align: center; margin-bottom: 4rem; text-shadow: 2px 2px 0 #6C1DDA; }
+    .title { color: white; font-weight: 900; font-size: 2.5rem; text-align: center; margin-bottom: 0.5rem; text-shadow: 2px 2px 0 #6C1DDA; }
+    .disclaimer { color: white; font-size: 0.8rem; text-align: center; margin-bottom: 4rem; opacity: 0.8; }
     .highlight { color: #F2E74B; }
     .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 2rem; max-width: 1200px; margin: 0 auto; }
     

@@ -52,6 +52,7 @@ import Swal from 'sweetalert2';
             </div>
 
             <h2 class="catalog-title">CATALOGO DE RECOMPENSAS</h2>
+            <p class="catalog-disclaimer">*Imágenes de referencia, los productos pueden variar en color, tamaño, modelo y marca.</p>
 
             <div *ngIf="loading()" class="loading-state">
                 <div class="spinner"></div>
@@ -317,6 +318,14 @@ import Swal from 'sweetalert2';
         letter-spacing: 2px;
         background: url(/assets/img/texture-gold.jpg);
         -webkit-background-clip: text;
+    }
+    
+    .catalog-disclaimer {
+        color: white;
+        font-size: 0.75rem;
+        margin-top: -0.5rem;
+        margin-bottom: 2rem;
+        opacity: 0.9;
     }
 
     .rewards-grid {

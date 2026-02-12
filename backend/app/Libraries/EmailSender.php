@@ -113,7 +113,7 @@ class EmailSender
                 <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="max-width: 600px; background-color: rgba(37, 22, 58, 0.9); border-radius: 16px; border: 1px solid #442a66; overflow: hidden; box-shadow: 0 10px 30px rgba(0,0,0,0.5);">
                     <!-- Header with Logos -->
                     <tr>
-                        <td align="center" style="padding: 30px; background-color: rgba(18, 6, 33, 0.37); border-bottom: 2px solid #442a66;">
+                        <td align="center" style="padding: 30px; background-color: rgba(18, 6, 33, 0.11); border-bottom: 2px solid #442a66;">
                             <img src="https://dev.takisaficionintensa.com.mx/assets/img/Banderin_01.png" alt="Takis 1" width="190" style="display: inline-block; vertical-align: middle; border: 0; margin-right: 10px;">
                             <img src="https://dev.takisaficionintensa.com.mx/assets/img/Banderin_02.png" alt="Takis 2" width="190" style="display: inline-block; vertical-align: middle; border: 0; margin-left: 10px;">
                         </td>
