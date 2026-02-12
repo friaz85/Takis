@@ -264,7 +264,7 @@ export class LoginComponent implements OnInit {
       },
       error: (err) => {
         this.loading.set(false);
-        const msg = err.error?.message || 'Error. Verifica tu correo.';
+        const msg = err.error?.messages?.error || err.error?.message || 'Error. Verifica tu correo.';
         this.toast.show(msg, 'error');
       }
     });

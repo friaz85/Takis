@@ -298,7 +298,8 @@ export class OtpComponent {
       },
       error: (err) => {
         this.loading.set(false);
-        this.toast.show(err.error?.message || 'Codigo incorrecto.', 'error');
+        const msg = err.error?.messages?.error || err.error?.message || 'Codigo incorrecto.';
+        this.toast.show(msg, 'error');
       }
     });
   }
@@ -317,7 +318,8 @@ export class OtpComponent {
       },
       error: (err) => {
         this.loading.set(false);
-        this.toast.show('Error al reenviar codigo.', 'error');
+        const msg = err.error?.messages?.error || err.error?.message || 'Error al reenviar codigo.';
+        this.toast.show(msg, 'error');
       }
     });
   }
