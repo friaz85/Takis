@@ -319,13 +319,14 @@ import Swal from 'sweetalert2';
         background: url(/assets/img/texture-gold.jpg);
         -webkit-background-clip: text;
     }
-    
+
     .catalog-disclaimer {
         color: white;
-        font-size: 0.75rem;
-        margin-top: -0.5rem;
+        font-size: 0.85rem;
+        margin-top: 0.5rem;
         margin-bottom: 2rem;
-        opacity: 0.9;
+        opacity: 1;
+        font-family: inherit;
     }
 
     .rewards-grid {
