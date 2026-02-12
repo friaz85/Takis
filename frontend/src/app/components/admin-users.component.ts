@@ -58,8 +58,8 @@ import { environment } from '../../environments/environment';
                    <small class="block text-gray">{{ user.city }}</small>
                 </td>
                 <td>
-                  <span class="status-badge" [class.blocked]="user.is_blocked">
-                    {{ user.is_blocked ? '🔒 Bloqueado' : '✅ Activo' }}
+                  <span class="status-badge" [class.blocked]="user.is_blocked == 1">
+                    {{ user.is_blocked == 1 ? '🔒 Bloqueado' : '✅ Activo' }}
                   </span>
                 </td>
                 <td class="text-right">
@@ -68,7 +68,7 @@ import { environment } from '../../environments/environment';
                     [class.unblock]="user.is_blocked"
                     (click)="openBlockModal(user)"
                   >
-                    {{ user.is_blocked ? 'Desbloquear' : 'Bloquear' }}
+                    {{ user.is_blocked == 1 ? 'Desbloquear' : 'Bloquear' }}
                   </button>
                 </td>
               </tr>
@@ -96,7 +96,7 @@ import { environment } from '../../environments/environment';
       <div class="modal-overlay" *ngIf="selectedUser()" (click)="closeBlockModal($event)">
         <div class="block-modal" (click)="$event.stopPropagation()">
           <div class="modal-header">
-            <h3>{{ selectedUser().is_blocked ? 'Desbloquear Usuario' : 'Bloquear Usuario' }}</h3>
+            <h3>{{ selectedUser().is_blocked == 1 ? 'Desbloquear Usuario' : 'Bloquear Usuario' }}</h3>
             <button class="close-btn" (click)="closeBlockModal($event)">✕</button>
           </div>
           
@@ -106,7 +106,7 @@ import { environment } from '../../environments/environment';
               <p><strong>Email:</strong> {{ selectedUser().email }}</p>
             </div>
 
-            <div class="form-group" *ngIf="!selectedUser().is_blocked">
+            <div class="form-group" *ngIf="selectedUser().is_blocked == 0">
               <label>Razon del Bloqueo</label>
               <textarea 
                 [(ngModel)]="blockReason" 
@@ -116,11 +116,11 @@ import { environment } from '../../environments/environment';
               ></textarea>
             </div>
 
-            <div class="warning-box" *ngIf="!selectedUser().is_blocked">
+            <div class="warning-box" *ngIf="selectedUser().is_blocked == 0">
               <p>⚠️ El usuario no podra acceder a su cuenta hasta que sea desbloqueado.</p>
             </div>
 
-            <div class="info-box" *ngIf="selectedUser().is_blocked">
+            <div class="info-box" *ngIf="selectedUser().is_blocked == 1">
               <p><strong>Razon del bloqueo:</strong> {{ selectedUser().blocked_reason || 'No especificada' }}</p>
               <p><strong>Bloqueado el:</strong> {{ selectedUser().blocked_at | date:'medium' }}</p>
             </div>
@@ -132,9 +132,9 @@ import { environment } from '../../environments/environment';
               class="btn-action" 
               [class.unblock]="selectedUser().is_blocked"
               (click)="toggleUserBlock()"
-              [disabled]="!selectedUser().is_blocked && !blockReason"
+              [disabled]="selectedUser().is_blocked == 0 && !blockReason"
             >
-              {{ selectedUser().is_blocked ? '🔓 Desbloquear' : '🔒 Bloquear' }}
+              {{ selectedUser().is_blocked == 1 ? '🔓 Desbloquear' : '🔒 Bloquear' }}
             </button>
           </div>
         </div>

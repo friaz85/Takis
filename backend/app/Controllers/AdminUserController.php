@@ -18,11 +18,12 @@ class AdminUserController extends ResourceController
         $userModel = new UserModel();
         $users     = $userModel->findAll();
 
-        // Remove sensitive data
+        // Type casting and remove sensitive data
         foreach ($users as &$user) {
             unset($user['password_hash']);
             unset($user['otp']);
             unset($user['otp_expiry']);
+            $user['is_blocked'] = (int) ($user['is_blocked'] ?? 0);
         }
 
         return $this->respond($users);
@@ -52,11 +53,15 @@ class AdminUserController extends ResourceController
             // Block user
             $reason = $data['reason'] ?? 'Actividad sospechosa';
 
-            $userModel->update($id, [
+            $result = $userModel->update($id, [
                 'is_blocked'     => 1,
                 'blocked_reason' => $reason,
                 'blocked_at'     => date('Y-m-d H:i:s')
             ]);
+
+            if (!$result) {
+                log_message('error', "Failed to block user {$id}: " . print_r($userModel->errors(), true));
+            }
 
             $logModel->save([
                 'ip_address' => $this->request->getIPAddress(),
@@ -68,11 +73,15 @@ class AdminUserController extends ResourceController
             $message = 'Usuario bloqueado exitosamente';
         } else {
             // Unblock user
-            $userModel->update($id, [
+            $result = $userModel->update($id, [
                 'is_blocked'     => 0,
                 'blocked_reason' => null,
                 'blocked_at'     => null
             ]);
+
+            if (!$result) {
+                log_message('error', "Failed to unblock user {$id}: " . print_r($userModel->errors(), true));
+            }
 
             $logModel->save([
                 'ip_address' => $this->request->getIPAddress(),
@@ -85,8 +94,9 @@ class AdminUserController extends ResourceController
         }
 
         return $this->respond([
-            'status'  => 'success',
-            'message' => $message
+            'status'       => 'success',
+            'message'      => $message,
+            'debug_result' => $result // Temporary debug
         ]);
     }
 
