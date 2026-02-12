@@ -47,7 +47,7 @@ Chart.register(...registerables);
 
       <!-- KPI Cards -->
       <div class="kpi-grid">
-        <div class="kpi-card visits">
+        <div class="kpi-card visits" *ngIf="getUsername() !== 'takis_admin'">
            <div class="kpi-icon">🌐</div>
            <div class="kpi-info">
              <h3>Visitas</h3>
@@ -386,7 +386,8 @@ Chart.register(...registerables);
         display: none !important;
       }
 
-      .dashboard-page.user-takis-admin .visits-panel {
+      .dashboard-page.user-takis-admin .visits-panel,
+      .dashboard-page.user-takis-admin .kpi-card.visits {
         display: none !important;
       }
 
