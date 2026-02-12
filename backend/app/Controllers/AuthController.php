@@ -43,7 +43,7 @@ class AuthController extends ResourceController
         $existingUser = $userModel->where('email', $email)->first();
 
         if ($existingUser && isset($existingUser['is_blocked']) && (int) $existingUser['is_blocked'] === 1) {
-            return $this->fail("Esta cuenta ha sido bloqueada. Razón: " . ($existingUser['blocked_reason'] ?? 'Actividad sospechosa') . ". Contacta a soporte.", 403);
+            return $this->fail("Inicio de sesión restringido, favor de comunicarse al servicio al cliente", 403);
         }
 
         if ($existingUser) {
@@ -87,11 +87,11 @@ class AuthController extends ResourceController
         $user = $userModel->where('email', $email)->first();
 
         if (!$user) {
-            return $this->failNotFound('Correo no registrado. Regístrate primero.');
+            return $this->failNotFound('El correo aún no se encuentra registrado, verifícalo o regístrate.');
         }
 
         if (isset($user['is_blocked']) && (int) $user['is_blocked'] === 1) {
-            return $this->fail("Esta cuenta ha sido bloqueada. Razón: " . ($user['blocked_reason'] ?? 'Actividad sospechosa') . ". Contacta a soporte.", 403);
+            return $this->fail("Inicio de sesión restringido, favor de comunicarse al servicio al cliente", 403);
         }
 
         $otp = rand(100000, 999999);
@@ -119,8 +119,6 @@ class AuthController extends ResourceController
 
         // Check if user is blocked
         if (isset($user['is_blocked']) && (int) $user['is_blocked'] === 1) {
-            $reason = $user['blocked_reason'] ?? 'Actividad sospechosa detectada';
-
             // Log blocked login attempt
             $logModel = new SecurityLogModel();
             $logModel->save([
@@ -130,7 +128,7 @@ class AuthController extends ResourceController
                 'details'    => 'Usuario bloqueado intentó acceder'
             ]);
 
-            return $this->fail("Tu cuenta ha sido bloqueada temporalmente. Razón: {$reason}. Contacta a soporte.", 403);
+            return $this->fail("Inicio de sesión restringido, favor de comunicarse al servicio al cliente", 403);
         }
 
         if ($user['otp'] == $otp && strtotime($user['otp_expiry']) > time()) {
