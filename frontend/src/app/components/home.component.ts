@@ -32,7 +32,7 @@ import { environment } from '../../environments/environment';
           <!-- Right: Home Card -->
           <div class="hero-right home-card" [style.backgroundImage]="'linear-gradient(rgba(86, 14, 140, 0.8), rgba(86, 14, 140, 0.6)), url(/assets/img/BG_soccer.jpg)'">
             
-            <h1 class="welcome-title">HOLA {{ userName }}!</h1>
+            <h1 class="welcome-title">¡HOLA {{ userName }}!</h1>
             
             <!-- Scoreboard Points Display -->
             <div class="scoreboard">
