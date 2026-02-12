@@ -99,7 +99,7 @@ import Swal from 'sweetalert2';
             <div class="form-grid">
               <div class="form-group full">
                 <label>NOMBRE COMPLETO</label>
-                <input type="text" [(ngModel)]="addressForm.full_name" name="full_name" required placeholder="NOMBRE COMPLETO">
+                <input type="text" [(ngModel)]="addressForm.full_name" name="full_name" required placeholder="NOMBRE COMPLETO" readonly style="opacity: 0.7; cursor: not-allowed;">
               </div>
 
               <div class="form-group full">
@@ -418,9 +418,11 @@ import Swal from 'sweetalert2';
     /* Modal Styles */
     .modal-overlay {
       position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-      background: rgba(0,0,0,0.8); z-index: 1000;
-      display: flex; align-items: center; justify-content: center;
-      backdrop-filter: blur(5px);
+      background: rgba(0,0,0,0.9); z-index: 2000;
+      display: flex; align-items: flex-start; justify-content: center;
+      backdrop-filter: blur(8px);
+      overflow-y: auto;
+      padding: 2rem 0;
     }
     .modal-card {
       background: #1A0B2E;
@@ -432,7 +434,7 @@ import Swal from 'sweetalert2';
       width: 90%; max-width: 650px;
       position: relative;
       box-shadow: 0 0 50px rgba(0,0,0,0.8);
-      overflow: visible;
+      margin: auto;
     }
     .modal-title-yellow {
         color: #F2E74B;
@@ -768,10 +770,10 @@ export class RedeemRewardsComponent implements OnInit {
         this.submittingAddress.set(false);
         this.showAddressModal.set(false);
 
-        // Retry Redemption immediately
+        // Retry Redemption immediately without asking for confirmation again
         const pending = this.pendingReward();
         if (pending) {
-          this.redeem(pending);
+          this.executeRedemption(pending);
         }
       },
       error: (err) => {
