@@ -146,8 +146,8 @@ import Swal from 'sweetalert2';
               </div>
             </div>
 
-            <button type="submit" class="takis-btn-primary block" [disabled]="submittingAddress()">
-              {{ submittingAddress() ? 'GUARDANDO...' : 'GUARDAR Y CANJEAR' }}
+            <button type="submit" class="takis-btn-primary block" [disabled]="submittingAddress() || processingId()">
+              {{ submittingAddress() ? 'GUARDANDO...' : (processingId() ? 'PROCESANDO CANJE...' : 'GUARDAR Y CANJEAR') }}
             </button>
           </form>
         </div>
@@ -528,15 +528,16 @@ import Swal from 'sweetalert2';
       background: #F2E74B !important;
       color: #5d1f87 !important;
       border-radius: 1.5rem !important;
-      padding: 1rem 2rem !important;
+      padding: 1rem 2.2rem !important;
       font-weight: 900 !important;
-      font-size: 1.3rem !important;
+      font-size: 1.4rem !important;
       text-transform: uppercase !important;
       box-shadow: 0 8px 0 #b8af2e !important;
       font-family: 'TakisVeneer', 'Inter', sans-serif !important;
       border: none !important;
-      margin: 0 10px !important;
+      margin: 10px !important;
       cursor: pointer !important;
+      transition: 0.1s;
     }
     ::ng-deep .takis-swal-confirm:hover { transform: translateY(-2px); box-shadow: 0 10px 0 #b8af2e !important; }
     ::ng-deep .takis-swal-confirm:active { transform: translateY(4px); box-shadow: 0 2px 0 #b8af2e !important; }
@@ -544,16 +545,18 @@ import Swal from 'sweetalert2';
     ::ng-deep .takis-swal-cancel {
       background: transparent !important;
       color: #F2E74B !important;
-      border: 3px solid #F2E74B !important;
+      border: 4px solid #F2E74B !important;
       border-radius: 1.5rem !important;
       padding: 0.8rem 2rem !important;
       font-weight: 900 !important;
-      font-size: 1.3rem !important;
+      font-size: 1.4rem !important;
       text-transform: uppercase !important;
       font-family: 'TakisVeneer', 'Inter', sans-serif !important;
-      margin: 0 10px !important;
+      margin: 10px !important;
       cursor: pointer !important;
+      transition: 0.1s;
     }
+    ::ng-deep .takis-swal-cancel:hover { background: rgba(242, 231, 75, 0.1); transform: translateY(-2px); }
 
     /* Responsive */
     .mobile-logo { display: none; }
@@ -588,7 +591,7 @@ export class RedeemRewardsComponent implements OnInit {
   activeFilter = signal<'all' | 'redeemable'>('all');
   userPoints = signal(0);
   loading = signal(true);
-  processingId: number | null = null;
+  processingId = signal<number | null>(null);
 
   mexicoStates = [
     'Aguascalientes', 'Baja California', 'Baja California Sur', 'Campeche', 'Chiapas',
@@ -685,7 +688,7 @@ export class RedeemRewardsComponent implements OnInit {
   }
 
   redeem(reward: any) {
-    if (this.processingId) return;
+    if (this.processingId()) return;
     if (reward.cost > this.userPoints()) {
       Swal.fire({
         title: 'Puntos insuficientes',
@@ -730,12 +733,17 @@ export class RedeemRewardsComponent implements OnInit {
   }
 
   private executeRedemption(reward: any) {
-    this.processingId = reward.id;
+    this.processingId.set(reward.id);
 
     this.http.post(`${environment.apiUrl}/redeem`, { reward_id: reward.id }).subscribe({
       next: (res: any) => {
         // Optimistic update
         this.userPoints.update(p => p - reward.cost);
+
+        // Success: Close modal if it was open
+        this.showAddressModal.set(false);
+        this.submittingAddress.set(false);
+        this.pendingReward.set(null);
 
         Swal.fire({
           title: '¡CANJE EXITOSO!',
@@ -749,7 +757,7 @@ export class RedeemRewardsComponent implements OnInit {
           buttonsStyling: false
         });
 
-        this.processingId = null;
+        this.processingId.set(null);
         this.analytics.trackConversion('redemption', res.order_id || reward.id, {
           rewardTitle: reward.title,
           rewardPoints: reward.cost
@@ -763,7 +771,8 @@ export class RedeemRewardsComponent implements OnInit {
         }
       },
       error: (err) => {
-        this.processingId = null;
+        this.processingId.set(null);
+        this.submittingAddress.set(false); // Release button in modal if open
         console.error('Redeem Error', err);
 
         const errorCode = err.error?.error || err.error?.code || err.error?.messages?.code;
@@ -813,18 +822,13 @@ export class RedeemRewardsComponent implements OnInit {
     this.http.post(`${environment.apiUrl}/profile`, this.addressForm).subscribe({
       next: (res: any) => {
         this.toast.show('Direccion guardada exitosamente', 'success');
-        this.showAddressModal.set(false);
 
-        // Retry Redemption immediately without asking for confirmation again
-        // Added small timeout to let modal close smoothly and prevent flicker
+        // Retry Redemption immediately without closing the modal first (avoid flickering)
         const pending = this.pendingReward();
         if (pending) {
-          this.pendingReward.set(null);
-          setTimeout(() => {
-            if (this.submittingAddress()) this.submittingAddress.set(false);
-            this.executeRedemption(pending);
-          }, 500);
+          this.executeRedemption(pending);
         } else {
+          this.showAddressModal.set(false);
           this.submittingAddress.set(false);
         }
       },

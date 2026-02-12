@@ -160,7 +160,8 @@ class RedemptionController extends ResourceController
 
         // Validate Profile Data (Shipping Info) if reward is physical
         if ($reward['type'] === 'physical') {
-            if (empty($user['address']) || empty($user['city']) || empty($user['state']) || empty($user['zip_code']) || empty($user['phone'])) {
+            $city = !empty($user['city']) ? $user['city'] : ($user['municipio'] ?? '');
+            if (empty($user['address']) || empty($city) || empty($user['state']) || empty($user['zip_code']) || empty($user['phone'])) {
                 // Return specific code so frontend can redirect
                 return $this->fail('Por favor completa tus datos de envío en tu perfil para canjear este premio físico.', 400, 'PROFILE_INCOMPLETE');
             }
