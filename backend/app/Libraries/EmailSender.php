@@ -123,7 +123,7 @@ class EmailSender
                     <!-- Footer -->
                     <tr>
                         <td style="padding: 20px; background-color: rgba(18, 6, 33, 0.95); text-align: center; color: #ffffff; font-size: 12px; border-top: 1px solid #442a66;">
-                            <p style="margin: 0;">&copy; $year TAKIS: La promo de la afición más intensa Todos los derechos reservados.</p>
+                            <p style="margin: 0;">&copy; $year TAKIS: La promo de la afición más intensa. Todos los derechos reservados.</p>
                             <p style="margin: 5px 0 0 0;">Si no solicitaste este correo, puedes ignorarlo.</p>
                         </td>
                     </tr>

@@ -33,9 +33,9 @@ import { ToastService } from '../services/toast.service';
             <form (submit)="save()" class="profile-form">
               
               <div class="form-grid">
-                  <div class="field full-width">
+                   <div class="field full-width">
                     <label>NOMBRE COMPLETO</label>
-                    <input type="text" [(ngModel)]="profile.full_name" name="full_name" required class="input-flat" placeholder="NOMBRE COMPLETO">
+                    <input type="text" [(ngModel)]="profile.full_name" name="full_name" required class="input-flat" placeholder="NOMBRE COMPLETO" [readonly]="addressLocked()">
                   </div>
 
                   <div class="field">
@@ -45,7 +45,7 @@ import { ToastService } from '../services/toast.service';
 
                   <div class="field">
                     <label>TELEFONO</label>
-                    <input type="tel" [(ngModel)]="profile.phone" name="phone" required maxlength="10" class="input-flat" placeholder="10 DIGITOS">
+                    <input type="tel" [(ngModel)]="profile.phone" name="phone" required maxlength="10" class="input-flat" placeholder="10 DIGITOS" [readonly]="addressLocked()">
                   </div>
 
                   <div class="field full-width section-header">
@@ -54,27 +54,27 @@ import { ToastService } from '../services/toast.service';
 
                   <div class="field full-width">
                     <label>NOMBRE DE QUIEN RECIBE</label>
-                    <input type="text" [(ngModel)]="profile.recipient_name" name="recipient_name" class="input-flat" placeholder="NOMBRE COMPLETO">
+                    <input type="text" [(ngModel)]="profile.recipient_name" name="recipient_name" class="input-flat" placeholder="NOMBRE COMPLETO" [readonly]="addressLocked()">
                   </div>
 
                   <div class="field full-width">
                     <label>CALLE Y NUMERO</label>
-                    <input type="text" [(ngModel)]="profile.address" name="address" required class="input-flat" placeholder="CALLE Y NUMERO">
+                    <input type="text" [(ngModel)]="profile.address" name="address" required class="input-flat" placeholder="CALLE Y NUMERO" [readonly]="addressLocked()">
                   </div>
 
                   <div class="field">
                     <label>COLONIA</label>
-                    <input type="text" [(ngModel)]="profile.colonia" name="colonia" required class="input-flat" placeholder="COLONIA">
+                    <input type="text" [(ngModel)]="profile.colonia" name="colonia" required class="input-flat" placeholder="COLONIA" [readonly]="addressLocked()">
                   </div>
 
                   <div class="field">
                     <label>ALCALDIA / MUNICIPIO</label>
-                    <input type="text" [(ngModel)]="profile.municipio" name="municipio" required class="input-flat" placeholder="ALCALDIA">
+                    <input type="text" [(ngModel)]="profile.municipio" name="municipio" required class="input-flat" placeholder="ALCALDIA" [readonly]="addressLocked()">
                   </div>
 
                   <div class="field">
                     <label>ESTADO</label>
-                    <select [(ngModel)]="profile.state" name="state" required class="input-flat select-flat">
+                    <select [(ngModel)]="profile.state" name="state" required class="input-flat select-flat" [disabled]="addressLocked()">
                       <option value="" disabled selected>SELECCIONA UN ESTADO</option>
                       <option *ngFor="let state of mexicoStates" [value]="state">{{ state | uppercase }}</option>
                     </select>
@@ -82,12 +82,12 @@ import { ToastService } from '../services/toast.service';
                   
                   <div class="field">
                     <label>CODIGO POSTAL</label>
-                    <input type="text" [(ngModel)]="profile.zip_code" name="zip_code" required maxlength="5" class="input-flat" placeholder="CP">
+                    <input type="text" [(ngModel)]="profile.zip_code" name="zip_code" required maxlength="5" class="input-flat" placeholder="CP" [readonly]="addressLocked()">
                   </div>
 
                   <div class="field full-width">
                     <label>INSTRUCCIONES DE ENTREGA</label>
-                    <textarea [(ngModel)]="profile.delivery_instructions" name="delivery_instructions" class="input-flat textarea-flat" placeholder="INSTRUCCIONES ADICIONALES PARA LA ENTREGA"></textarea>
+                    <textarea [(ngModel)]="profile.delivery_instructions" name="delivery_instructions" class="input-flat textarea-flat" placeholder="INSTRUCCIONES ADICIONALES PARA LA ENTREGA" [readonly]="addressLocked()"></textarea>
                   </div>
               </div>
 
@@ -308,6 +308,7 @@ import { ToastService } from '../services/toast.service';
 export class UserProfileComponent implements OnInit {
   profile: any = {};
   loading = signal(false);
+  addressLocked = signal(false);
 
   mexicoStates = [
     'Aguascalientes', 'Baja California', 'Baja California Sur', 'Campeche', 'Chiapas',
@@ -325,6 +326,7 @@ export class UserProfileComponent implements OnInit {
     this.auth.getProfile().subscribe({
       next: (res: any) => {
         this.profile = res.user || res;
+        this.checkIfAddressLocked();
       },
       error: () => this.toast.show('Error al cargar perfil', 'error')
     });
@@ -356,6 +358,7 @@ export class UserProfileComponent implements OnInit {
       next: () => {
         this.loading.set(false);
         this.toast.show('Datos actualizados correctamente!', 'success');
+        this.checkIfAddressLocked();
         // Update session storage if needed logic is inside auth or just reload from there
       },
       error: (err) => {
@@ -363,5 +366,20 @@ export class UserProfileComponent implements OnInit {
         this.toast.show(err.error?.message || 'Error al actualizar perfil.', 'error');
       }
     });
+  }
+
+  checkIfAddressLocked() {
+    const p = this.profile;
+    const isComplete = !!(
+      p.full_name &&
+      p.phone &&
+      p.recipient_name &&
+      p.address &&
+      p.colonia &&
+      p.municipio &&
+      p.state &&
+      p.zip_code
+    );
+    this.addressLocked.set(isComplete);
   }
 }

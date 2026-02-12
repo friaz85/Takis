@@ -103,48 +103,48 @@ import Swal from 'sweetalert2';
                 <input type="text" [(ngModel)]="addressForm.full_name" name="full_name" required placeholder="NOMBRE COMPLETO" readonly style="opacity: 0.7; cursor: not-allowed;">
               </div>
 
-              <div class="form-group full">
+               <div class="form-group full">
                 <label>NOMBRE DE QUIEN RECIBE</label>
-                <input type="text" [(ngModel)]="addressForm.recipient_name" name="recipient_name" placeholder="NOMBRE QUIEN RECIBE">
+                <input type="text" [(ngModel)]="addressForm.recipient_name" name="recipient_name" placeholder="NOMBRE QUIEN RECIBE" [readonly]="addressLocked()">
               </div>
-
-              <div class="form-group full">
-                <label>CALLE Y NUMERO</label>
-                <input type="text" [(ngModel)]="addressForm.address" name="address" required placeholder="CALLE Y NUMERO">
-              </div>
-              
-              <div class="form-group">
-                <label>COLONIA</label>
-                <input type="text" [(ngModel)]="addressForm.colonia" name="colonia" required placeholder="COLONIA">
-              </div>
-              
-              <div class="form-group">
-                <label>ALCALDIA / MUNICIPIO</label>
-                <input type="text" [(ngModel)]="addressForm.municipio" name="municipio" required placeholder="MUNICIPIO">
-              </div>
-
-              <div class="form-group">
-                <label>ESTADO</label>
-                <select [(ngModel)]="addressForm.state" name="state" required class="select-flat-modal">
-                    <option value="" disabled selected>SELECCIONA UN ESTADO</option>
-                    <option *ngFor="let st of mexicoStates" [value]="st">{{ st | uppercase }}</option>
-                </select>
-              </div>
-
-              <div class="form-group">
-                <label>CODIGO POSTAL</label>
-                <input type="text" [(ngModel)]="addressForm.zip_code" name="zip_code" required maxlength="5" placeholder="CP">
-              </div>
-
-              <div class="form-group">
-                <label>TELEFONO DE CONTACTO</label>
-                <input type="text" [(ngModel)]="addressForm.phone" name="phone" required maxlength="10" placeholder="10 DIGITOS">
-              </div>
-
-              <div class="form-group full">
-                <label>INSTRUCCIONES DE ENTREGA</label>
-                <textarea [(ngModel)]="addressForm.delivery_instructions" name="delivery_instructions" class="textarea-flat-modal" placeholder="INSTRUCCIONES ADICIONALES PARA LA ENTREGA"></textarea>
-              </div>
+ 
+               <div class="form-group full">
+                 <label>CALLE Y NUMERO</label>
+                 <input type="text" [(ngModel)]="addressForm.address" name="address" required placeholder="CALLE Y NUMERO" [readonly]="addressLocked()">
+               </div>
+               
+               <div class="form-group">
+                 <label>COLONIA</label>
+                 <input type="text" [(ngModel)]="addressForm.colonia" name="colonia" required placeholder="COLONIA" [readonly]="addressLocked()">
+               </div>
+               
+               <div class="form-group">
+                 <label>ALCALDIA / MUNICIPIO</label>
+                 <input type="text" [(ngModel)]="addressForm.municipio" name="municipio" required placeholder="MUNICIPIO" [readonly]="addressLocked()">
+               </div>
+ 
+               <div class="form-group">
+                 <label>ESTADO</label>
+                 <select [(ngModel)]="addressForm.state" name="state" required class="select-flat-modal" [disabled]="addressLocked()">
+                     <option value="" disabled selected>SELECCIONA UN ESTADO</option>
+                     <option *ngFor="let st of mexicoStates" [value]="st">{{ st | uppercase }}</option>
+                 </select>
+               </div>
+ 
+               <div class="form-group">
+                 <label>CODIGO POSTAL</label>
+                 <input type="text" [(ngModel)]="addressForm.zip_code" name="zip_code" required maxlength="5" placeholder="CP" [readonly]="addressLocked()">
+               </div>
+ 
+               <div class="form-group">
+                 <label>TELEFONO DE CONTACTO</label>
+                 <input type="text" [(ngModel)]="addressForm.phone" name="phone" required maxlength="10" placeholder="10 DIGITOS" [readonly]="addressLocked()">
+               </div>
+ 
+               <div class="form-group full">
+                 <label>INSTRUCCIONES DE ENTREGA</label>
+                 <textarea [(ngModel)]="addressForm.delivery_instructions" name="delivery_instructions" class="textarea-flat-modal" placeholder="INSTRUCCIONES ADICIONALES PARA LA ENTREGA" [readonly]="addressLocked()"></textarea>
+               </div>
             </div>
 
             <button type="submit" class="takis-btn-primary block" [disabled]="submittingAddress() || processingId()">
@@ -602,6 +602,7 @@ export class RedeemRewardsComponent implements OnInit {
   userPoints = signal(0);
   loading = signal(true);
   processingId = signal<number | null>(null);
+  addressLocked = signal(false);
 
   mexicoStates = [
     'Aguascalientes', 'Baja California', 'Baja California Sur', 'Campeche', 'Chiapas',
@@ -675,6 +676,18 @@ export class RedeemRewardsComponent implements OnInit {
           phone: user.phone || '',
           delivery_instructions: user.delivery_instructions || ''
         };
+
+        const isComplete = !!(
+          this.addressForm.full_name &&
+          this.addressForm.recipient_name &&
+          this.addressForm.address &&
+          this.addressForm.colonia &&
+          this.addressForm.municipio &&
+          this.addressForm.state &&
+          this.addressForm.zip_code &&
+          this.addressForm.phone
+        );
+        this.addressLocked.set(isComplete);
 
         this.http.get(`${environment.apiUrl}/rewards`).subscribe({
           next: (res: any) => {
@@ -837,6 +850,19 @@ export class RedeemRewardsComponent implements OnInit {
     this.http.post(`${environment.apiUrl}/profile`, this.addressForm).subscribe({
       next: (res: any) => {
         this.toast.show('Direccion guardada exitosamente', 'success');
+
+        // Lock if now complete
+        const isNowComplete = !!(
+          this.addressForm.full_name &&
+          this.addressForm.recipient_name &&
+          this.addressForm.address &&
+          this.addressForm.colonia &&
+          this.addressForm.municipio &&
+          this.addressForm.state &&
+          this.addressForm.zip_code &&
+          this.addressForm.phone
+        );
+        this.addressLocked.set(isNowComplete);
 
         // Retry Redemption immediately without closing the modal first (avoid flickering)
         const pending = this.pendingReward();
