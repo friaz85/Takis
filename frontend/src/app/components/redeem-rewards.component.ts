@@ -779,6 +779,8 @@ export class RedeemRewardsComponent implements OnInit {
         if (errorCode === 'PROFILE_INCOMPLETE') {
           this.pendingReward.set(reward);
           this.showAddressModal.set(true);
+          const msg = err.error?.message || (err.error?.messages ? (typeof err.error.messages === 'object' ? err.error.messages.error : err.error.messages) : null);
+          if (msg) this.toast.show(msg, 'info', 6000);
           return;
         }
 
@@ -811,12 +813,15 @@ export class RedeemRewardsComponent implements OnInit {
     if (this.submittingAddress()) return;
 
     // Basic validation
-    if (!this.addressForm.full_name || !this.addressForm.address || !this.addressForm.phone || !this.addressForm.zip_code || !this.addressForm.state) {
-      this.toast.show('Por favor completa los campos requeridos', 'info');
+    if (!this.addressForm.address || !this.addressForm.phone || !this.addressForm.zip_code || !this.addressForm.state || !this.addressForm.municipio || !this.addressForm.colonia) {
+      this.toast.show('Por favor completa todos los campos de envío', 'info');
       return;
     }
 
     this.submittingAddress.set(true);
+
+    // Sync city with municipio just in case
+    this.addressForm.city = this.addressForm.municipio;
 
     // Update Profile First
     this.http.post(`${environment.apiUrl}/profile`, this.addressForm).subscribe({
