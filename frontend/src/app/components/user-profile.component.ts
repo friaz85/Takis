@@ -371,14 +371,14 @@ export class UserProfileComponent implements OnInit {
   checkIfAddressLocked() {
     const p = this.profile;
     const isComplete = !!(
-      p.full_name &&
-      p.phone &&
-      p.recipient_name &&
-      p.address &&
-      p.colonia &&
-      p.municipio &&
-      p.state &&
-      p.zip_code
+      p.full_name?.toString().trim() &&
+      p.phone?.toString().trim() &&
+      p.recipient_name?.toString().trim() &&
+      p.address?.toString().trim() &&
+      p.colonia?.toString().trim() &&
+      p.municipio?.toString().trim() &&
+      p.state?.toString().trim() &&
+      p.zip_code?.toString().trim()
     );
     this.addressLocked.set(isComplete);
   }

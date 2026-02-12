@@ -678,14 +678,14 @@ export class RedeemRewardsComponent implements OnInit {
         };
 
         const isComplete = !!(
-          this.addressForm.full_name &&
-          this.addressForm.recipient_name &&
-          this.addressForm.address &&
-          this.addressForm.colonia &&
-          this.addressForm.municipio &&
-          this.addressForm.state &&
-          this.addressForm.zip_code &&
-          this.addressForm.phone
+          this.addressForm.full_name?.toString().trim() &&
+          this.addressForm.recipient_name?.toString().trim() &&
+          this.addressForm.address?.toString().trim() &&
+          this.addressForm.colonia?.toString().trim() &&
+          this.addressForm.municipio?.toString().trim() &&
+          this.addressForm.state?.toString().trim() &&
+          this.addressForm.zip_code?.toString().trim() &&
+          this.addressForm.phone?.toString().trim()
         );
         this.addressLocked.set(isComplete);
 
@@ -770,7 +770,7 @@ export class RedeemRewardsComponent implements OnInit {
 
         Swal.fire({
           title: '¡CANJE EXITOSO!',
-          text: 'Disfruta tu premio. Se ha generado tu comprobante.',
+          text: 'A continuación recibirás un correo de confirmación con tu número de PEDIDO y también puedes consultar estatus en la sección HISTORIAL.',
           icon: 'success',
           confirmButtonColor: '#F2E74B',
           confirmButtonText: 'ENTENDIDO',
@@ -853,14 +853,14 @@ export class RedeemRewardsComponent implements OnInit {
 
         // Lock if now complete
         const isNowComplete = !!(
-          this.addressForm.full_name &&
-          this.addressForm.recipient_name &&
-          this.addressForm.address &&
-          this.addressForm.colonia &&
-          this.addressForm.municipio &&
-          this.addressForm.state &&
-          this.addressForm.zip_code &&
-          this.addressForm.phone
+          this.addressForm.full_name?.toString().trim() &&
+          this.addressForm.recipient_name?.toString().trim() &&
+          this.addressForm.address?.toString().trim() &&
+          this.addressForm.colonia?.toString().trim() &&
+          this.addressForm.municipio?.toString().trim() &&
+          this.addressForm.state?.toString().trim() &&
+          this.addressForm.zip_code?.toString().trim() &&
+          this.addressForm.phone?.toString().trim()
         );
         this.addressLocked.set(isNowComplete);
 

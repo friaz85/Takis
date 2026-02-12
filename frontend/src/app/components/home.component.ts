@@ -435,7 +435,7 @@ export class HomeComponent implements OnInit {
       user_id: user.id
     }).subscribe({
       next: (res: any) => {
-        this.toastService.show(`Codigo canjeado! +${res.points} puntos`, 'success', 5000);
+        this.toastService.show(`Código aceptado +${res.points} punto`, 'success', 5000);
         this.code = '';
         this.loadUserPoints();
         this.submitting.set(false);
