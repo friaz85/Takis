@@ -89,7 +89,7 @@ import { environment } from '../../environments/environment';
                 <td class="font-bold">{{ order.user_name }}</td>
                 <td>{{ order.reward_title }}</td>
                 <td class="hide-mobile">
-                  <span class="status-pill" [class]="order.status">{{ order.status }}</span>
+                  <span class="status-pill" [class]="order.status">{{ getStatusLabel(order.status) }}</span>
                 </td>
                 <td class="text-right text-sm text-gray">{{ order.created_at | date:'short' }}</td>
               </tr>
@@ -132,19 +132,32 @@ import { environment } from '../../environments/environment';
                 </div>
               </div>
 
-              <div class="info-item full mt-4">
-                <label>Recompensa</label>
-                <span class="reward-text">{{ selectedOrder().reward_title }}</span>
-              </div>
-
               <div class="info-grid mt-4">
                 <div class="info-item">
-                  <label>Puntos</label>
-                  <span class="points-text">{{ selectedOrder().points_cost }} pts</span>
+                  <label>Recompensa</label>
+                  <span class="reward-text">{{ selectedOrder().reward_title }}</span>
                 </div>
                 <div class="info-item">
-                  <label>Fecha</label>
+                  <label>Fecha del Pedido</label>
                   <span>{{ selectedOrder().created_at | date:'medium' }}</span>
+                </div>
+              </div>
+
+              <!-- Address Accordion -->
+              <div class="address-accordion mt-4">
+                <button class="accordion-toggle" (click)="showAddress.set(!showAddress())">
+                   <span>📍 Datos de Envío</span>
+                   <span class="arrow" [class.open]="showAddress()">▼</span>
+                </button>
+                <div class="accordion-content" *ngIf="showAddress()">
+                  <div class="address-details">
+                    <p><strong>Recibe:</strong> {{ selectedOrder().recipient_name || selectedOrder().user_name }}</p>
+                    <p><strong>Dirección:</strong> {{ selectedOrder().address }}</p>
+                    <p><strong>CP / Colonia:</strong> {{ selectedOrder().zip_code }} - {{ selectedOrder().colonia }}</p>
+                    <p><strong>Mpio / Estado:</strong> {{ selectedOrder().municipio }} / {{ selectedOrder().state }}</p>
+                    <p><strong>Teléfono:</strong> {{ selectedOrder().phone }}</p>
+                    <p *ngIf="selectedOrder().delivery_instructions"><strong>Notas:</strong> {{ selectedOrder().delivery_instructions }}</p>
+                  </div>
                 </div>
               </div>
 
@@ -342,6 +355,45 @@ import { environment } from '../../environments/environment';
     .btn-save { background: #F2E74B; border: none; color: #1A0B2E; padding: 0.75rem 1.5rem; border-radius: 0.5rem; cursor: pointer; font-weight: bold; display: flex; align-items: center; gap: 0.5rem; transition: 0.3s; }
     .btn-save:hover { background: #6C1DDA; color: white; }
 
+    /* Address Accordion */
+    .address-accordion {
+      border: 1px solid rgba(108, 29, 218, 0.3);
+      border-radius: 0.8rem;
+      overflow: hidden;
+      background: rgba(108, 29, 218, 0.05);
+    }
+    .accordion-toggle {
+      width: 100%;
+      padding: 1rem;
+      background: rgba(108, 29, 218, 0.1);
+      border: none;
+      color: #F2E74B;
+      font-weight: bold;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      cursor: pointer;
+      transition: 0.3s;
+    }
+    .accordion-toggle:hover { background: rgba(108, 29, 218, 0.2); }
+    .accordion-content {
+      padding: 1.2rem;
+      border-top: 1px solid rgba(108, 29, 218, 0.2);
+    }
+    .address-details p {
+      margin: 0.5rem 0;
+      font-size: 0.9rem;
+      color: #e0e0e0;
+    }
+    .address-details strong {
+      color: #F2E74B;
+      font-size: 0.85rem;
+      text-transform: uppercase;
+      margin-right: 0.5rem;
+    }
+    .arrow { transition: 0.3s; font-size: 0.8rem; }
+    .arrow.open { transform: rotate(180deg); }
+
     .mt-4 { margin-top: 1rem; }
 
     .pagination-footer { padding: 1.5rem; display: flex; justify-content: space-between; align-items: center; border-top: 1px solid rgba(108, 29, 218, 0.2); }
@@ -372,8 +424,19 @@ export class AdminOrdersComponent implements OnInit {
   currentPage = signal(1);
   pageSize = 10;
   savingOrder = signal(false);
+  showAddress = signal(false);
   Math = Math;
   dataVersion = signal(0);
+
+  getStatusLabel(status: string) {
+    const labels: any = {
+      'pending': 'PENDIENTE',
+      'processing': 'EN PROCESO',
+      'shipped': 'ENVIADO',
+      'delivered': 'ENTREGADO'
+    };
+    return labels[status] || status.toUpperCase();
+  }
 
   setPage(page: number) {
     if (page >= 1 && page <= this.totalPages()) {
@@ -410,7 +473,7 @@ export class AdminOrdersComponent implements OnInit {
     return this.orders().filter((o: any) =>
       o.user_name?.toLowerCase().includes(term) ||
       o.reward_title?.toLowerCase().includes(term) ||
-      o.status?.toLowerCase().includes(term)
+      this.getStatusLabel(o.status).toLowerCase().includes(term)
     );
   });
 
@@ -440,6 +503,7 @@ export class AdminOrdersComponent implements OnInit {
   closeOrderModal(event: Event) {
     event.stopPropagation();
     this.selectedOrder.set(null);
+    this.showAddress.set(false);
   }
 
   updateOrderStatus() {
