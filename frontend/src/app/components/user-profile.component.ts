@@ -35,7 +35,7 @@ import { ToastService } from '../services/toast.service';
               <div class="form-grid">
                    <div class="field full-width">
                     <label>NOMBRE COMPLETO</label>
-                    <input type="text" [(ngModel)]="profile.full_name" name="full_name" required class="input-flat" placeholder="NOMBRE COMPLETO" [readonly]="addressLocked()">
+                    <input type="text" [(ngModel)]="profile.full_name" name="full_name" required class="input-flat" placeholder="NOMBRE COMPLETO" [disabled]="addressLocked()">
                   </div>
 
                   <div class="field">
@@ -45,7 +45,7 @@ import { ToastService } from '../services/toast.service';
 
                   <div class="field">
                     <label>TELEFONO</label>
-                    <input type="tel" [(ngModel)]="profile.phone" name="phone" required maxlength="10" class="input-flat" placeholder="10 DIGITOS" [readonly]="addressLocked()">
+                    <input type="tel" [(ngModel)]="profile.phone" name="phone" required maxlength="10" class="input-flat" placeholder="10 DIGITOS" [disabled]="addressLocked()">
                   </div>
 
                   <div class="field full-width section-header">
@@ -54,22 +54,22 @@ import { ToastService } from '../services/toast.service';
 
                   <div class="field full-width">
                     <label>NOMBRE DE QUIEN RECIBE</label>
-                    <input type="text" [(ngModel)]="profile.recipient_name" name="recipient_name" class="input-flat" placeholder="NOMBRE COMPLETO" [readonly]="addressLocked()">
+                    <input type="text" [(ngModel)]="profile.recipient_name" name="recipient_name" class="input-flat" placeholder="NOMBRE COMPLETO" [disabled]="addressLocked()">
                   </div>
 
                   <div class="field full-width">
                     <label>CALLE Y NUMERO</label>
-                    <input type="text" [(ngModel)]="profile.address" name="address" required class="input-flat" placeholder="CALLE Y NUMERO" [readonly]="addressLocked()">
+                    <input type="text" [(ngModel)]="profile.address" name="address" required class="input-flat" placeholder="CALLE Y NUMERO" [disabled]="addressLocked()">
                   </div>
 
                   <div class="field">
                     <label>COLONIA</label>
-                    <input type="text" [(ngModel)]="profile.colonia" name="colonia" required class="input-flat" placeholder="COLONIA" [readonly]="addressLocked()">
+                    <input type="text" [(ngModel)]="profile.colonia" name="colonia" required class="input-flat" placeholder="COLONIA" [disabled]="addressLocked()">
                   </div>
 
                   <div class="field">
                     <label>ALCALDIA / MUNICIPIO</label>
-                    <input type="text" [(ngModel)]="profile.municipio" name="municipio" required class="input-flat" placeholder="ALCALDIA" [readonly]="addressLocked()">
+                    <input type="text" [(ngModel)]="profile.municipio" name="municipio" required class="input-flat" placeholder="ALCALDIA" [disabled]="addressLocked()">
                   </div>
 
                   <div class="field">
@@ -82,12 +82,12 @@ import { ToastService } from '../services/toast.service';
                   
                   <div class="field">
                     <label>CODIGO POSTAL</label>
-                    <input type="text" [(ngModel)]="profile.zip_code" name="zip_code" required maxlength="5" class="input-flat" placeholder="CP" [readonly]="addressLocked()">
+                    <input type="text" [(ngModel)]="profile.zip_code" name="zip_code" required maxlength="5" class="input-flat" placeholder="CP" [disabled]="addressLocked()">
                   </div>
 
                   <div class="field full-width">
                     <label>INSTRUCCIONES DE ENTREGA</label>
-                    <textarea [(ngModel)]="profile.delivery_instructions" name="delivery_instructions" class="input-flat textarea-flat" placeholder="INSTRUCCIONES ADICIONALES PARA LA ENTREGA" [readonly]="addressLocked()"></textarea>
+                    <textarea [(ngModel)]="profile.delivery_instructions" name="delivery_instructions" class="input-flat textarea-flat" placeholder="INSTRUCCIONES ADICIONALES PARA LA ENTREGA" [disabled]="addressLocked()"></textarea>
                   </div>
               </div>
 
@@ -205,6 +205,13 @@ import { ToastService } from '../services/toast.service';
     .input-flat:focus {
         background: #e6e6e6;
         box-shadow: 0 0 0 2px #560E8C;
+    }
+    
+    .input-flat:disabled {
+        background: #e0e0e0;
+        cursor: not-allowed;
+        opacity: 0.8;
+        color: #666;
     }
     
     .readonly {
@@ -381,5 +388,6 @@ export class UserProfileComponent implements OnInit {
       p.zip_code?.toString().trim()
     );
     this.addressLocked.set(isComplete);
+    console.log('Profile complete check:', isComplete, p);
   }
 }

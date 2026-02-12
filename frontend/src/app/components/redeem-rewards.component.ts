@@ -104,23 +104,23 @@ import Swal from 'sweetalert2';
               </div>
 
                <div class="form-group full">
-                <label>NOMBRE DE QUIEN RECIBE</label>
-                <input type="text" [(ngModel)]="addressForm.recipient_name" name="recipient_name" placeholder="NOMBRE QUIEN RECIBE" [readonly]="addressLocked()">
-              </div>
+                 <label>NOMBRE DE QUIEN RECIBE</label>
+                 <input type="text" [(ngModel)]="addressForm.recipient_name" name="recipient_name" placeholder="NOMBRE QUIEN RECIBE" [disabled]="addressLocked()">
+               </div>
  
                <div class="form-group full">
                  <label>CALLE Y NUMERO</label>
-                 <input type="text" [(ngModel)]="addressForm.address" name="address" required placeholder="CALLE Y NUMERO" [readonly]="addressLocked()">
+                 <input type="text" [(ngModel)]="addressForm.address" name="address" required placeholder="CALLE Y NUMERO" [disabled]="addressLocked()">
                </div>
                
                <div class="form-group">
                  <label>COLONIA</label>
-                 <input type="text" [(ngModel)]="addressForm.colonia" name="colonia" required placeholder="COLONIA" [readonly]="addressLocked()">
+                 <input type="text" [(ngModel)]="addressForm.colonia" name="colonia" required placeholder="COLONIA" [disabled]="addressLocked()">
                </div>
                
                <div class="form-group">
                  <label>ALCALDIA / MUNICIPIO</label>
-                 <input type="text" [(ngModel)]="addressForm.municipio" name="municipio" required placeholder="MUNICIPIO" [readonly]="addressLocked()">
+                 <input type="text" [(ngModel)]="addressForm.municipio" name="municipio" required placeholder="MUNICIPIO" [disabled]="addressLocked()">
                </div>
  
                <div class="form-group">
@@ -133,17 +133,17 @@ import Swal from 'sweetalert2';
  
                <div class="form-group">
                  <label>CODIGO POSTAL</label>
-                 <input type="text" [(ngModel)]="addressForm.zip_code" name="zip_code" required maxlength="5" placeholder="CP" [readonly]="addressLocked()">
+                 <input type="text" [(ngModel)]="addressForm.zip_code" name="zip_code" required maxlength="5" placeholder="CP" [disabled]="addressLocked()">
                </div>
  
                <div class="form-group">
                  <label>TELEFONO DE CONTACTO</label>
-                 <input type="text" [(ngModel)]="addressForm.phone" name="phone" required maxlength="10" placeholder="10 DIGITOS" [readonly]="addressLocked()">
+                 <input type="text" [(ngModel)]="addressForm.phone" name="phone" required maxlength="10" placeholder="10 DIGITOS" [disabled]="addressLocked()">
                </div>
  
                <div class="form-group full">
                  <label>INSTRUCCIONES DE ENTREGA</label>
-                 <textarea [(ngModel)]="addressForm.delivery_instructions" name="delivery_instructions" class="textarea-flat-modal" placeholder="INSTRUCCIONES ADICIONALES PARA LA ENTREGA" [readonly]="addressLocked()"></textarea>
+                 <textarea [(ngModel)]="addressForm.delivery_instructions" name="delivery_instructions" class="textarea-flat-modal" placeholder="INSTRUCCIONES ADICIONALES PARA LA ENTREGA" [disabled]="addressLocked()"></textarea>
                </div>
             </div>
 
@@ -503,6 +503,13 @@ import Swal from 'sweetalert2';
         background: rgba(255,255,255,0.2); 
     }
 
+    .form-group input:disabled, .form-group select:disabled, .form-group textarea:disabled {
+        background: rgba(255, 255, 255, 0.1) !important;
+        cursor: not-allowed;
+        opacity: 0.7;
+        color: #bbb !important;
+    }
+
     .select-flat-modal {
         cursor: pointer;
         appearance: none;
@@ -688,6 +695,7 @@ export class RedeemRewardsComponent implements OnInit {
           this.addressForm.phone?.toString().trim()
         );
         this.addressLocked.set(isComplete);
+        console.log('Address form complete check:', isComplete, this.addressForm);
 
         this.http.get(`${environment.apiUrl}/rewards`).subscribe({
           next: (res: any) => {
@@ -863,6 +871,7 @@ export class RedeemRewardsComponent implements OnInit {
           this.addressForm.phone?.toString().trim()
         );
         this.addressLocked.set(isNowComplete);
+        console.log('Address form update lock check:', isNowComplete);
 
         // Retry Redemption immediately without closing the modal first (avoid flickering)
         const pending = this.pendingReward();
