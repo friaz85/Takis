@@ -512,14 +512,48 @@ import Swal from 'sweetalert2';
     
     .takis-btn-primary { 
       background: #F2E74B; color: #5d1f87; border: none; 
-      padding: 1.2rem; border-radius: 0.8rem; 
-      font-weight: 900; font-size: 1.3rem; width: 100%; 
+      padding: 1.2rem; border-radius: 1.5rem; 
+      font-weight: 900; font-size: 1.5rem; width: 100%; 
       cursor: pointer; text-transform: uppercase; transition: 0.3s;
       font-family: 'TakisVeneer', 'Inter', sans-serif;
-      box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+      box-shadow: 0 8px 0 #b8af2e;
+      position: relative;
     }
-    .takis-btn-primary:hover { transform: scale(1.02); box-shadow: 0 0 20px rgba(242, 231, 75, 0.4); }
+    .takis-btn-primary:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 10px 0 #b8af2e; }
+    .takis-btn-primary:active:not(:disabled) { transform: translateY(4px); box-shadow: 0 2px 0 #b8af2e; }
     .takis-btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
+
+    /* SweetAlert Button Custom Classes */
+    ::ng-deep .takis-swal-confirm {
+      background: #F2E74B !important;
+      color: #5d1f87 !important;
+      border-radius: 1.5rem !important;
+      padding: 1rem 2rem !important;
+      font-weight: 900 !important;
+      font-size: 1.3rem !important;
+      text-transform: uppercase !important;
+      box-shadow: 0 8px 0 #b8af2e !important;
+      font-family: 'TakisVeneer', 'Inter', sans-serif !important;
+      border: none !important;
+      margin: 0 10px !important;
+      cursor: pointer !important;
+    }
+    ::ng-deep .takis-swal-confirm:hover { transform: translateY(-2px); box-shadow: 0 10px 0 #b8af2e !important; }
+    ::ng-deep .takis-swal-confirm:active { transform: translateY(4px); box-shadow: 0 2px 0 #b8af2e !important; }
+
+    ::ng-deep .takis-swal-cancel {
+      background: transparent !important;
+      color: #F2E74B !important;
+      border: 3px solid #F2E74B !important;
+      border-radius: 1.5rem !important;
+      padding: 0.8rem 2rem !important;
+      font-weight: 900 !important;
+      font-size: 1.3rem !important;
+      text-transform: uppercase !important;
+      font-family: 'TakisVeneer', 'Inter', sans-serif !important;
+      margin: 0 10px !important;
+      cursor: pointer !important;
+    }
 
     /* Responsive */
     .mobile-logo { display: none; }
@@ -683,8 +717,11 @@ export class RedeemRewardsComponent implements OnInit {
       background: '#1A0B2E',
       color: '#fff',
       customClass: {
-        popup: 'takis-swal-popup'
-      }
+        popup: 'takis-swal-popup',
+        confirmButton: 'takis-swal-confirm',
+        cancelButton: 'takis-swal-cancel'
+      },
+      buttonsStyling: false
     }).then((result) => {
       if (result.isConfirmed) {
         this.executeRedemption(reward);
@@ -704,7 +741,12 @@ export class RedeemRewardsComponent implements OnInit {
           title: '¡CANJE EXITOSO!',
           text: 'Disfruta tu premio. Se ha generado tu comprobante.',
           icon: 'success',
-          confirmButtonColor: '#6C1DDA'
+          confirmButtonColor: '#F2E74B',
+          confirmButtonText: 'ENTENDIDO',
+          customClass: {
+            confirmButton: 'takis-swal-confirm'
+          },
+          buttonsStyling: false
         });
 
         this.processingId = null;
@@ -741,7 +783,11 @@ export class RedeemRewardsComponent implements OnInit {
           title: 'ERROR',
           text: msg,
           icon: 'error',
-          confirmButtonColor: '#6C1DDA'
+          confirmButtonText: 'CERRAR',
+          customClass: {
+            confirmButton: 'takis-swal-confirm'
+          },
+          buttonsStyling: false
         });
       }
     });
@@ -767,13 +813,19 @@ export class RedeemRewardsComponent implements OnInit {
     this.http.post(`${environment.apiUrl}/profile`, this.addressForm).subscribe({
       next: (res: any) => {
         this.toast.show('Direccion guardada exitosamente', 'success');
-        this.submittingAddress.set(false);
         this.showAddressModal.set(false);
 
         // Retry Redemption immediately without asking for confirmation again
+        // Added small timeout to let modal close smoothly and prevent flicker
         const pending = this.pendingReward();
         if (pending) {
-          this.executeRedemption(pending);
+          this.pendingReward.set(null);
+          setTimeout(() => {
+            if (this.submittingAddress()) this.submittingAddress.set(false);
+            this.executeRedemption(pending);
+          }, 500);
+        } else {
+          this.submittingAddress.set(false);
         }
       },
       error: (err) => {
