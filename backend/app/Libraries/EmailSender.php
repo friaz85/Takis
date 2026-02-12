@@ -6,11 +6,7 @@ class EmailSender
 {
     private static function removeAccents($string)
     {
-        $string = str_replace(
-            ['á', 'é', 'í', 'ó', 'ú', 'Á', 'É', 'Í', 'Ó', 'Ú', 'ñ', 'Ñ'],
-            ['a', 'e', 'i', 'o', 'u', 'A', 'E', 'I', 'O', 'U', 'n', 'N'],
-            $string
-        );
+        // USER REQUESTED TO HAVE ACCENTS BACK
         return $string;
     }
 
