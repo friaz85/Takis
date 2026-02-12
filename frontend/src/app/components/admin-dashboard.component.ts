@@ -18,7 +18,8 @@ Chart.register(...registerables);
     <app-admin-navbar></app-admin-navbar>
     <div class="dashboard-page" 
          [class.sidebar-closed]="!layoutService.isSidebarOpen()"
-         [class.role-takis]="getRole() === 'takis'">
+         [class.role-takis]="getRole() === 'takis'"
+         [class.user-takis-admin]="getUsername() === 'takis_admin'">
       <div class="header-row">
         <div>
            <h2 class="title">DASHBOARD DE RENDIMIENTO</h2>
@@ -46,7 +47,7 @@ Chart.register(...registerables);
 
       <!-- KPI Cards -->
       <div class="kpi-grid">
-        <div class="kpi-card visits">
+        <div class="kpi-card visits" *ngIf="getUsername() !== 'takis_admin'">
            <div class="kpi-icon">🌐</div>
            <div class="kpi-info">
              <h3>Visitas</h3>
@@ -260,7 +261,7 @@ Chart.register(...registerables);
     .export-btn:hover { background: #F2E74B; color: #1A0B2E; transform: translateY(-2px); }
 
     /* KPI CARDS */
-    .kpi-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 1.5rem; margin-bottom: 2rem; }
+    .kpi-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1.5rem; margin-bottom: 2rem; }
     .kpi-card { 
       background: rgba(108, 29, 218, 0.1); border: 2px solid #6C1DDA; border-radius: 1rem;
       padding: 1.5rem; display: flex; align-items: center; gap: 1.5rem; transition: 0.3s;
@@ -382,6 +383,11 @@ Chart.register(...registerables);
 
       /* Hide restricted sections for takis role in report */
       .dashboard-page.role-takis .panel.activity {
+        display: none !important;
+      }
+
+      .dashboard-page.user-takis-admin .visits-panel,
+      .dashboard-page.user-takis-admin .kpi-card.visits {
         display: none !important;
       }
 
