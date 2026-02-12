@@ -74,20 +74,8 @@ class EmailSender
 
         $year = date('Y');
 
-        // Logic outside Heredoc
+        // User requested to remove buttons
         $buttonHtml = '';
-        if ($btnText) {
-            $url        = $btnUrl ?: '#';
-            $buttonHtml = "
-            <table role='presentation' cellspacing='0' cellpadding='0' border='0' style='margin: 0 auto;'>
-                <tr>
-                    <td style='border-radius: 50px; background-color: $accentColor;'>
-                        <a href='$url' style='display: inline-block; padding: 14px 40px; color: #1A0B2E; font-size: 16px; font-weight: bold; text-decoration: none; border-radius: 50px; text-transform: uppercase;'>$btnText</a>
-                    </td>
-                </tr>
-            </table>
-            ";
-        }
 
         return <<<HTML
 <!DOCTYPE html>
@@ -135,7 +123,7 @@ class EmailSender
                     <!-- Footer -->
                     <tr>
                         <td style="padding: 20px; background-color: rgba(18, 6, 33, 0.95); text-align: center; color: #ffffff; font-size: 12px; border-top: 1px solid #442a66;">
-                            <p style="margin: 0;">&copy; $year Takis Promo. Todos los derechos reservados.</p>
+                            <p style="margin: 0;">&copy; $year TAKIS: La promo de la afición más intensa Todos los derechos reservados.</p>
                             <p style="margin: 5px 0 0 0;">Si no solicitaste este correo, puedes ignorarlo.</p>
                         </td>
                     </tr>
