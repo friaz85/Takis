@@ -113,7 +113,7 @@ Chart.register(...registerables);
       <!-- Secondary Row: Visits (8/12) and Rewards (4/12) -->
       <div class="secondary-grid">
         <!-- Visits Log Table -->
-        <div class="panel visits-panel" *ngIf="stats?.visits_log?.length">
+        <div class="panel visits-panel" *ngIf="stats?.visits_log?.length && getUsername() !== 'takis_admin'">
            <div class="panel-header">
               <h3>🌐 Registro de Visitas Recientes</h3>
               <div class="header-actions">
@@ -543,6 +543,10 @@ export class AdminDashboardComponent implements OnInit, AfterViewInit {
   searchTerm = signal('');
   currentPage = signal(1);
   pageSize = 5;
+
+  getUsername() {
+    return this.auth.user()?.username;
+  }
 
   // Visits Table Pagination & Filter
   visitsSearchTerm = signal('');
