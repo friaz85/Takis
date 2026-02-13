@@ -5,7 +5,6 @@ import { RegisterComponent } from './components/register.component';
 import { OtpComponent } from './components/otp.component';
 import { HomeComponent } from './components/home.component';
 import { UserProfileComponent } from './components/user-profile.component';
-import { PublicCatalogComponent } from './components/public-catalog.component';
 import { RedeemRewardsComponent } from './components/redeem-rewards.component';
 import { HistoryComponent } from './components/history.component';
 import { AdminDashboardComponent } from './components/admin-dashboard.component';
@@ -22,9 +21,6 @@ import { adminGuard } from './guards/admin.guard';
 
 export const routes: Routes = [
     { path: '', component: LandingComponent },
-
-    // Public
-    { path: 'catalog', component: PublicCatalogComponent },
 
     // Auth
     { path: 'auth', component: LoginComponent },

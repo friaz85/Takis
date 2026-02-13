@@ -172,7 +172,7 @@ import Swal from 'sweetalert2';
     .hero { 
       padding: 1rem 2rem 4rem 2rem; 
       width: 100%;
-      max-width: 1400px;
+      max-width: 1600px;
       margin: 0 auto;
       z-index: 10;
     }
@@ -184,7 +184,7 @@ import Swal from 'sweetalert2';
       gap: 2rem;
     }
 
-    .hero-left { flex: 0 0 300px; display: flex; justify-content: center; position: sticky; top: 100px; }
+    .hero-left { flex: 0 0 250px; display: flex; justify-content: center; position: sticky; top: 100px; }
     
     .takis-logo { 
       width: 100%;
@@ -201,7 +201,7 @@ import Swal from 'sweetalert2';
     .catalog-card {
       background: rgba(86, 14, 140, 0.8);
       border-radius: 2rem;
-      padding: 3rem;
+      padding: 3rem 1.5rem;
       box-shadow: 0 20px 50px rgba(0,0,0,0.5);
       text-align: center;
       position: relative;
@@ -777,7 +777,7 @@ export class RedeemRewardsComponent implements OnInit {
         this.submittingAddress.set(false);
         this.pendingReward.set(null);
 
-        const isDigital = ['digital', 'Digital', 'DIGITAL'].includes(reward.type);
+        const isDigital = String(reward.type).toLowerCase().trim() === 'digital';
         const successTitle = '¡CANJE EXITOSO!';
         const successText = isDigital
           ? 'A continuación visualizarás tu cupón digital, recuerda guardarlo o tomarle captura, también lo puedes descargar más adelante en la sección HISTORIAL.'
