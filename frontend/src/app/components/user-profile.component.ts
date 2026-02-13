@@ -336,10 +336,38 @@ export class UserProfileComponent implements OnInit {
     this.auth.getProfile().subscribe({
       next: (res: any) => {
         this.profile = res.user || res;
+        if (this.profile.state) {
+          this.profile.state = this.normalizeState(this.profile.state);
+        }
         this.checkIfAddressLocked();
       },
       error: () => this.toast.show('Error al cargar perfil', 'error')
     });
+  }
+
+  normalizeState(state: string): string {
+    if (!state) return '';
+    const map: any = {
+      'Ciudad de Mexico': 'Ciudad de México',
+      'Estado de Mexico': 'Estado de México',
+      'Michoacan': 'Michoacán',
+      'Nuevo Leon': 'Nuevo León',
+      'Queretaro': 'Querétaro',
+      'San Luis Potosi': 'San Luis Potosí',
+      'Yucatan': 'Yucatán',
+      'CIUDAD DE MEXICO': 'Ciudad de México',
+      'ESTADO DE MEXICO': 'Estado de México',
+      'MICHOACAN': 'Michoacán',
+      'NUEVO LEON': 'Nuevo León',
+      'QUERETARO': 'Querétaro',
+      'SAN LUIS POTOSI': 'San Luis Potosí',
+      'YUCATAN': 'Yucatán',
+      'CIUDAD DE MÉXICO': 'Ciudad de México',
+      'ESTADO DE MÉXICO': 'Estado de México',
+      'QUERÉTARO': 'Querétaro'
+    };
+    const trimmed = state.trim();
+    return map[trimmed] || trimmed;
   }
 
   save() {
@@ -348,17 +376,17 @@ export class UserProfileComponent implements OnInit {
     const missing = requiredFields.filter(field => !this.profile[field]);
 
     if (missing.length > 0) {
-      this.toast.show('Por favor completa todos los campos requeridos.', 'info');
+      this.toast.show('POR FAVOR COMPLETA TODOS LOS CAMPOS REQUERIDOS.', 'info');
       return;
     }
 
     if (this.profile.phone.toString().length !== 10) {
-      this.toast.show('El telefono debe tener 10 digitos.', 'info');
+      this.toast.show('EL TELÉFONO DEBE TENER 10 DÍGITOS.', 'info');
       return;
     }
 
     if (this.profile.zip_code.toString().length !== 5) {
-      this.toast.show('El codigo postal debe tener 5 digitos.', 'info');
+      this.toast.show('EL CÓDIGO POSTAL DEBE TENER 5 DÍGITOS.', 'info');
       return;
     }
 
@@ -367,7 +395,7 @@ export class UserProfileComponent implements OnInit {
     this.auth.updateProfile(this.profile).subscribe({
       next: () => {
         this.loading.set(false);
-        this.toast.show('Datos actualizados correctamente!', 'success');
+        this.toast.show('¡DATOS ACTUALIZADOS CORRECTAMENTE!', 'success');
         this.checkIfAddressLocked();
         // Update session storage if needed logic is inside auth or just reload from there
       },

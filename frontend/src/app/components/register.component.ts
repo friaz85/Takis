@@ -332,18 +332,18 @@ export class RegisterComponent implements OnInit {
 
   onSubmit() {
     if (!this.form.name || !this.form.email || !this.form.phone) {
-      this.toast.show('Todos los campos son obligatorios.', 'info');
+      this.toast.show('TODOS LOS CAMPOS SON OBLIGATORIOS.', 'info');
       return;
     }
 
     if (!this.form.acceptedLegal) {
-      this.toast.show('Debes aceptar los terminos y el aviso de privacidad.', 'info');
+      this.toast.show('DEBES ACEPTAR LOS TÉRMINOS Y EL AVISO DE PRIVACIDAD.', 'info');
       return;
     }
 
     const phoneRegex = /^[0-9]{10}$/;
     if (!phoneRegex.test(this.form.phone)) {
-      this.toast.show('Por favor, ingresa un numero de telefono de 10 digitos.', 'error');
+      this.toast.show('POR FAVOR, INGRESA UN NÚMERO DE TELÉFONO DE 10 DÍGITOS.', 'error');
       return;
     }
 
@@ -354,12 +354,12 @@ export class RegisterComponent implements OnInit {
     this.http.post(`${environment.apiUrl}/auth/register`, payload).subscribe({
       next: (res: any) => {
         this.loading.set(false);
-        this.toast.show(res.message || 'Codigo enviado.', 'success');
+        this.toast.show(res.message?.toUpperCase() || 'CÓDIGO ENVIADO.', 'success');
         this.router.navigate(['/auth/otp'], { queryParams: { email: this.form.email } });
       },
       error: (err) => {
         this.loading.set(false);
-        const msg = err.error?.messages?.error || err.error?.message || 'Error al registrar.';
+        const msg = err.error?.messages?.error || err.error?.message || 'ERROR AL REGISTRAR.';
         this.toast.show(msg, 'error');
       }
     });

@@ -127,6 +127,8 @@ button {
   border-radius: 1.5rem !important;
   box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3) !important;
   padding: 2rem !important;
+  text-transform: uppercase !important;
+  /* Force uppercase in SweetAlert */
 }
 
 .takis-swal-button {
@@ -155,12 +157,15 @@ button {
   border-radius: 1rem !important;
   border: 2px solid rgba(242, 231, 75, 0.3) !important;
   box-shadow: 0 8px 25px rgba(0, 0, 0, 0.4) !important;
+  text-transform: uppercase !important;
+  /* Force uppercase in Toast */
 }
 
 .takis-toast-title {
   font-family: 'acumin-pro', 'TakisVeneer', sans-serif !important;
   font-weight: 700 !important;
   font-size: 1rem !important;
+  text-transform: uppercase !important;
 }
 
 .takis-toast-icon {
@@ -172,9 +177,15 @@ button {
   font-family: 'acumin-pro', 'TakisVeneer', sans-serif !important;
   font-weight: 900 !important;
   font-size: 1.8rem !important;
+  text-transform: uppercase !important;
 }
 
 .swal2-html-container {
   font-family: 'acumin-pro', sans-serif !important;
   font-size: 1rem !important;
+  text-transform: uppercase !important;
+}
+
+.swal2-popup {
+  text-transform: uppercase !important;
 }

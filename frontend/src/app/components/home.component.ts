@@ -435,7 +435,7 @@ export class HomeComponent implements OnInit {
 
   redeemCode() {
     if (!this.code.trim()) {
-      this.toastService.show('Por favor ingresa un codigo', 'error');
+      this.toastService.show('POR FAVOR INGRESA UN CÓDIGO', 'error');
       return;
     }
 
@@ -447,7 +447,7 @@ export class HomeComponent implements OnInit {
       user_id: user.id
     }).subscribe({
       next: (res: any) => {
-        this.toastService.show(`Código aceptado +${res.points} punto`, 'success', 5000);
+        this.toastService.show(`CÓDIGO ACEPTADO +${res.points} PUNTO(S)`, 'success', 5000);
         this.code = '';
         this.loadUserPoints();
         this.submitting.set(false);
@@ -457,7 +457,7 @@ export class HomeComponent implements OnInit {
         const errorMessage = err.error?.message ||
           err.error?.messages?.error ||
           err.message ||
-          'Error al canjear el codigo';
+          'ERROR AL CANJEAR EL CÓDIGO';
         this.toastService.show(errorMessage, 'error', 5000);
         this.submitting.set(false);
       }

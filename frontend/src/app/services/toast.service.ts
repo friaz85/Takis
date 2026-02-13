@@ -45,7 +45,7 @@ export class ToastService {
         // Show SweetAlert2 Toast with enhanced Takis styling
         this.Toast.fire({
             icon: icon,
-            title: message,
+            title: message.toUpperCase(),
             timer: duration,
             background: 'linear-gradient(135deg, #6C1DDA 0%, #560E8C 100%)',
             color: '#fff',

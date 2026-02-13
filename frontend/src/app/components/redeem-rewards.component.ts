@@ -309,7 +309,7 @@ import Swal from 'sweetalert2';
 
     .catalog-title {
         color: #f2e74b;
-        font-size: 3rem !important;
+        font-size: clamp(1.6rem, 5vw, 3rem);
         margin-top: 0px !important;
         font-weight: 900;
         text-transform: uppercase;
@@ -598,13 +598,39 @@ import Swal from 'sweetalert2';
         .score-center { width: 110px; height: 75px; }
         .score-value { font-size: 2rem; }
 
-        .catalog-title { font-size: 1.6rem; }
+        .catalog-title { font-size: 1.5rem !important; margin-bottom: 0.5rem; }
         
         .form-grid { grid-template-columns: 1fr; }
     }
   `]
 })
 export class RedeemRewardsComponent implements OnInit {
+  normalizeState(state: string): string {
+    if (!state) return '';
+    const map: any = {
+      'Ciudad de Mexico': 'Ciudad de México',
+      'Estado de Mexico': 'Estado de México',
+      'Michoacan': 'Michoacán',
+      'Nuevo Leon': 'Nuevo León',
+      'Queretaro': 'Querétaro',
+      'San Luis Potosi': 'San Luis Potosí',
+      'Yucatan': 'Yucatán',
+      'CIUDAD DE MEXICO': 'Ciudad de México',
+      'ESTADO DE MEXICO': 'Estado de México',
+      'MICHOACAN': 'Michoacán',
+      'NUEVO LEON': 'Nuevo León',
+      'QUERETARO': 'Querétaro',
+      'SAN LUIS POTOSI': 'San Luis Potosí',
+      'YUCATAN': 'Yucatán',
+      'CIUDAD DE MÉXICO': 'Ciudad de México',
+      'ESTADO DE MÉXICO': 'Estado de México',
+      'QUERÉTARO': 'Querétaro'
+    };
+    if (!state) return '';
+    const trimmed = state.trim();
+    return map[trimmed] || trimmed;
+  }
+
   rewards = signal<any[]>([]);
   activeFilter = signal<'all' | 'redeemable'>('all');
   userPoints = signal(0);
@@ -679,7 +705,7 @@ export class RedeemRewardsComponent implements OnInit {
           address: user.address || '',
           colonia: user.colonia || '',
           municipio: user.municipio || '',
-          state: user.state || '',
+          state: this.normalizeState(user.state) || '',
           zip_code: user.zip_code || '',
           phone: user.phone || '',
           delivery_instructions: user.delivery_instructions || ''
@@ -723,8 +749,8 @@ export class RedeemRewardsComponent implements OnInit {
     if (this.processingId()) return;
     if (reward.cost > this.userPoints()) {
       Swal.fire({
-        title: 'Puntos insuficientes',
-        text: `Te faltan ${reward.cost - this.userPoints()} puntos para canjear este premio.`,
+        title: 'PUNTOS INSUFICIENTES',
+        text: `TE FALTAN ${reward.cost - this.userPoints()} PUNTOS PARA CANJEAR ESTE PREMIO.`,
         icon: 'warning',
         confirmButtonColor: '#6C1DDA'
       });
@@ -732,17 +758,17 @@ export class RedeemRewardsComponent implements OnInit {
     }
     if (reward.stock <= 0) {
       Swal.fire({
-        title: 'Agotado',
-        text: 'Lo sentimos, este producto ya no tiene existencias.',
-        icon: 'error',
+        title: 'AGOTADO',
+        text: 'ESTE PREMIO SE HA AGOTADO POR EL MOMENTO.',
+        icon: 'info',
         confirmButtonColor: '#6C1DDA'
       });
       return;
     }
 
     Swal.fire({
-      title: '¿CONFIRMAR CANJE?',
-      text: `¿Deseas canjear ${reward.title} por ${reward.cost} puntos?`,
+      title: 'CONFIRMAR CANJE',
+      text: `¿DESEAS CANJEAR ${reward.title?.toUpperCase()} POR ${reward.cost} PUNTOS?`,
       icon: 'question',
       showCancelButton: true,
       confirmButtonText: 'SÍ, CANJEAR',
@@ -779,9 +805,7 @@ export class RedeemRewardsComponent implements OnInit {
 
         const isDigital = String(reward.type).toLowerCase().trim() === 'digital';
         const successTitle = '¡CANJE EXITOSO!';
-        const successText = isDigital
-          ? 'A continuación visualizarás tu cupón digital, recuerda guardarlo o tomarle captura, también lo puedes descargar más adelante en la sección HISTORIAL.'
-          : 'A continuación recibirás un correo de confirmación con tu número de PEDIDO y también puedes consultar estatus en la sección HISTORIAL.';
+        const successText = 'TU PREMIO HA SIDO CANJEADO CORRECTAMENTE. RECIBIRÁS UN CORREO CON LOS DETALLES.';
 
         Swal.fire({
           title: successTitle,
@@ -865,7 +889,7 @@ export class RedeemRewardsComponent implements OnInit {
     // Update Profile First
     this.http.post(`${environment.apiUrl}/profile`, this.addressForm).subscribe({
       next: (res: any) => {
-        this.toast.show('Direccion guardada exitosamente', 'success');
+        this.toast.show('DIRECCIÓN GUARDADA EXITOSAMENTE', 'success');
 
         // Lock if now complete
         const isNowComplete = !!(
@@ -893,7 +917,7 @@ export class RedeemRewardsComponent implements OnInit {
       error: (err) => {
         console.error('Update Profile Error', err);
         this.submittingAddress.set(false);
-        this.toast.show('Error al guardar la direccion. Intenta de nuevo.', 'error');
+        this.toast.show('ERROR AL GUARDAR LA DIRECCIÓN. INTENTA DE NUEVO.', 'error');
       }
     });
   }

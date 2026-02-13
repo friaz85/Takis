@@ -277,12 +277,12 @@ export class OtpComponent {
 
   verify() {
     if (!this.otp) {
-      this.toast.show('Ingresa el codigo.', 'info');
+      this.toast.show('INGRESA EL CÓDIGO.', 'info');
       return;
     }
 
     if (this.otp.length !== 6) {
-      this.toast.show('El codigo debe tener 6 digitos.', 'info');
+      this.toast.show('EL CÓDIGO DEBE TENER 6 DÍGITOS.', 'info');
       return;
     }
 
@@ -303,7 +303,7 @@ export class OtpComponent {
       },
       error: (err) => {
         this.loading.set(false);
-        const msg = err.error?.messages?.error || err.error?.message || 'Codigo incorrecto.';
+        const msg = err.error?.messages?.error || err.error?.message || 'CÓDIGO INCORRECTO.';
         this.toast.show(msg, 'error');
       }
     });
@@ -319,11 +319,11 @@ export class OtpComponent {
     this.auth.requestLoginOtp(this.email).subscribe({
       next: () => {
         this.loading.set(false);
-        this.toast.show('Codigo reenviado.', 'success');
+        this.toast.show('CÓDIGO REENVIADO.', 'success');
       },
       error: (err) => {
         this.loading.set(false);
-        const msg = err.error?.messages?.error || err.error?.message || 'Error al reenviar codigo.';
+        const msg = err.error?.messages?.error || err.error?.message || 'ERROR AL REENVIAR CÓDIGO.';
         this.toast.show(msg, 'error');
       }
     });

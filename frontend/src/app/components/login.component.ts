@@ -250,13 +250,13 @@ export class LoginComponent implements OnInit {
 
   onSubmit() {
     if (!this.email) {
-      this.toast.show('El campo de correo es obligatorio.', 'info');
+      this.toast.show('EL CAMPO DE CORREO ES OBLIGATORIO.', 'info');
       return;
     }
 
     const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
     if (!emailRegex.test(this.email)) {
-      this.toast.show('Por favor ingresa un correo electronico valido.', 'error');
+      this.toast.show('POR FAVOR INGRESA UN CORREO ELECTRÓNICO VÁLIDO.', 'error');
       return;
     }
 
@@ -264,12 +264,12 @@ export class LoginComponent implements OnInit {
     this.auth.requestLoginOtp(this.email).subscribe({
       next: (res: any) => {
         this.loading.set(false);
-        this.toast.show(res.message || 'Codigo enviado.', 'success');
+        this.toast.show(res.message?.toUpperCase() || 'CÓDIGO ENVIADO.', 'success');
         this.router.navigate(['/auth/otp'], { queryParams: { email: this.email } });
       },
       error: (err) => {
         this.loading.set(false);
-        const msg = err.error?.messages?.error || err.error?.message || 'Error. Verifica tu correo.';
+        const msg = err.error?.messages?.error || err.error?.message || 'ERROR. VERIFICA TU CORREO.';
         this.toast.show(msg, 'error');
       }
     });
