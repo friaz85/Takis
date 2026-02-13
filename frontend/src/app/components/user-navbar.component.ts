@@ -26,7 +26,7 @@ import { AuthService } from '../services/auth.service';
              <a routerLink="/rewards" routerLinkActive="active" (click)="isMenuOpen = false">RECOMPENSAS</a>
              <a routerLink="/historial" routerLinkActive="active" (click)="isMenuOpen = false">HISTORIAL</a>
              <a routerLink="/perfil" routerLinkActive="active" (click)="isMenuOpen = false">PERFIL</a>
-             <a routerLink="/como-funciona" routerLinkActive="active" (click)="isMenuOpen = false">PREGUNTAS FRECUENTES</a>
+             <a routerLink="/como-funciona" routerLinkActive="active" (click)="isMenuOpen = false">FAQ´S</a>
              <button (click)="logout()" class="logout-btn mobile-only">SALIR</button>
           </div>
 
