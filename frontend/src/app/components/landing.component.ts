@@ -25,7 +25,7 @@ import { AuthService } from '../services/auth.service';
           
           <div class="hero-right login-card" [style.backgroundImage]="'linear-gradient(rgba(86, 14, 140, 0.85), rgba(86, 14, 140, 0.85)), url(/assets/img/BG_landing.jpg)'">
             <h1 class="takis-title" style="color: #F2E74B">BIENVENIDO</h1>
-            <p class="desc">Registra tus códigos y canjea premios épicos.</p>
+            <p class="desc">Regístrate o inicia sesión</p>
             <div class="actions">
               <a routerLink="/auth/register" class="takis-btn primary">REGISTRARME</a>
               <a routerLink="/auth/login" class="takis-btn outline">INICIAR SESIÓN</a>
@@ -165,7 +165,7 @@ import { AuthService } from '../services/auth.service';
     .highlight { color: #F2E74B; }
     .desc { 
       color: #e0e0e0; 
-      font-size: 1.4rem; 
+      font-size: 1.1rem; 
       margin-bottom: 2rem; 
       font-weight: 500;
       text-shadow: 0 2px 4px rgba(0,0,0,0.3);
