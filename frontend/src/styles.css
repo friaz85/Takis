@@ -21,7 +21,7 @@ body {
   padding: 0;
   background-color: var(--takis-dark-purple);
   color: white;
-  font-family: 'TakisVeneer', 'Inter', sans-serif;
+  font-family: 'acumin-pro', 'TakisVeneer', sans-serif;
   overflow-x: hidden;
   min-height: 100vh;
 }
@@ -96,15 +96,23 @@ body::before {
 .landing textarea::placeholder,
 .modal-overlay input::placeholder,
 .modal-overlay textarea::placeholder {
-  font-family: 'TakisVeneer', 'Inter', sans-serif !important;
+  font-family: 'acumin-pro', 'TakisVeneer', sans-serif !important;
   font-size: 1.1rem !important;
 }
 
 .landing input,
 .landing textarea,
 .modal-overlay input,
+.modal-overlay textarea,
+select,
+button {
+  font-family: 'acumin-pro', 'TakisVeneer', sans-serif !important;
+}
+
+.landing input,
+.landing textarea,
+.modal-overlay input,
 .modal-overlay textarea {
-  font-family: 'TakisVeneer', 'Inter', sans-serif !important;
   font-size: 1.3rem !important;
 }
 
@@ -126,7 +134,7 @@ body::before {
   text-transform: uppercase !important;
   cursor: pointer !important;
   transition: all 0.3s ease !important;
-  font-family: 'TakisVeneer', 'Inter', sans-serif !important;
+  font-family: 'acumin-pro', 'TakisVeneer', sans-serif !important;
   box-shadow: 0 4px 15px rgba(108, 29, 218, 0.3) !important;
 }
 
@@ -144,7 +152,7 @@ body::before {
 }
 
 .takis-toast-title {
-  font-family: 'TakisVeneer', 'Inter', sans-serif !important;
+  font-family: 'acumin-pro', 'TakisVeneer', sans-serif !important;
   font-weight: 700 !important;
   font-size: 1rem !important;
 }
@@ -155,12 +163,12 @@ body::before {
 
 /* SweetAlert2 title styling */
 .swal2-title {
-  font-family: 'TakisVeneer', 'Inter', sans-serif !important;
+  font-family: 'acumin-pro', 'TakisVeneer', sans-serif !important;
   font-weight: 900 !important;
   font-size: 1.8rem !important;
 }
 
 .swal2-html-container {
-  font-family: 'Inter', sans-serif !important;
+  font-family: 'acumin-pro', sans-serif !important;
   font-size: 1rem !important;
 }
