@@ -44,12 +44,12 @@ import { ToastService } from '../services/toast.service';
                   </div>
 
                   <div class="field">
-                    <label>TELEFONO</label>
-                    <input type="tel" [(ngModel)]="profile.phone" name="phone" required maxlength="10" class="input-flat" placeholder="10 DIGITOS" [disabled]="addressLocked()">
+                    <label>TELÉFONO</label>
+                    <input type="tel" [(ngModel)]="profile.phone" name="phone" required maxlength="10" class="input-flat" placeholder="10 DÍGITOS" [disabled]="addressLocked()">
                   </div>
 
                   <div class="field full-width section-header">
-                    <h3 class="dir-envio-title">DIRECCION DE ENVIO</h3>
+                    <h3 class="dir-envio-title">DIRECCIÓN DE ENVÍO</h3>
                   </div>
 
                   <div class="field full-width">
@@ -58,8 +58,8 @@ import { ToastService } from '../services/toast.service';
                   </div>
 
                   <div class="field full-width">
-                    <label>CALLE Y NUMERO</label>
-                    <input type="text" [(ngModel)]="profile.address" name="address" required class="input-flat" placeholder="CALLE Y NUMERO" [disabled]="addressLocked()">
+                    <label>CALLE Y NÚMERO</label>
+                    <input type="text" [(ngModel)]="profile.address" name="address" required class="input-flat" placeholder="CALLE Y NÚMERO" [disabled]="addressLocked()">
                   </div>
 
                   <div class="field">
@@ -68,8 +68,8 @@ import { ToastService } from '../services/toast.service';
                   </div>
 
                   <div class="field">
-                    <label>ALCALDIA / MUNICIPIO</label>
-                    <input type="text" [(ngModel)]="profile.municipio" name="municipio" required class="input-flat" placeholder="ALCALDIA" [disabled]="addressLocked()">
+                    <label>ALCALDÍA / MUNICIPIO</label>
+                    <input type="text" [(ngModel)]="profile.municipio" name="municipio" required class="input-flat" placeholder="ALCALDÍA" [disabled]="addressLocked()">
                   </div>
 
                   <div class="field">
@@ -81,7 +81,7 @@ import { ToastService } from '../services/toast.service';
                   </div>
                   
                   <div class="field">
-                    <label>CODIGO POSTAL</label>
+                    <label>CÓDIGO POSTAL</label>
                     <input type="text" [(ngModel)]="profile.zip_code" name="zip_code" required maxlength="5" class="input-flat" placeholder="CP" [disabled]="addressLocked()">
                   </div>
 
@@ -270,7 +270,7 @@ import { ToastService } from '../services/toast.service';
         display: block;
         transition: 0.3s;
         box-shadow: 0 10px 0 #3a095e, 0 20px 30px rgba(86, 14, 140, 0.4);
-        font-family: 'TakisVeneer', 'Inter', sans-serif;
+        font-family: 'acumin-pro', 'Inter', sans-serif;
     }
     .submit-btn:hover:not(:disabled) {
         transform: translateY(-2px);
@@ -322,10 +322,10 @@ export class UserProfileComponent implements OnInit {
 
   mexicoStates = [
     'Aguascalientes', 'Baja California', 'Baja California Sur', 'Campeche', 'Chiapas',
-    'Chihuahua', 'Ciudad de Mexico', 'Coahuila', 'Colima', 'Durango', 'Estado de Mexico',
-    'Guanajuato', 'Guerrero', 'Hidalgo', 'Jalisco', 'Michoacan', 'Morelos', 'Nayarit',
-    'Nuevo Leon', 'Oaxaca', 'Puebla', 'Queretaro', 'Quintana Roo', 'San Luis Potosi',
-    'Sinaloa', 'Sonora', 'Tabasco', 'Tamaulipas', 'Tlaxcala', 'Veracruz', 'Yucatan', 'Zacatecas'
+    'Chihuahua', 'Ciudad de México', 'Coahuila', 'Colima', 'Durango', 'Estado de México',
+    'Guanajuato', 'Guerrero', 'Hidalgo', 'Jalisco', 'Michoacán', 'Morelos', 'Nayarit',
+    'Nuevo León', 'Oaxaca', 'Puebla', 'Querétaro', 'Quintana Roo', 'San Luis Potosí',
+    'Sinaloa', 'Sonora', 'Tabasco', 'Tamaulipas', 'Tlaxcala', 'Veracruz', 'Yucatán', 'Zacatecas'
   ];
 
   private auth = inject(AuthService);

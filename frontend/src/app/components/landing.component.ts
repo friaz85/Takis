@@ -25,10 +25,10 @@ import { AuthService } from '../services/auth.service';
           
           <div class="hero-right login-card" [style.backgroundImage]="'linear-gradient(rgba(86, 14, 140, 0.85), rgba(86, 14, 140, 0.85)), url(/assets/img/BG_landing.jpg)'">
             <h1 class="takis-title" style="color: #F2E74B">BIENVENIDO</h1>
-            <p class="desc">Registra tus codigos y canjea premios epicos.</p>
+            <p class="desc">Registra tus códigos y canjea premios épicos.</p>
             <div class="actions">
               <a routerLink="/auth/register" class="takis-btn primary">REGISTRARME</a>
-              <a routerLink="/auth/login" class="takis-btn outline">INICIAR SESION</a>
+              <a routerLink="/auth/login" class="takis-btn outline">INICIAR SESIÓN</a>
             </div>
             <img src="/assets/img/Logo-Takis.png" class="corner-logo" alt="Takis Logo">
           </div>
@@ -186,7 +186,7 @@ import { AuthService } from '../services/auth.service';
       transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); 
       font-size: 1.2rem; 
       text-align: center;
-      font-family: 'TakisVeneer', 'Inter', sans-serif;
+      font-family: 'acumin-pro', 'Inter', sans-serif;
     }
 
     .purple-btn {

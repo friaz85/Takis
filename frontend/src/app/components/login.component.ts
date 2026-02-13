@@ -29,16 +29,16 @@ import { ToastService } from '../services/toast.service';
             
             <form (submit)="onSubmit()" class="login-form">
               <div class="field">
-                <label>CORREO ELECTRONICO</label>
+                <label>CORREO ELECTRÓNICO</label>
                 <input type="email" [(ngModel)]="email" name="email" required class="input-flat" placeholder="tu@correo.com">
               </div>
 
               <button type="submit" class="submit-btn" [disabled]="loading()">
-                {{ loading() ? 'ENVIANDO...' : 'ENVIAR CODIGO DE ACCESO' }}
+                {{ loading() ? 'ENVIANDO...' : 'ENVIAR CÓDIGO DE ACCESO' }}
               </button>
               
               <div class="register-link">
-                 No tienes cuenta? <a routerLink="/auth/register">Registrate aqui</a>
+                 ¿No tienes cuenta? <a routerLink="/auth/register">Regístrate aquí</a>
               </div>
             </form>
           </div>
@@ -183,7 +183,7 @@ import { ToastService } from '../services/toast.service';
         width: 100%;
         margin-top: 1rem;
         transition: 0.3s;
-        font-family: 'TakisVeneer', 'Inter', sans-serif;
+        font-family: 'acumin-pro', 'Inter', sans-serif;
     }
 
     .submit-btn:hover:not(:disabled) {

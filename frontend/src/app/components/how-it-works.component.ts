@@ -25,23 +25,23 @@ import { WhatsappBubbleComponent } from './whatsapp-bubble.component';
           
           <!-- Right: Mecanica Card -->
           <div class="hero-right mecanica-card">
-            <h1 class="takis-title"><span class="highlight">MECANICA</span></h1>
+            <h1 class="takis-title"><span class="highlight">MECÁNICA</span></h1>
             
             <div class="steps">
               <div class="step">
                 <img src="/assets/img/01.png" class="step-number-img" alt="Paso 1">
                 <h3>Compra Takis</h3>
-                <p>Busca dentro del empaque de tus Takis favoritos los codigos participantes</p>
+                <p>Busca dentro del empaque de tus Takis favoritos los códigos participantes</p>
               </div>
               <div class="step">
                 <img src="/assets/img/02.png" class="step-number-img" alt="Paso 2">
                 <h3>Canjea</h3>
-                <p>Ingresa a tu cuenta, escribe el codigo y acumula puntos al instante</p>
+                <p>Ingresa a tu cuenta, escribe el código y acumula puntos al instante</p>
               </div>
               <div class="step">
                 <img src="/assets/img/03.png" class="step-number-img" alt="Paso 3">
                 <h3>Gana</h3>
-                <p>Visita nuestro catalogo de recompensas y elige el que mas te guste. Es asi de sencillo!</p>
+                <p>Visita nuestro catálogo de recompensas y elige el que más te guste. ¡Es así de sencillo!</p>
               </div>
             </div>
 

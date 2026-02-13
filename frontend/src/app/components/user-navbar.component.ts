@@ -26,7 +26,7 @@ import { AuthService } from '../services/auth.service';
              <a routerLink="/rewards" routerLinkActive="active" (click)="isMenuOpen = false">RECOMPENSAS</a>
              <a routerLink="/historial" routerLinkActive="active" (click)="isMenuOpen = false">HISTORIAL</a>
              <a routerLink="/perfil" routerLinkActive="active" (click)="isMenuOpen = false">PERFIL</a>
-             <a routerLink="/como-funciona" routerLinkActive="active" (click)="isMenuOpen = false">FAQ´S</a>
+             <a routerLink="/como-funciona" routerLinkActive="active" (click)="isMenuOpen = false">PREGUNTAS FRECUENTES</a>
              <button (click)="logout()" class="logout-btn mobile-only">SALIR</button>
           </div>
 
@@ -87,7 +87,7 @@ import { AuthService } from '../services/auth.service';
       cursor: pointer; 
       transition: all 0.3s ease;
       letter-spacing: 1px;
-      font-family: 'TakisVeneer', 'Inter', sans-serif;
+      font-family: 'acumin-pro', 'Inter', sans-serif;
     }
     .logout-btn:hover { 
       background: #5d1f87; 

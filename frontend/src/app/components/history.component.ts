@@ -185,7 +185,7 @@ import { environment } from '../../environments/environment';
       cursor: pointer;
       transition: 0.3s;
       text-transform: uppercase;
-      font-family: 'TakisVeneer', 'Inter', sans-serif;
+      font-family: 'acumin-pro', 'Inter', sans-serif;
     }
     .tab:hover { background: rgba(255,255,255,0.1); }
     .tab.active {
@@ -283,7 +283,7 @@ import { environment } from '../../environments/environment';
       cursor: pointer;
       transition: 0.3s;
       text-transform: uppercase;
-      font-family: 'TakisVeneer', 'Inter', sans-serif;
+      font-family: 'acumin-pro', 'Inter', sans-serif;
     }
     .reprint-btn:hover {
       transform: translateY(-2px);

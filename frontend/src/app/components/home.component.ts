@@ -53,19 +53,19 @@ import { environment } from '../../environments/environment';
 
             <!-- Code Form -->
             <div class="code-section">
-                <label class="code-label">REGISTRAR CODIGO</label>
+                <label class="code-label">REGISTRAR CÓDIGO</label>
                 <div class="input-wrapper">
                     <input 
                       type="text" 
                       [(ngModel)]="code" 
-                      placeholder="CODIGO"
+                      placeholder="CÓDIGO"
                       (keyup.enter)="redeemCode()"
                       class="code-input"
                     >
                 </div>
 
                 <button (click)="redeemCode()" [disabled]="submitting()" class="redeem-btn">
-                   {{ submitting() ? 'CANJEANDO...' : 'CANJEAR CODIGO' }}
+                   {{ submitting() ? 'CANJEANDO...' : 'CANJEAR CÓDIGO' }}
                 </button>
 
                 <button (click)="goToRewards()" class="rewards-btn">
@@ -306,7 +306,7 @@ import { environment } from '../../environments/environment';
         width: 100%;
         transition: 0.2s;
         box-shadow: 0 5px 15px rgba(0,0,0,0.3);
-        font-family: 'TakisVeneer', 'Inter', sans-serif;
+        font-family: 'acumin-pro', 'Inter', sans-serif;
     }
     
     .redeem-btn:hover:not(:disabled) {
@@ -326,7 +326,7 @@ import { environment } from '../../environments/environment';
         width: 100%;
         transition: 0.2s;
         margin-top: 1rem;
-        font-family: 'TakisVeneer', 'Inter', sans-serif;
+        font-family: 'acumin-pro', 'Inter', sans-serif;
     }
     
     .rewards-btn:hover {

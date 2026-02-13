@@ -51,7 +51,7 @@ import Swal from 'sweetalert2';
                 <div class="score-end right-end"></div>
             </div>
 
-            <h2 class="catalog-title">CATALOGO DE RECOMPENSAS</h2>
+            <h2 class="catalog-title">CATÁLOGO DE RECOMPENSAS</h2>
             <p class="catalog-disclaimer">*Imágenes de referencia, los productos pueden variar en color, tamaño, modelo y marca.</p>
 
             <div *ngIf="loading()" class="loading-state">
@@ -93,8 +93,8 @@ import Swal from 'sweetalert2';
       <div class="modal-card" [style.backgroundImage]="'linear-gradient(rgba(86, 14, 140, 0.9), rgba(86, 14, 140, 0.8)), url(/assets/img/BG_soccer.jpg)'">
         <button class="close-btn-round" (click)="closeModal()">X</button>
         <div class="modal-body">
-          <h2 class="modal-title-yellow">ENVIO DE PREMIO</h2>
-          <p class="modal-subtitle-white">Para enviarte tu <strong>{{ pendingReward()?.title }}</strong> necesitamos completar tus datos de envio.</p>
+          <h2 class="modal-title-yellow">ENVÍO DE PREMIO</h2>
+          <p class="modal-subtitle-white">Para enviarte tu <strong>{{ pendingReward()?.title }}</strong> necesitamos completar tus datos de envío.</p>
           
           <form (ngSubmit)="submitAddress()">
             <div class="form-grid">
@@ -532,7 +532,7 @@ import Swal from 'sweetalert2';
       padding: 1.2rem; border-radius: 1.5rem; 
       font-weight: 900; font-size: 1.5rem; width: 100%; 
       cursor: pointer; text-transform: uppercase; transition: 0.3s;
-      font-family: 'TakisVeneer', 'Inter', sans-serif;
+      font-family: 'acumin-pro', 'Inter', sans-serif;
       box-shadow: 0 8px 0 #b8af2e;
       position: relative;
     }
@@ -550,7 +550,7 @@ import Swal from 'sweetalert2';
       font-size: 1.4rem !important;
       text-transform: uppercase !important;
       box-shadow: 0 8px 0 #b8af2e !important;
-      font-family: 'TakisVeneer', 'Inter', sans-serif !important;
+      font-family: 'acumin-pro', 'Inter', sans-serif !important;
       border: none !important;
       margin: 10px !important;
       cursor: pointer !important;
@@ -568,7 +568,7 @@ import Swal from 'sweetalert2';
       font-weight: 900 !important;
       font-size: 1.4rem !important;
       text-transform: uppercase !important;
-      font-family: 'TakisVeneer', 'Inter', sans-serif !important;
+      font-family: 'acumin-pro', 'Inter', sans-serif !important;
       margin: 10px !important;
       cursor: pointer !important;
       transition: 0.1s;

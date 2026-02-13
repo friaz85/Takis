@@ -41,13 +41,13 @@ import { AuthService } from '../services/auth.service';
               </div>
 
               <div class="field">
-                <label>TELEFONO</label>
-                <input type="tel" [(ngModel)]="form.phone" name="phone" required class="input-flat" placeholder="10 digitos">
+                <label>TELÉFONO</label>
+                <input type="tel" [(ngModel)]="form.phone" name="phone" required class="input-flat" placeholder="10 dígitos">
               </div>
 
               <div class="check-group">
                 <label class="checkbox-container">
-                    HE LEIDO Y ACEPTO <a href="https://takisaficionintensa.com.mx/tyc" target="_blank">TERMINOS Y CONDICIONES Y AVISO DE PRIVACIDAD</a>
+                    HE LEÍDO Y ACEPTO <a href="https://takisaficionintensa.com.mx/tyc" target="_blank">TÉRMINOS Y CONDICIONES Y AVISO DE PRIVACIDAD</a>
                     <input type="checkbox" [(ngModel)]="form.acceptedLegal" name="acceptedLegal" required>
                     <span class="checkmark"></span>
                 </label>
@@ -276,7 +276,7 @@ import { AuthService } from '../services/auth.service';
         max-width: 250px;
         margin: 0 auto;
         transition: 0.3s;
-        font-family: 'TakisVeneer', 'Inter', sans-serif;
+        font-family: 'acumin-pro', 'Inter', sans-serif;
     }
 
     .submit-btn:hover:not(:disabled) {

@@ -27,20 +27,20 @@ import { ToastService } from '../services/toast.service';
 
           <!-- Right Column: OTP Card -->
           <div class="hero-right otp-card" [style.backgroundImage]="'linear-gradient(rgba(86, 14, 140, 0.9), rgba(86, 14, 140, 0.6)), url(/assets/img/BG_otp_new.jpg)'">
-            <h2 class="form-title">VERIFICACION <span style="color: #fff">OTP</span></h2>
+            <h2 class="form-title">VERIFICACIÓN <span style="color: #fff">OTP</span></h2>
             
             <p class="subtitle">
-              Ingresa el codigo enviado a <span *ngIf="email">{{email}}</span>
+              Ingresa el código enviado a <span *ngIf="email">{{email}}</span>
             </p>
 
             <div class="otp-wrapper">
                 <input type="text" [(ngModel)]="otp" maxlength="6" class="otp-input" placeholder="000000" (keyup.enter)="verify()">
             </div>
             
-            <p class="spam-hint">Si no recibiste tu codigo, por favor revisa tu carpeta de SPAM o correo no deseado.</p>
+            <p class="spam-hint">Si no recibiste tu código, por favor revisa tu carpeta de SPAM o correo no deseado.</p>
 
             <div class="actions">
-                <a (click)="resendCode()" class="resend-link">ENVIAR OTRO CODIGO.</a>
+                <a (click)="resendCode()" class="resend-link">ENVIAR OTRO CÓDIGO.</a>
             </div>
 
             <button (click)="verify()" class="submit-btn" [disabled]="loading()">
@@ -214,7 +214,7 @@ import { ToastService } from '../services/toast.service';
         transition: 0.3s;
         width: auto;
         min-width: 200px;
-        font-family: 'TakisVeneer', 'Inter', sans-serif;
+        font-family: 'acumin-pro', 'Inter', sans-serif;
     }
 
     .submit-btn:hover:not(:disabled) {
