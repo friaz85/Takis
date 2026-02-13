@@ -286,9 +286,11 @@ import { ToastService } from '../services/toast.service';
     .mobile-logo { display: none; }
 
     @media (max-width: 992px) {
+        .hero { padding: 1rem 0.5rem; }
         .hero-flex {
             flex-direction: column;
             align-items: center;
+            gap: 1rem;
         }
         .hero-left {
             position: relative;
@@ -296,12 +298,13 @@ import { ToastService } from '../services/toast.service';
             margin-bottom: 2rem;
         }
         .desktop-logo { display: none; }
-        .takis-logo { max-width: 280px; }
+        .takis-logo { max-width: 250px; }
         .mobile-logo { display: block; width: 100%; height: auto; }
         
         .profile-card {
             width: 100%;
-            padding: 2rem 1.5rem;
+            padding: 2.5rem 0.8rem;
+            border-radius: 1.5rem;
         }
         .form-grid {
             grid-template-columns: 1fr;

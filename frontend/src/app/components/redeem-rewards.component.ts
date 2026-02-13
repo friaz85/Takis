@@ -776,9 +776,15 @@ export class RedeemRewardsComponent implements OnInit {
         this.submittingAddress.set(false);
         this.pendingReward.set(null);
 
+        const isDigital = reward.type === 'digital';
+        const successTitle = '¡CANJE EXITOSO!';
+        const successText = isDigital
+          ? 'A continuación visualizarás tu cupón digital, recuerda guardarlo o tomarle captura, también lo puedes descargar más adelante en la sección HISTORIAL.'
+          : 'A continuación recibirás un correo de confirmación con tu número de PEDIDO y también puedes consultar estatus en la sección HISTORIAL.';
+
         Swal.fire({
-          title: '¡CANJE EXITOSO!',
-          text: 'A continuación recibirás un correo de confirmación con tu número de PEDIDO y también puedes consultar estatus en la sección HISTORIAL.',
+          title: successTitle,
+          text: successText,
           icon: 'success',
           confirmButtonColor: '#F2E74B',
           confirmButtonText: 'ENTENDIDO',
@@ -786,6 +792,10 @@ export class RedeemRewardsComponent implements OnInit {
             confirmButton: 'takis-swal-confirm'
           },
           buttonsStyling: false
+        }).then(() => {
+          if (isDigital && res.pdf_url) {
+            window.open(res.pdf_url, '_blank');
+          }
         });
 
         this.processingId.set(null);
@@ -796,10 +806,6 @@ export class RedeemRewardsComponent implements OnInit {
 
         // Reload to sync
         this.loadData();
-
-        if (res.pdf_url) {
-          window.open(res.pdf_url, '_blank');
-        }
       },
       error: (err) => {
         this.processingId.set(null);

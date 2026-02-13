@@ -321,16 +321,17 @@ import { environment } from '../../environments/environment';
     .mobile-logo { display: none; }
 
     @media (max-width: 992px) {
-        .hero-flex { flex-direction: column; align-items: center; }
+        .hero { padding: 1rem 0.5rem 4rem 0.5rem; }
+        .hero-flex { flex-direction: column; align-items: center; gap: 1rem; }
         .hero-left { position: relative; top: 0; margin-bottom: 2rem; flex: auto; max-width: 100%; }
         
         .desktop-logo { display: none; }
-        .mobile-logo { display: block; width: 100%; height: auto; max-width: 280px; }
+        .mobile-logo { display: block; width: 100%; height: auto; max-width: 250px; }
         
-        .history-card { padding: 2rem 1rem; min-height: auto; }
+        .history-card { padding: 2rem 0.5rem; min-height: auto; border-radius: 1.5rem; }
         .history-title { font-size: 2rem; }
         
-        .table-container { padding: 0.5rem; }
+        .table-container { padding: 0.2rem; }
         .glass-table th, .glass-table td { padding: 0.8rem 0.5rem; font-size: 0.8rem; }
         .reward-mini img { width: 30px; height: 30px; }
         .reprint-btn { font-size: 0.7rem; padding: 0.4rem 0.8rem; }

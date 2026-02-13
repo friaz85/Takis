@@ -349,21 +349,24 @@ import { environment } from '../../environments/environment';
     .mobile-logo { display: none; }
 
     @media (max-width: 992px) {
+        .hero { padding: 1rem 0.5rem; }
         .corner-logo { display: none; } /* Hide on mobile */
         
         .hero-flex {
             flex-direction: column;
+            gap: 1rem;
         }
         .hero-left {
             justify-content: center;
         }
         .desktop-logo { display: none; }
-        .takis-logo { max-width: 280px; }
+        .takis-logo { max-width: 250px; }
         .mobile-logo { display: block; width: 100%; height: auto; }
         .home-card {
             width: 100%;
             padding: 2rem 1rem 6rem 1rem;
             min-height: auto;
+            border-radius: 1.5rem;
         }
         
         /* Scoreboard Responsive Fixes */
