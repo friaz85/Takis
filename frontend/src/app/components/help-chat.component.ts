@@ -51,8 +51,8 @@ export class HelpChatComponent {
         this.http.post('https://takis.qrewards.com.mx/api/index.php/support/ticket', { message: this.msg }).subscribe({
             next: () => {
                 Swal.fire({
-                    title: 'Ticket enviado!',
-                    text: 'Te contactaremos pronto.',
+                    title: 'TICKET ENVIADO!',
+                    text: 'TE CONTACTAREMOS PRONTO.',
                     icon: 'success',
                     confirmButtonText: 'OK',
                     confirmButtonColor: '#6C1DDA',

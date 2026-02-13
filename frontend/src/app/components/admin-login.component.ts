@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { AuthService } from '../services/auth.service';
+import { ToastService } from '../services/toast.service';
 
 @Component({
   selector: 'app-admin-login',
@@ -175,6 +176,7 @@ import { AuthService } from '../services/auth.service';
 export class AdminLoginComponent {
   private auth = inject(AuthService);
   private router = inject(Router);
+  private toast = inject(ToastService);
 
   username = '';
   password = '';
@@ -191,7 +193,9 @@ export class AdminLoginComponent {
         this.router.navigate(['/admin/dashboard']);
       },
       error: (err) => {
-        this.error.set(err.error?.message || 'Error de conexión');
+        const msg = (err.error?.message || 'ERROR DE CONEXIÓN').toUpperCase();
+        this.error.set(msg);
+        this.toast.show(msg, 'error');
         this.loading.set(false);
       }
     });

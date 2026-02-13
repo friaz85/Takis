@@ -2,6 +2,7 @@ import { Component, inject, OnInit, signal, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { HttpClient } from '@angular/common/http';
 import { FormsModule } from '@angular/forms';
+import { ToastService } from '../services/toast.service';
 import { AdminNavbarComponent } from './admin-navbar.component';
 import { AdminLayoutService } from '../services/admin-layout.service';
 import { environment } from '../../environments/environment';
@@ -272,6 +273,7 @@ export class AdminUsersComponent implements OnInit {
   }
 
   private http = inject(HttpClient);
+  private toast = inject(ToastService);
   public layoutService = inject(AdminLayoutService);
 
   ngOnInit() {
@@ -319,10 +321,11 @@ export class AdminUsersComponent implements OnInit {
         }));
         this.selectedUser.set(null);
         this.blockReason = '';
-        console.log(isBlocking ? 'Usuario bloqueado' : 'Usuario desbloqueado');
+        this.toast.show(isBlocking ? '¡USUARIO BLOQUEADO EXITOSAMENTE!' : '¡USUARIO DESBLOQUEADO EXITOSAMENTE!', 'success');
       },
       error: (err) => {
         console.error('Error al actualizar usuario:', err);
+        this.toast.show('ERROR AL ACTUALIZAR USUARIO.', 'error');
         this.selectedUser.set(null);
       }
     });

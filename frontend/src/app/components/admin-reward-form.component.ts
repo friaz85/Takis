@@ -6,6 +6,7 @@ import { AdminNavbarComponent } from './admin-navbar.component';
 import { AdminLayoutService } from '../services/admin-layout.service';
 import { ToastService } from '../services/toast.service';
 import { environment } from '../../environments/environment';
+import Swal from 'sweetalert2';
 
 interface CodeArea {
   id: number;
@@ -1048,13 +1049,13 @@ export class AdminRewardFormComponent implements OnInit, AfterViewInit {
       if (this.editingReward.id) {
         await this.http.put(`${environment.apiUrl}/admin/rewards/update/${this.editingReward.id}`, this.editingReward).toPromise();
         this.rewards.update(list => list.map(r => r.id === this.editingReward.id ? this.editingReward : r));
-        this.toastService.show('✅ Recompensa actualizada exitosamente', 'success');
+        this.toastService.show('✅ RECOMPENSA ACTUALIZADA EXITOSAMENTE', 'success');
       } else {
         const res: any = await this.http.post(`${environment.apiUrl}/admin/rewards/create`, this.editingReward).toPromise();
         if (res.id) {
           this.editingReward.id = res.id;
           this.rewards.update(list => [...list, this.editingReward]);
-          this.toastService.show('✅ Recompensa creada exitosamente', 'success');
+          this.toastService.show('✅ RECOMPENSA CREADA EXITOSAMENTE', 'success');
         }
       }
 
@@ -1064,20 +1065,38 @@ export class AdminRewardFormComponent implements OnInit, AfterViewInit {
       this.loadRewards(); // Reload to get fresh data from server
     } catch (error) {
       console.error('Error saving reward:', error);
-      this.toastService.show('❌ Error al guardar la recompensa. Por favor intenta de nuevo.', 'error');
+      this.toastService.show('❌ ERROR AL GUARDAR LA RECOMPENSA. POR FAVOR INTENTA DE NUEVO.', 'error');
       this.saving.set(false);
     }
   }
 
 
   deleteReward(id: number) {
-    if (!confirm('¿Estás seguro de eliminar esta recompensa?')) return;
-
-    this.http.delete(`${environment.apiUrl}/admin/rewards/${id}`).subscribe({
-      next: () => {
-        this.rewards.update(list => list.filter(r => r.id !== id));
-      },
-      error: (e: any) => console.error('Error deleting reward:', e)
+    Swal.fire({
+      title: '¿ELIMINAR RECOMPENSA?',
+      text: 'ESTA ACCIÓN NO SE PUEDE DESHACER.',
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#ff3333',
+      confirmButtonText: 'SÍ, ELIMINAR',
+      cancelButtonText: 'CANCELAR',
+      customClass: {
+        popup: 'takis-swal-popup',
+        confirmButton: 'takis-swal-button'
+      }
+    }).then((result) => {
+      if (result.isConfirmed) {
+        this.http.delete(`${environment.apiUrl}/admin/rewards/${id}`).subscribe({
+          next: () => {
+            this.rewards.update(list => list.filter(r => r.id !== id));
+            this.toastService.show('¡RECOMPENSA ELIMINADA!', 'success');
+          },
+          error: (e: any) => {
+            console.error('Error deleting reward:', e);
+            this.toastService.show('ERROR AL ELIMINAR RECOMPENSA.', 'error');
+          }
+        });
+      }
     });
   }
 

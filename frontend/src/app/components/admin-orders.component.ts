@@ -2,6 +2,7 @@ import { Component, inject, OnInit, signal, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { HttpClient } from '@angular/common/http';
 import { FormsModule } from '@angular/forms';
+import { ToastService } from '../services/toast.service';
 import { AdminNavbarComponent } from './admin-navbar.component';
 import { AdminLayoutService } from '../services/admin-layout.service';
 import { environment } from '../../environments/environment';
@@ -445,6 +446,7 @@ export class AdminOrdersComponent implements OnInit {
   }
 
   private http = inject(HttpClient);
+  private toast = inject(ToastService);
   public layoutService = inject(AdminLayoutService);
 
   ngOnInit() {
@@ -522,12 +524,11 @@ export class AdminOrdersComponent implements OnInit {
         this.orders.update(list => list.map(o => o.id === updated.id ? updated : o));
         this.savingOrder.set(false);
         this.selectedOrder.set(null);
-        console.log('Pedido actualizado exitosamente');
+        this.toast.show('¡PEDIDO ACTUALIZADO EXITOSAMENTE!', 'success');
       },
       error: (err) => {
         console.error('Error al actualizar pedido:', err);
-        // Fallback: update locally anyway
-        this.orders.update(list => list.map(o => o.id === updated.id ? updated : o));
+        this.toast.show('ERROR AL ACTUALIZAR PEDIDO.', 'error');
         this.savingOrder.set(false);
         this.selectedOrder.set(null);
       }
