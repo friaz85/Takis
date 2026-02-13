@@ -172,7 +172,7 @@ import Swal from 'sweetalert2';
     .hero { 
       padding: 1rem 2rem 4rem 2rem; 
       width: 100%;
-      max-width: 1600px;
+      max-width: 1400px;
       margin: 0 auto;
       z-index: 10;
     }
@@ -184,7 +184,7 @@ import Swal from 'sweetalert2';
       gap: 2rem;
     }
 
-    .hero-left { flex: 0 0 250px; display: flex; justify-content: center; position: sticky; top: 100px; }
+    .hero-left { flex: 0 0 300px; display: flex; justify-content: center; position: sticky; top: 100px; }
     
     .takis-logo { 
       width: 100%;
@@ -201,7 +201,7 @@ import Swal from 'sweetalert2';
     .catalog-card {
       background: rgba(86, 14, 140, 0.8);
       border-radius: 2rem;
-      padding: 3rem 1.5rem;
+      padding: 3rem;
       box-shadow: 0 20px 50px rgba(0,0,0,0.5);
       text-align: center;
       position: relative;
@@ -814,7 +814,8 @@ export class RedeemRewardsComponent implements OnInit {
         console.error('Redeem Error', err);
 
         const errorCode = err.error?.error || err.error?.code || err.error?.messages?.code;
-        if (errorCode === 'PROFILE_INCOMPLETE') {
+        const isRewardDigital = String(reward.type).toLowerCase().trim() === 'digital';
+        if (errorCode === 'PROFILE_INCOMPLETE' && !isRewardDigital) {
           this.pendingReward.set(reward);
           this.showAddressModal.set(true);
           const msg = err.error?.message || (err.error?.messages ? (typeof err.error.messages === 'object' ? err.error.messages.error : err.error.messages) : null);

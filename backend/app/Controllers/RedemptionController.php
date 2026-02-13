@@ -159,7 +159,7 @@ class RedemptionController extends ResourceController
         }
 
         // Validate Profile Data (Shipping Info) if reward is physical
-        if ($reward['type'] === 'physical') {
+        if (strtolower($reward['type']) === 'physical') {
             $city    = !empty($user['city']) ? $user['city'] : ($user['municipio'] ?? '');
             $missing = [];
             if (empty($user['address']))
@@ -226,7 +226,7 @@ class RedemptionController extends ResourceController
         }
 
         // Check for low stock and send WhatsApp alert
-        if ($reward['type'] === 'digital' && $newStock < 10 && $newStock > 0) {
+        if (strtolower($reward['type']) === 'digital' && $newStock < 10 && $newStock > 0) {
             try {
                 \App\Libraries\WhatsAppNotifier::sendLowStockAlert($reward['title'], $newStock);
             } catch (\Exception $e) {
@@ -238,7 +238,7 @@ class RedemptionController extends ResourceController
 
         // Prepare shipping details if physical
         $shippingDetails = null;
-        if ($reward['type'] === 'physical') {
+        if (strtolower($reward['type']) === 'physical') {
             $shippingDetails = json_encode([
                 'address'   => $user['address'],
                 'colonia'   => $user['colonia'] ?? '',
@@ -264,7 +264,7 @@ class RedemptionController extends ResourceController
         $pdfUrl      = null;
         $isWallpaper = false;
 
-        if ($reward['type'] === 'digital') {
+        if (strtolower($reward['type']) === 'digital') {
             // Check extension of pdf_template to see if it's actually an image (Wallpaper moved to template field)
             $templateExt     = pathinfo($reward['pdf_template'] ?? '', PATHINFO_EXTENSION);
             $isImageTemplate = in_array(strtolower($templateExt), ['jpg', 'jpeg', 'png']);
@@ -312,7 +312,7 @@ class RedemptionController extends ResourceController
             return $this->fail('Error al procesar el canje. Verifica los datos o intenta de nuevo.');
         }
 
-        if ($reward['type'] === 'physical') {
+        if (strtolower($reward['type']) === 'physical') {
             // Ensure we use the correct base URL for the image
             // Fallback to hardcoded dev URL if base_url is not set correctly yet by environment
             $baseUrl  = 'https://dev.takisaficionintensa.com.mx/api';
