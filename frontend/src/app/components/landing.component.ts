@@ -275,6 +275,17 @@ import { AuthService } from '../services/auth.service';
       .hero-flex {
         padding: 2rem 0; /* Add padding for scrollable content */
       }
+
+      .takis-title {
+        font-size: clamp(2.5rem, 10vw, 3.5rem) !important;
+      }
+      
+      .corner-logo {
+        width: 60px !important;
+        bottom: 10px !important;
+        right: 10px !important;
+        opacity: 0.8;
+      }
     }
   `]
 })

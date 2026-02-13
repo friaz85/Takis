@@ -598,7 +598,7 @@ import Swal from 'sweetalert2';
         .score-center { width: 110px; height: 75px; }
         .score-value { font-size: 2rem; }
 
-        .catalog-title { font-size: 2rem; }
+        .catalog-title { font-size: 1.6rem; }
         
         .form-grid { grid-template-columns: 1fr; }
     }
@@ -614,10 +614,10 @@ export class RedeemRewardsComponent implements OnInit {
 
   mexicoStates = [
     'Aguascalientes', 'Baja California', 'Baja California Sur', 'Campeche', 'Chiapas',
-    'Chihuahua', 'Ciudad de Mexico', 'Coahuila', 'Colima', 'Durango', 'Estado de Mexico',
-    'Guanajuato', 'Guerrero', 'Hidalgo', 'Jalisco', 'Michoacan', 'Morelos', 'Nayarit',
-    'Nuevo Leon', 'Oaxaca', 'Puebla', 'Queretaro', 'Quintana Roo', 'San Luis Potosi',
-    'Sinaloa', 'Sonora', 'Tabasco', 'Tamaulipas', 'Tlaxcala', 'Veracruz', 'Yucatan', 'Zacatecas'
+    'Chihuahua', 'Ciudad de México', 'Coahuila', 'Colima', 'Durango', 'Estado de México',
+    'Guanajuato', 'Guerrero', 'Hidalgo', 'Jalisco', 'Michoacán', 'Morelos', 'Nayarit',
+    'Nuevo León', 'Oaxaca', 'Puebla', 'Querétaro', 'Quintana Roo', 'San Luis Potosí',
+    'Sinaloa', 'Sonora', 'Tabasco', 'Tamaulipas', 'Tlaxcala', 'Veracruz', 'Yucatán', 'Zacatecas'
   ];
 
   // Modal State

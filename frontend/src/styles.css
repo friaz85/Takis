@@ -54,7 +54,7 @@ body::before {
 
 .takis-title {
   font-family: 'acumin-pro', sans-serif;
-  font-size: clamp(2rem, 8vw, 3.5rem);
+  font-size: clamp(1.8rem, 7vw, 3.5rem);
   /* Responsive font size */
   font-weight: 900;
   color: white;
