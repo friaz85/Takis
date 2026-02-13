@@ -252,9 +252,14 @@ import { ToastService } from '../services/toast.service';
         .mobile-logo { display: block; width: 100%; height: auto; }
         .otp-card {
             width: 100%;
-            padding: 3rem 1rem;
+            padding: 3rem 1rem 5rem 1rem;
             border-radius: 1.5rem;
             min-height: auto;
+        }
+        .corner-logo {
+            width: 60px !important;
+            bottom: 15px !important;
+            right: 15px !important;
         }
     }
   `]

@@ -266,7 +266,7 @@ import { AuthService } from '../services/auth.service';
       .mobile-logo { display: block; width: 100%; height: auto; }
       
       .login-card {
-        padding: 3rem 1rem;
+        padding: 3rem 1rem 5rem 1rem;
         width: 100%;
         border-radius: 1.5rem;
         min-height: auto;
