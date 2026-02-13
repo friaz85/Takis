@@ -25,7 +25,7 @@ import { ToastService } from '../services/toast.service';
 
           <!-- Right Column: Login Form -->
           <div class="hero-right login-card">
-            <h2 class="form-title">INICIAR SESION</h2>
+            <h2 class="form-title">INICIAR SESIÓN</h2>
             
             <form (submit)="onSubmit()" class="login-form">
               <div class="field">
@@ -115,7 +115,7 @@ import { ToastService } from '../services/toast.service';
 
     .form-title {
         color: #560E8C;
-        font-size: 2.5rem;
+        font-size: clamp(1.8rem, 6vw, 2.5rem);
         font-weight: 900;
         margin: 0 0 2rem 0;
         text-transform: uppercase;

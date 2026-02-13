@@ -144,7 +144,7 @@ import { environment } from '../../environments/environment';
 
     .welcome-title {
         color: #f2e74b;
-        font-size: 3rem;
+        font-size: clamp(1.8rem, 6vw, 3rem);
         font-weight: 900;
         text-transform: uppercase;
         margin-bottom: 2rem;
@@ -237,6 +237,15 @@ import { environment } from '../../environments/environment';
     @keyframes shine-center {
         0% { left: -100%; }
         100% { left: 200%; }
+    }
+    .faqs-title {
+        color: white;
+        font-size: clamp(1.5rem, 5vw, 2.5rem);
+        font-weight: 900;
+        background: linear-gradient(to bottom, #fff 0%, #ccc 50%, #fff 100%);
+        -webkit-background-clip: text;
+        background-clip: text;
+        color: transparent;
     }
 
     .score-value {

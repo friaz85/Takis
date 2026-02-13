@@ -158,7 +158,7 @@ import { environment } from '../../environments/environment';
 
     .history-title {
         color: white;
-        font-size: 2.5rem;
+        font-size: clamp(1.5rem, 6vw, 2.5rem);
         font-weight: 900;
         text-transform: uppercase;
         margin-bottom: 2rem;

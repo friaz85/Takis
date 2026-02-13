@@ -131,7 +131,7 @@ import { AuthService } from '../services/auth.service';
 
     .form-title {
         color: #560E8C;
-        font-size: 2.5rem;
+        font-size: clamp(1.8rem, 6vw, 2.5rem);
         font-weight: 900;
         margin: 0 0 2rem 0;
         text-transform: uppercase;

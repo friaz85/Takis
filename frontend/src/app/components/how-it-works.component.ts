@@ -177,7 +177,7 @@ import { WhatsappBubbleComponent } from './whatsapp-bubble.component';
 
     .faqs-title {
       color: white;
-      font-size: 2rem;
+      font-size: clamp(1.5rem, 5vw, 2.3rem);
       font-weight: 900;
       text-transform: uppercase;
       margin-bottom: 2rem;

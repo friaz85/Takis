@@ -24,6 +24,8 @@ body {
   font-family: 'acumin-pro', 'TakisVeneer', sans-serif;
   overflow-x: hidden;
   min-height: 100vh;
+  text-transform: uppercase;
+  /* Force uppercase globally */
 }
 
 /* Base background for all sections */
@@ -52,7 +54,8 @@ body::before {
 
 .takis-title {
   font-family: 'acumin-pro', sans-serif;
-  font-size: 3.5rem;
+  font-size: clamp(2rem, 8vw, 3.5rem);
+  /* Responsive font size */
   font-weight: 900;
   color: white;
   margin: 0 0 1rem 0;
@@ -98,6 +101,8 @@ body::before {
 .modal-overlay textarea::placeholder {
   font-family: 'acumin-pro', 'TakisVeneer', sans-serif !important;
   font-size: 1.1rem !important;
+  text-transform: uppercase;
+  /* Force placeholder to be uppercase */
 }
 
 .landing input,
@@ -107,6 +112,7 @@ body::before {
 select,
 button {
   font-family: 'acumin-pro', 'TakisVeneer', sans-serif !important;
+  text-transform: uppercase;
 }
 
 .landing input,
