@@ -294,18 +294,23 @@ import { AuthService } from '../services/auth.service';
     .mobile-logo { display: none; }
 
     @media (max-width: 992px) {
+        .hero { padding: 1rem 0.5rem; }
         .hero-flex {
             flex-direction: column;
+            gap: 1rem;
         }
-        .hero-left {
+        .hero-left, .hero-right {
             justify-content: center;
+            width: 100%;
+            max-width: 100%;
         }
         .desktop-logo { display: none; }
-        .takis-logo { max-width: 280px; }
+        .takis-logo { max-width: 250px; }
         .mobile-logo { display: block; width: 100%; height: auto; }
         .register-card {
             width: 100%;
-            padding: 2rem 1.5rem;
+            padding: 2.5rem 1rem;
+            border-radius: 1.5rem;
         }
     }
   `]

@@ -246,13 +246,14 @@ import { WhatsappBubbleComponent } from './whatsapp-bubble.component';
     .mobile-logo { display: none; }
 
     @media (max-width: 1100px) {
-        .hero-flex { flex-direction: column; align-items: center; }
+        .hero { padding: 1rem 0.5rem 4rem 0.5rem; }
+        .hero-flex { flex-direction: column; align-items: center; gap: 1rem; }
         .hero-left { position: relative; top: 0; margin-bottom: 2rem; flex: auto; max-width: 100%; }
         
         .desktop-logo { display: none; }
         .mobile-logo { display: block; width: 100%; height: auto; max-width: 250px; }
         
-        .mecanica-card { padding: 2rem 1.5rem; min-height: auto; }
+        .mecanica-card { padding: 2rem 1rem; min-height: auto; border-radius: 1.5rem; }
         .steps { grid-template-columns: 1fr; }
         
         .faqs-title { font-size: 1.5rem; }

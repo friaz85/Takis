@@ -243,25 +243,34 @@ import { AuthService } from '../services/auth.service';
     .mobile-logo { display: none; }
 
     @media (max-width: 992px) {
+      .hero { padding: 1rem 0.5rem; }
       .hero-flex {
         flex-direction: column;
         text-align: center;
-        gap: 0.1rem;
+        gap: 1rem;
       }
       .hero-left, .hero-right {
         justify-content: center;
         text-align: center;
+        width: 100%;
       }
       .actions {
         justify-content: center;
         flex-direction: column;
       }
       .takis-logo { 
-        max-width: 280px; 
+        max-width: 250px; 
         max-height: none; /* Let mobile version determine height */
       }
       .desktop-logo { display: none; }
       .mobile-logo { display: block; width: 100%; height: auto; }
+      
+      .login-card {
+        padding: 3rem 1rem;
+        width: 100%;
+        border-radius: 1.5rem;
+        min-height: auto;
+      }
       
       .hero-flex {
         padding: 2rem 0; /* Add padding for scrollable content */

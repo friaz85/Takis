@@ -579,15 +579,16 @@ import Swal from 'sweetalert2';
     .mobile-logo { display: none; }
 
     @media (max-width: 992px) {
-        .hero-flex { flex-direction: column; align-items: center; }
+        .hero { padding: 1rem 0.5rem 4rem 0.5rem; }
+        .hero-flex { flex-direction: column; align-items: center; gap: 1rem; }
         .hero-left { position: relative; top: 0; margin-bottom: 2rem; flex: auto; max-width: 100%; }
         
         .desktop-logo { display: none; }
-        .mobile-logo { display: block; width: 100%; height: auto; max-width: 280px; }
+        .mobile-logo { display: block; width: 100%; height: auto; max-width: 250px; }
         .corner-logo { display: none; }
         
-        .catalog-card { padding: 2rem 1rem; min-height: auto; }
-        .rewards-grid { grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 1rem; }
+        .catalog-card { padding: 2rem 0.5rem; min-height: auto; border-radius: 1.5rem; }
+        .rewards-grid { grid-template-columns: repeat(auto-fill, minmax(135px, 1fr)); gap: 1rem; padding-right: 0; max-height: none; overflow-y: visible; }
         
         /* Scoreboard Responsive Fixes */
         .scoreboard { transform: scale(0.9); width: 100%; }
@@ -776,7 +777,7 @@ export class RedeemRewardsComponent implements OnInit {
         this.submittingAddress.set(false);
         this.pendingReward.set(null);
 
-        const isDigital = reward.type === 'digital';
+        const isDigital = ['digital', 'Digital', 'DIGITAL'].includes(reward.type);
         const successTitle = '¡CANJE EXITOSO!';
         const successText = isDigital
           ? 'A continuación visualizarás tu cupón digital, recuerda guardarlo o tomarle captura, también lo puedes descargar más adelante en la sección HISTORIAL.'

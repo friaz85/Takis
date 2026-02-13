@@ -406,8 +406,8 @@ export class PublicCatalogComponent implements OnInit {
       return;
     }
 
-    // Logic for redemption detailed in next steps or separate navigation
-    this.router.navigate(['/redeem', reward.id]);
+    // Logic: send them to the protected rewards page
+    this.router.navigate(['/rewards']);
   }
 
   setFilter(filter: 'all' | 'redeemable') {
