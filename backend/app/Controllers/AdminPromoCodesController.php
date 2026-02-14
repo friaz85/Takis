@@ -10,20 +10,56 @@ class AdminPromoCodesController extends ResourceController
 {
     public function index()
     {
-        $promoModel = new PromoCodeModel();
-        $userModel  = new UserModel();
+        $db      = \Config\Database::connect();
+        $builder = $db->table('promo_codes pc');
 
-        $codes = $promoModel->orderBy('id', 'DESC')->findAll();
+        // Query Params
+        $status = $this->request->getVar('status'); // 'available', 'used', 'all'
+        $search = $this->request->getVar('search');
+        $page   = intval($this->request->getVar('page') ?? 1);
+        $limit  = intval($this->request->getVar('limit') ?? 500);
+        $offset = ($page - 1) * $limit;
 
-        // Enrich with user names
-        foreach ($codes as &$code) {
-            if ($code['used_by']) {
-                $user              = $userModel->find($code['used_by']);
-                $code['user_name'] = $user['full_name'] ?? $user['email'] ?? 'Usuario';
-            }
+        $builder->select('pc.*, u.full_name as user_name, u.email as user_email');
+        $builder->join('users u', 'u.id = pc.used_by', 'left');
+
+        // Filters
+        if ($status === 'available') {
+            $builder->where('pc.is_used', 0);
+        } elseif ($status === 'used') {
+            $builder->where('pc.is_used', 1);
         }
 
-        return $this->respond($codes);
+        if (!empty($search)) {
+            $builder->groupStart()
+                ->like('pc.code', $search)
+                ->orLike('u.full_name', $search)
+                ->orLike('u.email', $search)
+                ->groupEnd();
+        }
+
+        // Clone builder for totals before limit/offset
+        $countBuilder = clone $builder;
+        $total        = $countBuilder->countAllResults(false);
+
+        // Specific totals counts (Available vs Used)
+        $db         = \Config\Database::connect();
+        $availQuery = $db->table('promo_codes')->where('is_used', 0)->countAllResults();
+        $usedQuery  = $db->table('promo_codes')->where('is_used', 1)->countAllResults();
+
+        $builder->orderBy('pc.id', 'DESC');
+        $builder->limit($limit, $offset);
+
+        $codes = $builder->get()->getResult();
+
+        return $this->respond([
+            'data'            => $codes,
+            'total'           => $total,
+            'total_available' => $availQuery,
+            'total_used'      => $usedQuery,
+            'page'            => $page,
+            'limit'           => $limit
+        ]);
     }
 
     public function generate()
