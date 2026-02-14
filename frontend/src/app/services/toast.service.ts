@@ -51,7 +51,7 @@ export class ToastService {
             color: '#fff',
             iconColor: type === 'success' ? '#4eff88' : type === 'error' ? '#ff4444' : '#F2E74B',
             width: '350px',
-            padding: '1.5rem'
+            padding: '1rem'
         });
 
         setTimeout(() => {

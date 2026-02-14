@@ -164,7 +164,7 @@ button {
 .takis-toast-title {
   font-family: 'acumin-pro', 'TakisVeneer', sans-serif !important;
   font-weight: 700 !important;
-  font-size: 1rem !important;
+  font-size: 0.85rem !important;
   text-transform: uppercase !important;
 }
 
@@ -176,13 +176,13 @@ button {
 .swal2-title {
   font-family: 'acumin-pro', 'TakisVeneer', sans-serif !important;
   font-weight: 900 !important;
-  font-size: 1.8rem !important;
+  font-size: 1.3rem !important;
   text-transform: uppercase !important;
 }
 
 .swal2-html-container {
   font-family: 'acumin-pro', sans-serif !important;
-  font-size: 1rem !important;
+  font-size: 0.9rem !important;
   text-transform: uppercase !important;
 }
 
