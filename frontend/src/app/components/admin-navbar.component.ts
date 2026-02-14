@@ -45,10 +45,10 @@ import { AdminLayoutService } from '../services/admin-layout.service';
           <span class="icon">💬</span> Soporte
         </a>
         <a *ngIf="getRole() !== 'takis'" routerLink="/admin/promo-codes" routerLinkActive="active" class="nav-item" (click)="onNavItemClick()">
-          <span class="icon">🎫</span> Códigos Promocionales
+          <span class="icon">🎫</span> Códigos Registrados
         </a>
         <a *ngIf="getRole() !== 'takis'" routerLink="/admin/entry-codes" routerLinkActive="active" class="nav-item" (click)="onNavItemClick()">
-          <span class="icon">🎟️</span> Códigos Registrados
+          <span class="icon">🎟️</span> Canjes Realizados
         </a>
       </nav>
 

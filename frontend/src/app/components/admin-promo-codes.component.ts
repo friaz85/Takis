@@ -16,69 +16,33 @@ import { environment } from '../../environments/environment';
     <div class="admin-page" [class.sidebar-closed]="!layoutService.isSidebarOpen()">
       <div class="header-row">
         <div>
-          <h2 class="title">CÓDIGOS PROMOCIONALES</h2>
-          <p class="subtitle">Gestiona los códigos de entrada para los usuarios</p>
+          <h2 class="title">CÓDIGOS REGISTRADOS</h2>
+          <p class="subtitle">Solo se muestran los códigos que ya han sido utilizados por los usuarios</p>
         </div>
         <button class="export-btn" (click)="loadCodes()">
           <span class="icon">🔄</span> <span class="btn-text">Refrescar</span>
         </button>
       </div>
 
-      <!-- Stats Cards -->
-      <div class="stats-grid">
-        <div class="stat-card">
-          <div class="stat-icon">📊</div>
-          <div class="stat-info">
-            <span class="stat-label">Total Códigos</span>
-            <span class="stat-value">{{ (totalAvailable() + totalUsed()).toLocaleString() }}</span>
-          </div>
-        </div>
-        <div class="stat-card">
-          <div class="stat-icon">✅</div>
-          <div class="stat-info">
-            <span class="stat-label">Disponibles</span>
-            <span class="stat-value">{{ totalAvailable().toLocaleString() }}</span>
-          </div>
-        </div>
-        <div class="stat-card">
-          <div class="stat-icon">🎯</div>
-          <div class="stat-info">
-            <span class="stat-label">Usados</span>
-            <span class="stat-value">{{ totalUsed().toLocaleString() }}</span>
-          </div>
-        </div>
-        <div class="stat-card">
-          <div class="stat-icon">💰</div>
-          <div class="stat-info">
-            <span class="stat-label">Puntos por Código</span>
-            <span class="stat-value">1</span>
-          </div>
-        </div>
-      </div>
-
       <div class="table-container">
         <div class="table-header">
           <div class="search-box">
-            <input 
+             <input 
               type="text" 
               [ngModel]="searchTerm()" 
               (ngModelChange)="onSearchChange($event)"
-              placeholder="🔍 Buscar código..."
+              placeholder="🔍 Buscar por código o usuario..."
             >
           </div>
           <div class="filter-buttons">
             <button 
-              [class.active]="filterStatus() === 'all'"
-              (click)="filterStatus.set('all'); currentPage.set(1)"
-            >Todos</button>
+              [class.active]="filterStatus() === 'used'"
+              (click)="filterStatus.set('used'); currentPage.set(1)"
+            >Solo Usados</button>
             <button 
               [class.active]="filterStatus() === 'available'"
               (click)="filterStatus.set('available'); currentPage.set(1)"
-            >Disponibles</button>
-            <button 
-              [class.active]="filterStatus() === 'used'"
-              (click)="filterStatus.set('used'); currentPage.set(1)"
-            >Usados</button>
+            >Disponibles (Carga lenta)</button>
           </div>
         </div>
 
@@ -86,32 +50,31 @@ import { environment } from '../../environments/environment';
           <div class="loading-overlay" *ngIf="loading()">
             <div class="spinner"></div>
           </div>
-          <table>
+          <table class="admin-table">
             <thead>
               <tr>
-                <th>ID</th>
                 <th>Código</th>
-                <th>Puntos</th>
-                <th>Estado</th>
-                <th>Usado Por</th>
-                <th>Fecha de Uso</th>
+                <th class="hide-mobile">Puntos</th>
+                <th>Usuario</th>
+                <th class="hide-mobile">IP</th>
+                <th class="text-right">Fecha de Uso</th>
               </tr>
             </thead>
             <tbody>
               <tr *ngFor="let code of codes()">
-                <td>{{ code.id }}</td>
                 <td class="font-bold code-display">{{ code.code }}</td>
-                <td><span class="points-badge">{{ code.points }} pts</span></td>
+                <td class="hide-mobile"><span class="points-badge">{{ code.points }} pts</span></td>
                 <td>
-                  <span class="status-pill" [class.used]="Number(code.is_used) === 1" [class.available]="Number(code.is_used) === 0">
-                    {{ Number(code.is_used) === 1 ? 'Usado' : 'Disponible' }}
-                  </span>
+                   <div class="user-cell">
+                      <span>{{ code.user_name || 'Anónimo' }}</span>
+                      <small class="text-gray block">{{ code.user_email }}</small>
+                   </div>
                 </td>
-                <td>{{ code.user_name || '-' }}</td>
-                <td>{{ code.used_at ? (code.used_at | date:'short') : '-' }}</td>
+                <td class="hide-mobile text-sm opacity-70">{{ code.used_ip || '-' }}</td>
+                <td class="text-right text-sm text-gold">{{ code.used_at | date:'short' }}</td>
               </tr>
               <tr *ngIf="codes().length === 0 && !loading()">
-                <td colspan="6" style="text-align: center; padding: 3rem;">No se encontraron resultados</td>
+                <td colspan="5" style="text-align: center; padding: 3rem;">No se encontraron registros</td>
               </tr>
             </tbody>
           </table>
@@ -133,76 +96,77 @@ import { environment } from '../../environments/environment';
   `,
   styles: [`
     .admin-page { 
-      padding: 2rem; 
+      padding: 5rem 2rem 2rem 2rem; 
       background: #0d0221d6; 
       min-height: 100vh; 
       color: white; 
-      margin-left: 250px;
-      transition: margin-left 0.3s ease;
+      margin-left: 260px;
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     }
-    .admin-page.sidebar-closed { margin-left: 0; }
+    .admin-page.sidebar-closed { margin-left: 0; padding-top: 5rem; }
 
     .header-row { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 2rem; gap: 2rem; flex-wrap: wrap; }
-    .title { color: #F2E74B; font-size: 2rem; font-weight: 900; margin: 0; }
+    .title { color: #F2E74B; font-size: 2.2rem; font-weight: 900; margin: 0; letter-spacing: -1px; }
     .subtitle { color: rgba(255,255,255,0.6); margin: 0.5rem 0 0 0; }
 
-    .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1.5rem; margin-bottom: 2rem; }
-    .stat-card { background: rgba(108, 29, 218, 0.1); border: 1px solid rgba(108, 29, 218, 0.3); border-radius: 1rem; padding: 1.5rem; display: flex; align-items: center; gap: 1rem; }
-    .stat-icon { font-size: 2.5rem; }
+    .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 1.5rem; margin-bottom: 2rem; }
+    .stat-card { background: rgba(108, 29, 218, 0.1); border: 2px solid #6C1DDA; border-radius: 1.5rem; padding: 1.5rem; display: flex; align-items: center; gap: 1.5rem; transition: 0.3s; }
+    .stat-icon { font-size: 2.2rem; background: rgba(0,0,0,0.3); width: 60px; height: 60px; display: flex; align-items: center; justify-content: center; border-radius: 1rem; }
     .stat-info { display: flex; flex-direction: column; }
-    .stat-label { color: rgba(255,255,255,0.6); font-size: 0.85rem; }
-    .stat-value { color: #F2E74B; font-size: 1.5rem; font-weight: 900; }
+    .stat-label { color: rgba(255,255,255,0.6); font-size: 0.85rem; text-transform: uppercase; font-weight: bold; }
+    .stat-value { color: #F2E74B; font-size: 1.8rem; font-weight: 900; }
 
-    .table-container { background: rgba(255,255,255,0.02); border-radius: 1rem; border: 1px solid rgba(255,255,255,0.1); overflow: hidden; position: relative; }
-    .loading-overlay { 
-      position: absolute; top: 0; left: 0; right: 0; bottom: 0; 
-      background: rgba(0,0,0,0.5); display: flex; align-items: center; 
-      justify-content: center; z-index: 10; 
-    }
+    .table-container { background: rgba(255,255,255,0.05); border-radius: 1.5rem; border: 2px solid #6C1DDA; overflow: hidden; position: relative; }
+    .loading-overlay { position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; z-index: 10; }
     .spinner { width: 40px; height: 40px; border: 4px solid #F2E74B; border-top-color: transparent; border-radius: 50%; animation: spin 1s linear infinite; }
     @keyframes spin { to { transform: rotate(360deg); } }
 
-    .table-header { padding: 1.5rem; display: flex; justify-content: space-between; align-items: center; gap: 1rem; flex-wrap: wrap; border-bottom: 1px solid rgba(255,255,255,0.1); }
-    .search-box input { background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); color: white; padding: 0.75rem 1rem; border-radius: 0.5rem; width: 300px; outline: none; }
+    .table-header { padding: 1.5rem; display: flex; justify-content: space-between; align-items: center; gap: 1rem; flex-wrap: wrap; border-bottom: 1px solid rgba(108, 29, 218, 0.2); }
+    .search-box input { background: rgba(0,0,0,0.2); border: 1px solid #6C1DDA; color: white; padding: 0.8rem 1.2rem; border-radius: 0.5rem; width: 350px; outline: none; transition: 0.3s; }
+    .search-box input:focus { border-color: #F2E74B; }
     .filter-buttons { display: flex; gap: 0.5rem; }
-    .filter-buttons button { background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); color: white; padding: 0.5rem 1rem; border-radius: 0.5rem; cursor: pointer; }
-    .filter-buttons button.active { background: #6C1DDA; border-color: #6C1DDA; }
+    .filter-buttons button { background: rgba(255,255,255,0.05); border: 1px solid #6C1DDA; color: #ccc; padding: 0.6rem 1.2rem; border-radius: 0.5rem; cursor: pointer; font-weight: bold; transition: 0.2s; }
+    .filter-buttons button.active { background: #6C1DDA; color: white; border-color: #F2E74B; }
 
     .table-wrapper { overflow-x: auto; min-height: 400px; position: relative; }
-    table { width: 100%; border-collapse: collapse; }
+    .admin-table { width: 100%; border-collapse: collapse; }
     thead { background: rgba(108, 29, 218, 0.2); }
-    th { padding: 1rem; text-align: left; font-weight: bold; color: #F2E74B; font-size: 0.85rem; text-transform: uppercase; }
-    td { padding: 1rem; border-bottom: 1px solid rgba(255,255,255,0.05); }
-    tbody tr:hover { background: rgba(108, 29, 218, 0.1); }
+    th { padding: 1.2rem; text-align: left; font-weight: 900; color: #F2E74B; font-size: 0.85rem; text-transform: uppercase; }
+    td { padding: 1.2rem; border-bottom: 1px solid rgba(108, 29, 218, 0.1); font-size: 0.9rem; }
     .font-bold { font-weight: 800; color: #F2E74B; }
-    .code-display { font-family: 'Courier New', monospace; letter-spacing: 1px; }
-    .points-badge { background: rgba(0, 204, 102, 0.2); color: #00cc66; padding: 0.3rem 0.6rem; border-radius: 0.3rem; font-weight: bold; font-size: 0.85rem; }
-    .status-pill { padding: 0.3rem 0.8rem; border-radius: 0.5rem; font-size: 0.75rem; font-weight: bold; }
-    .status-pill.available { background: #00cc66; color: white; }
-    .status-pill.used { background: #666; color: white; }
+    .code-display { font-family: monospace; letter-spacing: 1px; }
+    .points-badge { background: rgba(0, 204, 102, 0.1); color: #00cc66; border: 1px solid #00cc66; padding: 0.25rem 0.5rem; border-radius: 0.4rem; font-weight: 900; }
+    
+    .user-cell { display: flex; flex-direction: column; }
+    .block { display: block; }
+    .text-gray { color: #888; font-size: 0.75rem; }
+    .text-gold { color: #F2E74B; font-weight: bold; }
 
     .pagination-footer { padding: 1.5rem; display: flex; justify-content: space-between; align-items: center; border-top: 1px solid rgba(108, 29, 218, 0.2); }
     .page-info { font-weight: 900; color: #F2E74B; font-size: 0.85rem; text-transform: uppercase; }
     .pagination-controls { display: flex; align-items: center; gap: 0.75rem; }
     .pagination-controls button { 
-      width: 35px; height: 35px; border-radius: 50%; background: #3A1A5E; border: none; color: #F2E74B; 
-      display: flex; align-items: center; justify-content: center; cursor: pointer; font-size: 1.1rem; transition: 0.3s; 
+      width: 38px; height: 38px; border-radius: 50%; background: #3A1A5E; border: none; color: #F2E74B; 
+      display: flex; align-items: center; justify-content: center; cursor: pointer; font-size: 1.2rem; transition: 0.3s; 
     }
     .pagination-controls button:not(:disabled):hover { background: #6C1DDA; color: white; transform: scale(1.1); }
     .pagination-controls button:disabled { opacity: 0.3; cursor: not-allowed; }
-    .page-number { font-weight: 900; color: #F2E74B; font-size: 1.1rem; margin: 0 0.5rem; }
+    .page-number { font-weight: 900; color: #F2E74B; font-size: 1.2rem; margin: 0 0.5rem; }
 
-    @media (max-width: 768px) {
+    .export-btn { background: #6C1DDA; border: none; color: white; padding: 0.75rem 1.5rem; border-radius: 0.5rem; cursor: pointer; display: flex; align-items: center; gap: 0.5rem; font-weight: bold; transition: 0.3s; }
+    .export-btn:hover { background: #F2E74B; color: #1A0B2E; transform: translateY(-2px); }
+
+    @media (max-width: 1100px) {
+      .admin-page { margin-left: 0; padding: 5rem 1rem 2rem 1rem; }
       .hide-mobile { display: none; }
       .search-box input { width: 100%; }
-      .stats-grid { grid-template-columns: 1fr 1fr; }
     }
   `]
 })
 export class AdminPromoCodesComponent implements OnInit {
   codes = signal<any[]>([]);
   searchTerm = signal('');
-  filterStatus = signal<'all' | 'available' | 'used'>('all');
+  filterStatus = signal<'available' | 'used'>('used');
   currentPage = signal(1);
   pageSize = 50;
   totalRecords = signal(0);
@@ -262,9 +226,4 @@ export class AdminPromoCodesComponent implements OnInit {
   }
 
   totalPages = computed(() => Math.ceil(this.totalRecords() / this.pageSize));
-
-  getLastDigits(code: string): string {
-    if (!code) return '';
-    return code.slice(-3);
-  }
 }

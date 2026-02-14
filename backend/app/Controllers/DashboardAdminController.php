@@ -170,13 +170,19 @@ class DashboardAdminController extends ResourceController
         } catch (\Throwable $e) {
         }
 
-        $promoStats = $db->query("
-            SELECT 
-                COUNT(*) as total,
-                SUM(CASE WHEN is_used = 1 THEN 1 ELSE 0 END) as used,
-                SUM(CASE WHEN is_used = 0 THEN 1 ELSE 0 END) as available
+        // Promo Codes Stats - Only count USED codes (fast with index)
+        // Counting all 73M records is too slow, so we only show used codes
+        $usedPromoCount = $db->query("
+            SELECT COUNT(*) as used
             FROM promo_codes
-        ")->getRowArray();
+            WHERE is_used = 1
+        ")->getRow()->used ?? 0;
+
+        $promoStats = [
+            'total'     => $usedPromoCount, // Show only used as "total" for dashboard
+            'used'      => $usedPromoCount,
+            'available' => 0 // Don't count available (too slow)
+        ];
 
         // Visit Logs (Last 50)
         $visitsLog = [];
@@ -207,7 +213,32 @@ class DashboardAdminController extends ResourceController
             'top_rewards'  => $topRewards,
             'recent'       => $recentActivity,
             'visits_log'   => $visitsLog,
-            'success_rate' => $totalRedemptions > 0 ? 100 : 0
+            'success_rate' => $this->calculateSuccessRate($db, $startDate, $endDate, $params)
         ]);
+    }
+
+    private function calculateSuccessRate($db, $startDate, $endDate, $params)
+    {
+        // Count successful code entries (promo_codes with is_used = 1)
+        $successfulCodes = $db->query("
+            SELECT COUNT(*) as total
+            FROM promo_codes
+            WHERE is_used = 1
+        ")->getRow()->total ?? 0;
+
+        // Count failed attempts from security_logs
+        $failedAttempts = $db->query("
+            SELECT COUNT(*) as total
+            FROM security_logs
+            WHERE action = 'code_entry_failed'
+        ")->getRow()->total ?? 0;
+
+        $totalAttempts = $successfulCodes + $failedAttempts;
+
+        if ($totalAttempts === 0) {
+            return 0;
+        }
+
+        return round(($successfulCodes / $totalAttempts) * 100, 1);
     }
 }

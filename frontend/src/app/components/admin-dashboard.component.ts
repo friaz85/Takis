@@ -18,8 +18,7 @@ Chart.register(...registerables);
     <app-admin-navbar></app-admin-navbar>
     <div class="dashboard-page" 
          [class.sidebar-closed]="!layoutService.isSidebarOpen()"
-         [class.role-takis]="getRole() === 'takis'"
-         [class.user-takis-admin]="getUsername() === 'takis_admin'">
+         [class.role-takis]="getRole() === 'takis'">
       <div class="header-row">
         <div>
            <h2 class="title">DASHBOARD DE RENDIMIENTO</h2>
@@ -46,8 +45,9 @@ Chart.register(...registerables);
       </div>
 
       <!-- KPI Cards -->
+      <!-- KPI Cards - Single Row -->
       <div class="kpi-grid">
-        <div class="kpi-card visits" *ngIf="getUsername() !== 'takis_admin'">
+        <div class="kpi-card visits">
            <div class="kpi-icon">🌐</div>
            <div class="kpi-info">
              <h3>Visitas</h3>
@@ -57,33 +57,24 @@ Chart.register(...registerables);
         </div>
         <div class="kpi-card users">
            <div class="kpi-icon">👥</div>
-            <div class="kpi-info">
-              <h3>Usuarios registrados</h3>
-              <span class="value">{{ stats?.cards?.users | number }}</span>
-            </div>
+           <div class="kpi-info">
+             <h3>Usuarios Registrados</h3>
+             <span class="value">{{ stats?.cards?.users | number }}</span>
+           </div>
         </div>
         <div class="kpi-card promo">
            <div class="kpi-icon">🎫</div>
            <div class="kpi-info">
              <h3>Códigos Registrados</h3>
-             <span class="value">{{ stats?.cards?.promo?.total | number }}</span>
-             <small>{{ stats?.cards?.promo?.used }} usados</small>
+             <span class="value">{{ stats?.cards?.promo?.used | number }}</span>
+             <small>Códigos usados</small>
            </div>
         </div>
         <div class="kpi-card redemptions">
            <div class="kpi-icon">🎟️</div>
-            <div class="kpi-info">
-              <h3>Canjes realizados</h3>
-              <span class="value">{{ stats?.cards?.redemptions | number }}</span>
-            </div>
-        </div>
-        <!-- Success Rate Card -->
-        <div class="kpi-card success">
-           <div class="kpi-icon">✅</div>
            <div class="kpi-info">
-             <h3>Tasa de Éxito</h3>
-             <span class="value">{{ stats?.success_rate || '0' }}%</span>
-             <small>Canjes vs Intentos</small>
+             <h3>Canjes Realizados</h3>
+             <span class="value">{{ stats?.cards?.redemptions | number }}</span>
            </div>
         </div>
       </div>
@@ -114,7 +105,7 @@ Chart.register(...registerables);
       <!-- Secondary Row: Visits (8/12) and Rewards (4/12) -->
       <div class="secondary-grid">
         <!-- Visits Log Table -->
-        <div class="panel visits-panel" *ngIf="stats?.visits_log?.length && getUsername() !== 'takis_admin'">
+        <div class="panel visits-panel" *ngIf="stats?.visits_log?.length">
            <div class="panel-header">
               <h3>🌐 Registro de Visitas Recientes</h3>
               <div class="header-actions">
@@ -261,18 +252,25 @@ Chart.register(...registerables);
     .export-btn:hover { background: #F2E74B; color: #1A0B2E; transform: translateY(-2px); }
 
     /* KPI CARDS */
-    .kpi-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1.5rem; margin-bottom: 2rem; }
+    .kpi-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1.5rem; margin-bottom: 2rem; }
+    .kpi-grid-secondary { grid-template-columns: repeat(2, 1fr); }
     .kpi-card { 
       background: rgba(108, 29, 218, 0.1); border: 2px solid #6C1DDA; border-radius: 1rem;
       padding: 1.5rem; display: flex; align-items: center; gap: 1.5rem; transition: 0.3s;
     }
-    .kpi-card:hover { transform: translateY(-5px); border-color: #F2E74B; background: rgba(108, 29, 218, 0.2); }
-    .kpi-icon { 
-      font-size: 2rem; background: rgba(0,0,0,0.3); width: 60px; height: 60px; 
-      display: flex; align-items: center; justify-content: center; border-radius: 1rem; 
-    }
+    .kpi-card:hover { background: rgba(108, 29, 218, 0.2); border-color: #F2E74B; transform: translateY(-2px); }
+    .kpi-icon { font-size: 2.5rem; flex-shrink: 0; }
+    .kpi-info { flex: 1; min-width: 0; }
     .kpi-info h3 { margin: 0; font-size: 0.85rem; color: #ccc; text-transform: uppercase; letter-spacing: 1px; }
-    .kpi-info .value { font-size: 2rem; font-weight: 900; color: #F2E74B; line-height: 1.2; display: block; }
+    .kpi-info .value { 
+      font-size: 2rem; 
+      font-weight: 900; 
+      color: #F2E74B; 
+      line-height: 1.2; 
+      display: block; 
+      word-break: break-word;
+      overflow-wrap: break-word;
+    }
     .kpi-info small { color: rgba(255,255,255,0.6); font-size: 0.8rem; display: block; margin-top: 4px; }
 
     /* CHARTS */
@@ -383,11 +381,6 @@ Chart.register(...registerables);
 
       /* Hide restricted sections for takis role in report */
       .dashboard-page.role-takis .panel.activity {
-        display: none !important;
-      }
-
-      .dashboard-page.user-takis-admin .visits-panel,
-      .dashboard-page.user-takis-admin .kpi-card.visits {
         display: none !important;
       }
 
@@ -549,10 +542,6 @@ export class AdminDashboardComponent implements OnInit, AfterViewInit {
   searchTerm = signal('');
   currentPage = signal(1);
   pageSize = 5;
-
-  getUsername() {
-    return this.auth.user()?.username;
-  }
 
   // Visits Table Pagination & Filter
   visitsSearchTerm = signal('');

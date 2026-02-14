@@ -11,43 +11,29 @@ class AdminEntryCodeController extends ResourceController
     public function index()
     {
         try {
-            $db      = \Config\Database::connect();
+            $db = \Config\Database::connect();
+
+            // Query to get redeemed codes with user info and IP from security logs
+            // We join with security_logs where action is 'success_redeem' and details contains the code
             $builder = $db->table('promo_codes pc');
-
-            // Query Params
-            $search = $this->request->getVar('search');
-            $page   = intval($this->request->getVar('page') ?? 1);
-            $limit  = intval($this->request->getVar('limit') ?? 50);
-            $offset = ($page - 1) * $limit;
-
-            $builder->select('pc.id, pc.code, pc.points, pc.used_at, pc.used_ip as ip_address, u.full_name as user_name, u.email as user_email');
+            $builder->select('pc.id, pc.code, pc.points, pc.used_at, u.full_name as user_name, u.email as user_email, sl.ip_address');
             $builder->join('users u', 'u.id = pc.used_by', 'left');
 
+            // Subquery or Join for IP from security_logs
+            // Since sl.details contains "Code: {code}", we use LIKE or a more precise join if possible
+            // Re-using the logic from RedemptionController::redeemCode where it saves: 
+            // 'details' => "Code: $code"
+            $builder->join('security_logs sl', "sl.user_id = pc.used_by AND sl.action = 'success_redeem' AND sl.details LIKE CONCAT('%', pc.code, '%')", 'left');
+
             $builder->where('pc.is_used', 1);
-
-            if (!empty($search)) {
-                $builder->groupStart()
-                    ->like('pc.code', $search)
-                    ->orLike('u.full_name', $search)
-                    ->orLike('u.email', $search)
-                    ->groupEnd();
-            }
-
-            // Clone for total
-            $countBuilder = clone $builder;
-            $total        = $countBuilder->countAllResults(false);
-
             $builder->orderBy('pc.used_at', 'DESC');
-            $builder->limit($limit, $offset);
+
+            // Group by to avoid duplicates if multiple logs exist for some reason
+            $builder->groupBy('pc.id');
 
             $results = $builder->get()->getResult();
 
-            return $this->respond([
-                'data'  => $results,
-                'total' => $total,
-                'page'  => $page,
-                'limit' => $limit
-            ]);
+            return $this->respond($results);
         } catch (\Exception $e) {
             return $this->failServerError($e->getMessage());
         }

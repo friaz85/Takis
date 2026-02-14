@@ -14,10 +14,11 @@ class AdminPromoCodesController extends ResourceController
         $builder = $db->table('promo_codes pc');
 
         // Query Params
-        $status = $this->request->getVar('status'); // 'available', 'used', 'all'
+        // Default to 'used' to avoid scanning 73M records by default
+        $status = $this->request->getVar('status') ?? 'used';
         $search = $this->request->getVar('search');
         $page   = intval($this->request->getVar('page') ?? 1);
-        $limit  = intval($this->request->getVar('limit') ?? 500);
+        $limit  = intval($this->request->getVar('limit') ?? 50); // Lower default limit
         $offset = ($page - 1) * $limit;
 
         $builder->select('pc.*, u.full_name as user_name, u.email as user_email');
@@ -42,12 +43,14 @@ class AdminPromoCodesController extends ResourceController
         $countBuilder = clone $builder;
         $total        = $countBuilder->countAllResults(false);
 
-        // Specific totals counts (Available vs Used)
-        $db         = \Config\Database::connect();
-        $availQuery = $db->table('promo_codes')->where('is_used', 0)->countAllResults();
-        $usedQuery  = $db->table('promo_codes')->where('is_used', 1)->countAllResults();
+        // Fetch totals only if needed or keep them simplified
+        // Counting used is fast with index, available is slow.
+        $usedCount = $db->table('promo_codes')->where('is_used', 1)->countAllResults();
 
-        $builder->orderBy('pc.id', 'DESC');
+        // We only fetch available if explicitly requested to avoid lag
+        $availCount = ($status === 'available') ? $total : 0;
+
+        $builder->orderBy('pc.used_at', 'DESC'); // Sort by used_at for better relevance
         $builder->limit($limit, $offset);
 
         $codes = $builder->get()->getResult();
@@ -55,8 +58,8 @@ class AdminPromoCodesController extends ResourceController
         return $this->respond([
             'data'            => $codes,
             'total'           => $total,
-            'total_available' => $availQuery,
-            'total_used'      => $usedQuery,
+            'total_available' => $availCount,
+            'total_used'      => $usedCount,
             'page'            => $page,
             'limit'           => $limit
         ]);
