@@ -93,9 +93,16 @@ He configurado un **Cron Job** en el sistema local para activar el sitio sin int
 - ✅ Google Tag Manager activo
 - ✅ Dashboard optimizado
 
+## � Restricciones de Usuario (takis_admin)
+- **Menú**: Ocultas opciones "Pedidos" y "Soporte"
+- **Dashboard**: Oculto KPI de Visitas y Tabla de Visitas
+- **Reportes**: Exportación PDF oculta sección de visitas
+- **Propósito**: Vista simplificada para cliente final
+
 ## 🔄 Últimos Commits
-- `81dfe0d` - Optimize admin dashboard and update page titles (13/Feb/2026)
-- Incluye: optimización de queries, actualización de títulos, KPIs simplificados
+- `95800d4` - Configure shared uploads between Prod and Dev environments [Force Add] (13/Feb/2026)
+- Incluye: script link_uploads_prod.sh, memoria actualizada, uploads compartidos
+
 
 ---
 *Documento actualizado el 13 de Febrero de 2026 por Antigravity para continuidad del proyecto.*

@@ -18,7 +18,8 @@ Chart.register(...registerables);
     <app-admin-navbar></app-admin-navbar>
     <div class="dashboard-page" 
          [class.sidebar-closed]="!layoutService.isSidebarOpen()"
-         [class.role-takis]="getRole() === 'takis'">
+         [class.role-takis]="getRole() === 'takis'"
+         [class.user-takis-admin]="!canSeeVisits()">
       <div class="header-row">
         <div>
            <h2 class="title">DASHBOARD DE RENDIMIENTO</h2>
@@ -47,7 +48,7 @@ Chart.register(...registerables);
       <!-- KPI Cards -->
       <!-- KPI Cards - Single Row -->
       <div class="kpi-grid">
-        <div class="kpi-card visits">
+        <div class="kpi-card visits" *ngIf="canSeeVisits()">
            <div class="kpi-icon">🌐</div>
            <div class="kpi-info">
              <h3>Visitas</h3>
@@ -105,7 +106,7 @@ Chart.register(...registerables);
       <!-- Secondary Row: Visits (8/12) and Rewards (4/12) -->
       <div class="secondary-grid">
         <!-- Visits Log Table -->
-        <div class="panel visits-panel" *ngIf="stats?.visits_log?.length">
+        <div class="panel visits-panel" *ngIf="stats?.visits_log?.length && canSeeVisits()">
            <div class="panel-header">
               <h3>🌐 Registro de Visitas Recientes</h3>
               <div class="header-actions">
@@ -253,6 +254,8 @@ Chart.register(...registerables);
 
     /* KPI CARDS */
     .kpi-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1.5rem; margin-bottom: 2rem; }
+    .dashboard-page.user-takis-admin .kpi-grid { grid-template-columns: repeat(3, 1fr); }
+    
     .kpi-grid-secondary { grid-template-columns: repeat(2, 1fr); }
     .kpi-card { 
       background: rgba(108, 29, 218, 0.1); border: 2px solid #6C1DDA; border-radius: 1rem;
@@ -289,6 +292,7 @@ Chart.register(...registerables);
     .chart-toggles button.active { background: #6C1DDA; color: white; border-color: #F2E74B; }
 
     .secondary-grid { display: grid; grid-template-columns: 2fr 1fr; gap: 1.5rem; margin-bottom: 2rem; }
+    .dashboard-page.user-takis-admin .secondary-grid { grid-template-columns: 1fr; }
     .activity-row { margin-bottom: 2rem; }
     
     .panel { background: rgba(255,255,255,0.05); border-radius: 1.5rem; padding: 1.5rem; border: 2px solid #6C1DDA; overflow: hidden; }
@@ -560,6 +564,10 @@ export class AdminDashboardComponent implements OnInit, AfterViewInit {
   canSeeActivity = computed(() => {
     const role = this.auth.user()?.role;
     return role === 'quantum' || role === 'system_admin' || !role; // Default to see if no role or quantum
+  });
+
+  canSeeVisits = computed(() => {
+    return this.auth.user()?.username !== 'takis_admin';
   });
 
   // Date Filters

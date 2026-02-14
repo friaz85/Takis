@@ -32,7 +32,7 @@ import { AdminLayoutService } from '../services/admin-layout.service';
           <span class="icon">📊</span> Dashboard
         </a>
         
-        <a *ngIf="getRole() !== 'takis' || getUsername() === 'takis_admin'" routerLink="/admin/orders" routerLinkActive="active" class="nav-item" (click)="onNavItemClick()">
+        <a *ngIf="getRole() !== 'takis' && getUsername() !== 'takis_admin'" routerLink="/admin/orders" routerLinkActive="active" class="nav-item" (click)="onNavItemClick()">
           <span class="icon">📦</span> Pedidos
         </a>
         <a *ngIf="getRole() !== 'takis'" routerLink="/admin/users" routerLinkActive="active" class="nav-item" (click)="onNavItemClick()">
@@ -41,7 +41,7 @@ import { AdminLayoutService } from '../services/admin-layout.service';
         <a *ngIf="getRole() !== 'takis'" routerLink="/admin/rewards" routerLinkActive="active" class="nav-item" (click)="onNavItemClick()">
           <span class="icon">🎁</span> Recompensas
         </a>
-        <a *ngIf="getRole() !== 'takis' || getUsername() === 'takis_admin'" routerLink="/admin/support" routerLinkActive="active" class="nav-item" (click)="onNavItemClick()">
+        <a *ngIf="getRole() !== 'takis' && getUsername() !== 'takis_admin'" routerLink="/admin/support" routerLinkActive="active" class="nav-item" (click)="onNavItemClick()">
           <span class="icon">💬</span> Soporte
         </a>
         <a *ngIf="getRole() !== 'takis'" routerLink="/admin/promo-codes" routerLinkActive="active" class="nav-item" (click)="onNavItemClick()">
