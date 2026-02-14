@@ -121,7 +121,15 @@ import { AdminLayoutService } from '../services/admin-layout.service';
     .highlight { color: #F2E74B; }
     small { color: #888; font-size: 0.7rem; text-transform: uppercase; letter-spacing: 2px; }
     
-    .nav-links { flex: 1; padding: 2rem 1rem; display: flex; flex-direction: column; gap: 0.5rem; }
+    .nav-links { 
+      flex: 1; 
+      padding: 2rem 1rem; 
+      display: flex; 
+      flex-direction: column; 
+      gap: 0.5rem; 
+      overflow-y: auto;
+      overflow-x: hidden;
+    }
     .nav-item { 
       display: flex; align-items: center; gap: 1rem; padding: 0.8rem 1.2rem; 
       color: #aaa; text-decoration: none; border-radius: 0.5rem; 
