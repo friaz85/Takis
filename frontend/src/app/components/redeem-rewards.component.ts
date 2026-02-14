@@ -805,7 +805,9 @@ export class RedeemRewardsComponent implements OnInit {
 
         const isDigital = String(reward.type).toLowerCase().trim() === 'digital';
         const successTitle = '¡CANJE EXITOSO!';
-        const successText = 'TU PREMIO HA SIDO CANJEADO CORRECTAMENTE. RECIBIRÁS UN CORREO CON LOS DETALLES.';
+        const successText = isDigital
+          ? 'A CONTINUACIÓN VISUALIZARÁS TU CUPÓN DIGITAL, RECUERDA GUARDARLO O TOMARLE CAPTURA, TAMBIÉN LO PUEDES DESCARGAR MÁS ADELANTE EN LA SECCIÓN HISTORIAL.'
+          : 'A CONTINUACIÓN RECIBIRÁS UN CORREO DE CONFIRMACIÓN CON TU NÚMERO DE PEDIDO Y TAMBIÉN PUEDES CONSULTAR ESTATUS EN LA SECCIÓN HISTORIAL.';
 
         Swal.fire({
           title: successTitle,
