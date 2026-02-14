@@ -170,6 +170,32 @@ class UpdatePromoSchemaController extends Controller
                 )");
                 $output[] = "Created table 'site_visits'.";
             }
+
+            // ADD INDEXES TO PROMO_CODES
+            $output[] = "Optimizing promo_codes indexes...";
+
+            // Check existing indexes for promo_codes
+            $indexQuery = $db->query("SHOW INDEX FROM promo_codes");
+            $indexes    = $indexQuery->getResult();
+            $indexNames = array_map(function ($idx) {
+                return $idx->Key_name; }, $indexes);
+
+            if (!in_array('idx_user_daily', $indexNames)) {
+                $db->query("ALTER TABLE promo_codes ADD INDEX idx_user_daily (used_by, used_at)");
+                $output[] = "Added index 'idx_user_daily'.";
+            }
+            if (!in_array('idx_ip_daily', $indexNames)) {
+                $db->query("ALTER TABLE promo_codes ADD INDEX idx_ip_daily (used_ip, used_at)");
+                $output[] = "Added index 'idx_ip_daily'.";
+            }
+            if (!in_array('idx_available', $indexNames)) {
+                $db->query("ALTER TABLE promo_codes ADD INDEX idx_available (is_used, code)");
+                $output[] = "Added index 'idx_available'.";
+            }
+            if (!in_array('idx_used_at', $indexNames)) {
+                $db->query("ALTER TABLE promo_codes ADD INDEX idx_used_at (used_at)");
+                $output[] = "Added index 'idx_used_at'.";
+            }
         } catch (\Exception $e) {
             $output[] = "Error: " . $e->getMessage();
         }
