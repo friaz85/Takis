@@ -48,7 +48,7 @@ import { AdminLayoutService } from '../services/admin-layout.service';
           <span class="icon">🎫</span> Códigos Promocionales
         </a>
         <a *ngIf="getRole() !== 'takis'" routerLink="/admin/entry-codes" routerLinkActive="active" class="nav-item" (click)="onNavItemClick()">
-          <span class="icon">🎟️</span> Recompensas Canjeadas
+          <span class="icon">🎟️</span> Códigos Registrados
         </a>
       </nav>
 
