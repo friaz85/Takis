@@ -240,6 +240,7 @@ import { WhatsappBubbleComponent } from './whatsapp-bubble.component';
       margin: 0;
       line-height: 1.6;
       font-size: 1rem;
+      white-space: pre-wrap;
     }
 
     /* Mobile */
@@ -267,28 +268,39 @@ export class HowItWorksComponent {
 
   faqs = [
     {
+      question: '¿Qué productos participan?',
+      answer: `Participan los productos Takis marcados con el logo de la campaña Takis: La Botana de la Afición más Intensa, los cuales son:
+Canal Detalle: Takis Fuego 70g, Takis Blue Heat 70g, Takis Huakamoles 70g, Takis Salsa Brava 70g, Takis Original 70g, Takis Chile Limón 70g, Takis Intense Nacho 70g y Takis Fuego 200g.
+Canal Conveniencia: Takis Fuego 80g, 200g y 260g.
+Canal Autoservicios: Takis Fuego 240g.`
+    },
+    {
       question: '¿Cómo puedo registrarme?',
-      answer: 'Puedes registrarte haciendo clic en el botón "REGÍSTRATE" en la página principal. Solo necesitas tu correo electrónico y crear una contraseña segura.'
+      answer: 'Puedes registrarte haciendo click en el botón "REGISTRARME" en la página principal. Solamente necesitas tu correo electrónico y número de teléfono. Asegúrate de ponerlos de manera correcta.'
     },
     {
       question: '¿Dónde encuentro los códigos?',
-      answer: 'Los códigos participantes se encuentran dentro del empaque de tus Takis favoritos. Busca el código impreso en el interior de la bolsa.'
+      answer: 'Los códigos participantes se encuentran en la tira que viene dentro del empaque de los productos Takis participantes. Busca el código y acumula puntos.'
     },
     {
       question: '¿Cuántos puntos vale cada código?',
-      answer: 'Cada código tiene un valor en puntos que se acredita automáticamente a tu cuenta al momento de canjearlo. El valor puede variar según la promoción.'
+      answer: 'Cada código registrado equivale a 1 punto. Este valor se acredita automáticamente a tu cuenta al momento de registrarlo.'
     },
     {
       question: '¿Cómo canjeo mis puntos por premios?',
-      answer: 'Ve a la sección "RECOMPENSAS" en el menú, selecciona el premio que desees y haz clic en "CANJEAR". Asegúrate de tener suficientes puntos acumulados.'
+      answer: 'Una vez que acumules los puntos necesarios, ve a la sección de recompensas dentro de la plataforma, selecciona el producto (premio) que desees del catálogo y confirma tu elección.'
     },
     {
       question: '¿Qué hago si mi código no funciona?',
-      answer: 'Verifica que hayas ingresado el código correctamente. Si el problema persiste, contacta a nuestro equipo de soporte a través del botón de WhatsApp.'
+      answer: 'Verifica que hayas ingresado el código correctamente. Recuerda que hay un límite de registro de 20 códigos por día. Si el problema persiste, contacta a soporte vía WhatsApp al 55 3875 9528.'
     },
     {
       question: '¿Cuánto tiempo tardan en llegar los premios físicos?',
-      answer: 'Los premios físicos se procesan en un plazo de 5 a 10 días hábiles. Recibirás un correo electrónico con la información de seguimiento de tu envío.'
+      answer: 'Los premios físicos se entregan en un plazo de 8 a 15 días hábiles después de que realices el canje y confirmes tus datos personales. Recibirás un folio para dar seguimiento a tu envío.'
+    },
+    {
+      question: '¿Qué pasa si gano un premio digital?',
+      answer: 'Los incentivos digitales se descargan al momento del canje, de igual manera puedes consultarlos en la sección historial.'
     }
   ];
 
