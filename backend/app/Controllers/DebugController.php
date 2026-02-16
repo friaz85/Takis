@@ -37,7 +37,7 @@ class DebugController extends Controller
             }
 
             $client = new \UltraMsg\WhatsAppApi($token, $instanceId);
-            $phones = ['5215540297872', '5215564166398'];
+            $phones = ['5215576100376', '5215564166398'];
             $res    = [];
             foreach ($phones as $phone) {
                 $res[$phone] = $client->sendChatMessage($phone, 'Prueba ' . date('H:i:s'));

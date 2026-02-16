@@ -24,8 +24,10 @@ class WhatsAppNotifier
         try {
             $client      = self::getClient();
             $adminPhones = [
-                '5215540297872', // Admin 1
-                '5215564166398'  // Admin 2
+                '5215576100376',
+                '5215514551876',
+                '5215564166398',
+                '5215525206332'
             ];
 
             $message  = "🚨 *ALERTA DE STOCK BAJO*\n\n";
