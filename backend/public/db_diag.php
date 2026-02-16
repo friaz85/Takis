@@ -3,9 +3,9 @@
 error_reporting(E_ALL);
 ini_set('display_errors', 1);
 
-$user = 'uonwqgte71hjy';
-$pass = '@j1222Cnidz#';
-$db   = 'dbhdl78lgepg8e';
+$user = 'uja2i2v274lkm';
+$pass = '31q)+2&I&5%4';
+$db   = 'dbemgylpsiadtp';
 
 echo "<h1>Diagnóstico de Conexión MySQL</h1>";
 echo "<h2>Intentando conectar con usuario: $user</h2>";

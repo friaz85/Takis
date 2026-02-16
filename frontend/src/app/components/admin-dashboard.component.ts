@@ -610,30 +610,6 @@ export class AdminDashboardComponent implements OnInit, AfterViewInit {
     if (this.startDate) params.start_date = this.startDate;
     if (this.endDate) params.end_date = this.endDate;
 
-    const mockData = {
-      cards: { users: 1250, redemptions: 458, points: 125400, promo: { total: 1000, used: 850 } },
-      success_rate: 98.5,
-      top_rewards: [
-        { title: 'Audífonos Bluetooth', count: 85 },
-        { title: 'Mochila Takis Edición Especial', count: 62 },
-        { title: 'Tarjeta de Regalo $500', count: 45 },
-        { title: 'Sudadera Takis', count: 38 },
-        { title: 'Gorra Takis', count: 25 }
-      ],
-      recent: [
-        { id: 101, user: 'Carlos Ruiz', reward: 'Audífonos Bluetooth', status: 'completed', created_at: new Date().toISOString() },
-        { id: 102, user: 'Elena Gómez', reward: 'Mochila Takis', status: 'pending', created_at: new Date(Date.now() - 3600000).toISOString() },
-        { id: 103, user: 'Marcos Soto', reward: 'Tarjeta Regalo', status: 'completed', created_at: new Date(Date.now() - 7200000).toISOString() },
-        { id: 104, user: 'Lucía Méndez', reward: 'Sudadera Takis', status: 'pending', created_at: new Date(Date.now() - 86400000).toISOString() },
-        { id: 105, user: 'Roberto Paz', reward: 'Gorra Takis', status: 'completed', created_at: new Date(Date.now() - 172800000).toISOString() }
-      ],
-      chart: Array.from({ length: 7 }, (_, i) => ({
-        date: new Date(Date.now() - (6 - i) * 86400000).toISOString(),
-        count: Math.floor(Math.random() * 50) + 10,
-        users: Math.floor(Math.random() * 30) + 5
-      }))
-    };
-
     let url = `${environment.apiUrl}/admin/stats`;
     if (this.startDate && this.endDate) {
       url += `?start_date=${this.startDate}&end_date=${this.endDate}`;
@@ -643,25 +619,31 @@ export class AdminDashboardComponent implements OnInit, AfterViewInit {
       next: (res: any) => {
         this.stats = {
           cards: {
-            users: res.cards?.users ?? mockData.cards.users,
-            redemptions: res.cards?.redemptions ?? mockData.cards.redemptions,
-            points: res.cards?.points ?? mockData.cards.points,
-            visits: res.cards?.visits ?? 0, // Ensure visits is mapped
-            promo: res.cards?.promo ?? mockData.cards.promo
+            users: res.cards?.users ?? 0,
+            redemptions: res.cards?.redemptions ?? 0,
+            points: res.cards?.points ?? 0,
+            visits: res.cards?.visits ?? 0,
+            promo: res.cards?.promo ?? { total: 0, used: 0 }
           },
-          success_rate: res.success_rate ?? mockData.success_rate,
-          top_rewards: res.top_rewards?.length ? res.top_rewards : mockData.top_rewards,
+          success_rate: res.success_rate ?? 0,
+          top_rewards: res.top_rewards || [],
           recent: res.recent || [],
           visits_log: res.visits_log || [],
-          chart: res.chart?.length ? res.chart : mockData.chart
+          chart: res.chart || []
         };
         this.dataVersion.update(v => v + 1); // Force computed update
         setTimeout(() => this.initCharts(), 0);
       },
       error: (e: any) => {
-        console.error('API Error, using full mock data:', e);
-        this.stats = mockData; // Mock data doesn't have visits in the original code, maybe add it?
-        (this.stats.cards as any).visits = 0;
+        console.error('API Error:', e);
+        this.stats = {
+          cards: { users: 0, redemptions: 0, points: 0, visits: 0, promo: { total: 0, used: 0 } },
+          success_rate: 0,
+          top_rewards: [],
+          recent: [],
+          visits_log: [],
+          chart: []
+        };
         this.dataVersion.update(v => v + 1);
         setTimeout(() => this.initCharts(), 0);
       }
