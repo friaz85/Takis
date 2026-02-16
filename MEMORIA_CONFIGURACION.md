@@ -99,12 +99,8 @@ He configurado un **Cron Job** en el sistema local para activar el sitio sin int
 - **Reportes**: Exportación PDF oculta sección de visitas
 - **Propósito**: Vista simplificada para cliente final
 
-## 🗄️ Separación de Entornos (15/Feb/2026)
-Se han separado las bases de datos para evitar conflictos:
-- **DEV**: `dbhdl78lgepg8e` (Usuario: `uonwqgte71hjy`)
-- **PROD**: `dbemgylpsiadtp` (Usuario: `uja2i2v274lkm`)
-
 ## 🔄 Últimos Commits
+- `07f82ad` (REVERTIDO) - Configure separate database for DEV environment
 - `39bfbd0` - Update WhatsApp stock alert phones (15/Feb/2026)
 - `95800d4` - Configure shared uploads between Prod and Dev environments [Force Add] (13/Feb/2026)
 - Incluye: script link_uploads_prod.sh, memoria actualizada, uploads compartidos
