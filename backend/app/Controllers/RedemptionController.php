@@ -45,9 +45,23 @@ class RedemptionController extends ResourceController
             ->countAllResults();
 
         if ($velocityCheck >= 5) {
-            // Log attack attempt
-            log_message('critical', "Velocity Attack Detected IP: {$ip} User: {$userId}");
-            return $this->failTooManyRequests('Demasiados intentos en muy poco tiempo. Por seguridad, espera 1 minuto.');
+            // AUTO-BLOCK USER PERMANENTLY (Velocity Violation)
+            $userModel->update($userId, [
+                'is_blocked'     => 1,
+                'blocked_reason' => 'Sistema Anti-Fraude: Velocidad de canje excesiva (Posible Bot)',
+                'blocked_at'     => $now
+            ]);
+
+            // Log attack attempt & block
+            log_message('critical', "Velocity Auto-Block. IP: {$ip} User: {$userId}");
+            $logModel->save([
+                'ip_address' => $ip,
+                'user_id'    => $userId,
+                'action'     => 'auto_block',
+                'details'    => 'Usuario bloqueado por velocidad excesiva (>5 intentos/min)'
+            ]);
+
+            return $this->fail('Tu cuenta ha sido bloqueada. No puedes realizar esta accion.', 403);
         }
 
         // 2. DAILY CAP (USER): Límite estricto de códigos exitosos por día
