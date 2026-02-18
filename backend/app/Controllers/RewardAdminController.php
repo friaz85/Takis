@@ -11,7 +11,7 @@ class RewardAdminController extends ResourceController
     public function index()
     {
         $rewardModel = new RewardModel();
-        return $this->respond($rewardModel->findAll());
+        return $this->respond($rewardModel->orderBy('cost', 'ASC')->findAll());
     }
 
     public function publicCatalog()
