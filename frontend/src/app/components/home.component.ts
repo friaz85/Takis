@@ -8,6 +8,7 @@ import { WhatsappBubbleComponent } from './whatsapp-bubble.component';
 import { ToastService } from '../services/toast.service';
 import { AuthService } from '../services/auth.service';
 import { environment } from '../../environments/environment';
+import Swal from 'sweetalert2';
 
 @Component({
   selector: 'app-home',
@@ -453,6 +454,27 @@ export class HomeComponent implements OnInit {
         this.submitting.set(false);
       },
       error: (err: any) => {
+        // Handle Blocked User (Auto Logout)
+        if (err.status === 403) {
+          Swal.fire({
+            title: 'CUENTA BLOQUEADA',
+            text: err.error?.message || 'Tu cuenta ha sido bloqueada. No puedes realizar esta acción.',
+            icon: 'error',
+            confirmButtonText: 'CERRAR',
+            confirmButtonColor: '#F2E74B',
+            background: '#1A0B2E',
+            color: '#fff',
+            allowOutsideClick: false,
+            customClass: { confirmButton: 'takis-swal-confirm' },
+            buttonsStyling: false
+          }).then(() => {
+            this.auth.logout();
+            this.router.navigate(['/auth/login']);
+          });
+          this.submitting.set(false);
+          return;
+        }
+
         // Try to extract error message from different possible locations
         const errorMessage = err.error?.message ||
           err.error?.messages?.error ||

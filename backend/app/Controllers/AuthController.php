@@ -28,13 +28,26 @@ class AuthController extends ResourceController
             return $this->fail($this->validator->getErrors());
         }
 
+        // Check if IP is Banned due to Anti-Fraud Auto-Block
+        $ip       = $this->request->getIPAddress();
+        $logModel = new SecurityLogModel();
+
+        // Check if there is ANY auto_block record for this IP
+        $isIpBanned = $logModel->where('ip_address', $ip)
+            ->where('action', 'auto_block')
+            ->countAllResults() > 0;
+
+        if ($isIpBanned) {
+            return $this->fail('Tu dirección IP ha sido bloqueada. No puedes registrarte.', 403);
+        }
+
         $email = $this->request->getVar('email');
         $phone = $this->request->getVar('phone');
 
         // Validate unique phone number
         $userWithPhone = $userModel->where('phone', $phone)->first();
         if ($userWithPhone && $userWithPhone['email'] !== $email) {
-            return $this->fail('El telefono ya esta registrado', 400);
+            return $this->fail('El teléfono ya está registrado', 400);
         }
 
         $otp       = rand(100000, 999999);

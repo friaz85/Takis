@@ -839,6 +839,26 @@ export class RedeemRewardsComponent implements OnInit {
         this.submittingAddress.set(false); // Release button in modal if open
         console.error('Redeem Error', err);
 
+        // Handle Blocked User
+        if (err.status === 403) {
+          Swal.fire({
+            title: 'CUENTA BLOQUEADA',
+            text: err.error?.message || 'Tu cuenta ha sido bloqueada. No puedes realizar esta acción.',
+            icon: 'error',
+            confirmButtonText: 'CERRAR',
+            confirmButtonColor: '#F2E74B',
+            background: '#1A0B2E',
+            color: '#fff',
+            allowOutsideClick: false,
+            customClass: { confirmButton: 'takis-swal-confirm' },
+            buttonsStyling: false
+          }).then(() => {
+            this.auth.logout();
+            this.router.navigate(['/auth/login']);
+          });
+          return;
+        }
+
         const errorCode = err.error?.error || err.error?.code || err.error?.messages?.code;
         const isRewardDigital = String(reward.type).toLowerCase().trim() === 'digital';
         if (errorCode === 'PROFILE_INCOMPLETE' && !isRewardDigital) {
