@@ -82,7 +82,7 @@ class RedemptionController extends ResourceController
                 'details'    => 'Usuario bloqueado permanentemente por exceso de intentos fallidos (5 en <10min)'
             ]);
 
-            return $this->fail('Tu cuenta ha sido bloqueada permanentemente por seguridad debido a actividad sospechosa. Contacta a soporte.', 403);
+            return $this->fail('Tu cuenta ha sido bloqueada. No puedes realizar esta accion.', 403);
         }
 
         // 4. IP HOARDING CHECK: Si una IP ha registrado canjes en más de 3 cuentas distintas hoy -> Bloquear IP (Opcional, por ahora solo log)
