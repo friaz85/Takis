@@ -51,13 +51,13 @@ class RedemptionController extends ResourceController
         }
 
         // 2. DAILY CAP (USER): Límite estricto de códigos exitosos por día
-        // Análisis indica mediana de 1 código. 10 es un límite generoso para usuarios reales, pero detiene bots (40+).
+        // Análisis indica mediana de 1 código. 20 es el límite contractual.
         $userDailyCount = $promoModel->where('used_by', $userId)
             ->where('used_at >=', $today)
             ->countAllResults();
 
-        if ($userDailyCount >= 10) {
-            return $this->fail('Has alcanzado tu límite diario de 10 códigos Takis. ¡Vuelve mañana para seguir participando!', 429);
+        if ($userDailyCount >= 20) {
+            return $this->fail('Has alcanzado tu límite diario de 20 códigos Takis. ¡Vuelve mañana para seguir participando!', 429);
         }
 
         // 3. BRUTE FORCE DETECTION (USER): Bloqueo automático si falla muchos códigos seguidos
@@ -68,7 +68,7 @@ class RedemptionController extends ResourceController
             ->countAllResults();
 
         if ($recentFailures >= 5) {
-            // AUTO-BLOCK USER
+            // AUTO-BLOCK USER PERMANENTLY
             $userModel->update($userId, [
                 'is_blocked'     => 1,
                 'blocked_reason' => 'Sistema Anti-Fraude: Detección de Fuerza Bruta (Múltiples códigos inválidos)',
@@ -79,10 +79,10 @@ class RedemptionController extends ResourceController
                 'ip_address' => $ip,
                 'user_id'    => $userId,
                 'action'     => 'auto_block',
-                'details'    => 'Usuario bloqueado automáticamente por exceso de intentos fallidos (5 en <10min)'
+                'details'    => 'Usuario bloqueado permanentemente por exceso de intentos fallidos (5 en <10min)'
             ]);
 
-            return $this->fail('Tu cuenta ha sido bloqueada temporalmente por seguridad debido a múltiples intentos fallidos. Contacta a soporte.', 403);
+            return $this->fail('Tu cuenta ha sido bloqueada permanentemente por seguridad debido a actividad sospechosa. Contacta a soporte.', 403);
         }
 
         // 4. IP HOARDING CHECK: Si una IP ha registrado canjes en más de 3 cuentas distintas hoy -> Bloquear IP (Opcional, por ahora solo log)
