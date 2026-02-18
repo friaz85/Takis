@@ -38,7 +38,7 @@ class AuthController extends ResourceController
             ->countAllResults() > 0;
 
         if ($isIpBanned) {
-            return $this->fail('Por el momento no se puede realizar el registro.', 403);
+            return $this->fail('Por el momento no se puede realizar el registro. Favor de comunicarse a atención a clientes. Código de error (-15)', 403);
         }
 
         $email = $this->request->getVar('email');
