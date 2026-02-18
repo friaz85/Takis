@@ -32,51 +32,61 @@ class RedemptionController extends ResourceController
         }
 
         /*
-         * Rate limiting to prevent bruteforce:
-         * - Per User: Max 20 failed attempts per day
-         * - Per IP: Max 60 failed attempts per day
+         * 🛡️ SISTEMA ANTI-FRAUDE Y RATE LIMITING
+         * Reglas estrictas para detener ataques de fuerza bruta y automatización.
          */
+        $now   = date('Y-m-d H:i:s');
         $today = date('Y-m-d 00:00:00');
 
-        // Check User attempts (failed)
-        $userAttempts = $logModel->where('user_id', $userId)
-            ->where('action', 'failed_redeem')
-            ->where('last_attempt >=', $today)
+        // 1. VELOCITY CHECK (IP): Bloquear si hay más de 5 intentos por minuto
+        // Esto detiene scripts que envían 10 códigos/minuto
+        $velocityCheck = $logModel->where('ip_address', $ip)
+            ->where('created_at >=', date('Y-m-d H:i:s', strtotime('-1 minute')))
             ->countAllResults();
 
-        if ($userAttempts >= 20) {
-            return $this->fail('Demasiados intentos fallidos. Intenta más tarde.', 429);
+        if ($velocityCheck >= 5) {
+            // Log attack attempt
+            log_message('critical', "Velocity Attack Detected IP: {$ip} User: {$userId}");
+            return $this->failTooManyRequests('Demasiados intentos en muy poco tiempo. Por seguridad, espera 1 minuto.');
         }
 
-        // Check IP attempts (failed)
-        $ipAttempts = $logModel->where('ip_address', $ip)
-            ->where('action', 'failed_redeem')
-            ->where('last_attempt >=', $today)
-            ->countAllResults();
-
-        if ($ipAttempts >= 60) {
-            return $this->fail('Se ha alcanzado el límite de intentos desde esta dirección IP. Intenta más tarde.', 429);
-        }
-
-        // Check Daily Limits (Successful redemptions)
-
-        // 1. Per User: Max 20
+        // 2. DAILY CAP (USER): Límite estricto de códigos exitosos por día
+        // Análisis indica mediana de 1 código. 10 es un límite generoso para usuarios reales, pero detiene bots (40+).
         $userDailyCount = $promoModel->where('used_by', $userId)
             ->where('used_at >=', $today)
             ->countAllResults();
 
-        if ($userDailyCount >= 20) {
-            return $this->fail('Has alcanzado el límite de 20 códigos canjeados por día.', 429);
+        if ($userDailyCount >= 10) {
+            return $this->fail('Has alcanzado tu límite diario de 10 códigos Takis. ¡Vuelve mañana para seguir participando!', 429);
         }
 
-        // 2. Per IP: Max 60
-        $ipDailyCount = $promoModel->where('used_ip', $ip)
-            ->where('used_at >=', $today)
+        // 3. BRUTE FORCE DETECTION (USER): Bloqueo automático si falla muchos códigos seguidos
+        // Si los últimos 5 intentos fueron fallidos y recientes -> Bloqueo de Cuenta
+        $recentFailures = $logModel->where('user_id', $userId)
+            ->where('action', 'failed_redeem')
+            ->where('created_at >=', date('Y-m-d H:i:s', strtotime('-10 minutes')))
             ->countAllResults();
 
-        if ($ipDailyCount >= 60) {
-            return $this->fail('Se ha alcanzado el límite de códigos canjeados desde esta dirección IP por hoy.', 429);
+        if ($recentFailures >= 5) {
+            // AUTO-BLOCK USER
+            $userModel->update($userId, [
+                'is_blocked'     => 1,
+                'blocked_reason' => 'Sistema Anti-Fraude: Detección de Fuerza Bruta (Múltiples códigos inválidos)',
+                'blocked_at'     => $now
+            ]);
+
+            $logModel->save([
+                'ip_address' => $ip,
+                'user_id'    => $userId,
+                'action'     => 'auto_block',
+                'details'    => 'Usuario bloqueado automáticamente por exceso de intentos fallidos (5 en <10min)'
+            ]);
+
+            return $this->fail('Tu cuenta ha sido bloqueada temporalmente por seguridad debido a múltiples intentos fallidos. Contacta a soporte.', 403);
         }
+
+        // 4. IP HOARDING CHECK: Si una IP ha registrado canjes en más de 3 cuentas distintas hoy -> Bloquear IP (Opcional, por ahora solo log)
+        // (Dejado como comentario para futura expansión si persiste el fraude de IP compartida)
 
         // Ensure we select points explicitly to be safe, though findAll/first should return all
         // First check if code exists at all
