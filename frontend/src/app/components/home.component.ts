@@ -387,6 +387,26 @@ import Swal from 'sweetalert2';
         .score-center { width: 110px; }
         .score-value { font-size: 2rem; }
     }
+
+    /* SweetAlert Button Custom Classes */
+    ::ng-deep .takis-swal-confirm {
+      background: #F2E74B !important;
+      color: #5d1f87 !important;
+      border-radius: 1.5rem !important;
+      padding: 1rem 2.2rem !important;
+      font-weight: 900 !important;
+      font-size: 1.4rem !important;
+      text-transform: uppercase !important;
+      box-shadow: 0 8px 0 #b8af2e !important;
+      font-family: 'acumin-pro', 'Inter', sans-serif !important;
+      border: none !important;
+      margin: 10px !important;
+      cursor: pointer !important;
+      transition: 0.1s;
+    }
+    ::ng-deep .takis-swal-confirm:hover { transform: translateY(-2px); box-shadow: 0 10px 0 #b8af2e !important; }
+    ::ng-deep .takis-swal-confirm:active { transform: translateY(4px); box-shadow: 0 2px 0 #b8af2e !important; }
+
   `]
 })
 export class HomeComponent implements OnInit {
