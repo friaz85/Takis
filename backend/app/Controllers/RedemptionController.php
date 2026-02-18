@@ -41,7 +41,7 @@ class RedemptionController extends ResourceController
         // 1. VELOCITY CHECK (IP): Bloquear si hay más de 5 intentos por minuto
         // Esto detiene scripts que envían 10 códigos/minuto
         $velocityCheck = $logModel->where('ip_address', $ip)
-            ->where('created_at >=', date('Y-m-d H:i:s', strtotime('-1 minute')))
+            ->where('last_attempt >=', date('Y-m-d H:i:s', strtotime('-1 minute')))
             ->countAllResults();
 
         if ($velocityCheck >= 5) {
@@ -78,7 +78,7 @@ class RedemptionController extends ResourceController
         // Si los últimos 5 intentos fueron fallidos y recientes -> Bloqueo de Cuenta
         $recentFailures = $logModel->where('user_id', $userId)
             ->where('action', 'failed_redeem')
-            ->where('created_at >=', date('Y-m-d H:i:s', strtotime('-10 minutes')))
+            ->where('last_attempt >=', date('Y-m-d H:i:s', strtotime('-10 minutes')))
             ->countAllResults();
 
         if ($recentFailures >= 5) {
