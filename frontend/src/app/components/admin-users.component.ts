@@ -41,13 +41,13 @@ import { environment } from '../../environments/environment';
           <table class="admin-table">
             <thead>
               <tr>
-                <th>Nombre</th>
-                <th>Correo</th>
-                <th class="hide-mobile">Telefono</th>
-                <th class="hide-mobile text-right">Puntos Acum.</th>
-                <th class="hide-mobile text-right">Puntos Util.</th>
-                <th>Estado</th>
-                <th class="text-right">Acciones</th>
+                <th (click)="sort('full_name')">Nombre {{ getSortIcon('full_name') }}</th>
+                <th (click)="sort('email')">Correo {{ getSortIcon('email') }}</th>
+                <th class="hide-mobile" (click)="sort('phone')">Telefono {{ getSortIcon('phone') }}</th>
+                <th class="hide-mobile text-right" (click)="sort('points_earned')">Puntos Acum. {{ getSortIcon('points_earned') }}</th>
+                <th class="hide-mobile text-right" (click)="sort('points_spent')">Puntos Util. {{ getSortIcon('points_spent') }}</th>
+                <th (click)="sort('is_blocked')">Estado {{ getSortIcon('is_blocked') }}</th>
+                <th class="text-right" style="cursor: default;">Acciones</th>
               </tr>
             </thead>
             <tbody>
@@ -179,7 +179,19 @@ import { environment } from '../../environments/environment';
 
     .table-wrapper { overflow-x: auto; }
     .admin-table { width: 100%; border-collapse: collapse; }
-    .admin-table th { background: rgba(108, 29, 218, 0.2); color: #F2E74B; padding: 1.2rem; text-align: left; font-size: 0.85rem; text-transform: uppercase; font-weight: 900; }
+    .admin-table th { 
+      background: rgba(108, 29, 218, 0.2); 
+      color: #F2E74B; 
+      padding: 1.2rem; 
+      text-align: left; 
+      font-size: 0.85rem; 
+      text-transform: uppercase; 
+      font-weight: 900; 
+      cursor: pointer; 
+      user-select: none;
+      transition: 0.2s;
+    }
+    .admin-table th:hover { background: rgba(108, 29, 218, 0.4); }
     .admin-table td { padding: 1.2rem; border-bottom: 1px solid rgba(108, 29, 218, 0.1); font-size: 0.9rem; }
     .admin-table tr:hover { background: rgba(242, 231, 75, 0.05); }
 
@@ -331,14 +343,57 @@ export class AdminUsersComponent implements OnInit {
     });
   }
 
+  sortColumn = signal<string>('');
+  sortDirection = signal<'asc' | 'desc'>('asc');
+
+  sort(column: string) {
+    if (this.sortColumn() === column) {
+      this.sortDirection.set(this.sortDirection() === 'asc' ? 'desc' : 'asc');
+    } else {
+      this.sortColumn.set(column);
+      this.sortDirection.set('asc');
+    }
+  }
+
+  getSortIcon(column: string): string {
+    if (this.sortColumn() !== column) return '↕️';
+    return this.sortDirection() === 'asc' ? '⬆️' : '⬇️';
+  }
+
   filteredUsers = computed(() => {
     this.dataVersion();
     const term = this.searchTerm().toLowerCase();
-    return this.users().filter((u: any) =>
+    let data = this.users().filter((u: any) =>
       u.full_name?.toLowerCase().includes(term) ||
       u.email?.toLowerCase().includes(term) ||
       u.phone?.toLowerCase().includes(term)
     );
+
+    // Apply Sort
+    const col = this.sortColumn();
+    const dir = this.sortDirection();
+
+    if (col) {
+      data = [...data].sort((a, b) => {
+        let valA = a[col];
+        let valB = b[col];
+
+        // Handle numeric values
+        if (col === 'points_earned' || col === 'points_spent') {
+          valA = Number(valA || 0);
+          valB = Number(valB || 0);
+        } else if (typeof valA === 'string') {
+          valA = valA.toLowerCase();
+          valB = valB ? valB.toLowerCase() : '';
+        }
+
+        if (valA < valB) return dir === 'asc' ? -1 : 1;
+        if (valA > valB) return dir === 'asc' ? 1 : -1;
+        return 0;
+      });
+    }
+
+    return data;
   });
 
   paginatedUsers = computed(() => {
