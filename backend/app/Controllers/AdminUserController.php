@@ -17,6 +17,7 @@ class AdminUserController extends ResourceController
     {
         $userModel = new UserModel();
         $users     = $userModel->findAll();
+        $db        = \Config\Database::connect();
 
         // Type casting and remove sensitive data
         foreach ($users as &$user) {
@@ -24,6 +25,32 @@ class AdminUserController extends ResourceController
             unset($user['otp']);
             unset($user['otp_expiry']);
             $user['is_blocked'] = (int) ($user['is_blocked'] ?? 0);
+
+            // Calculate Points Stats
+            // 1. Points Spent (Redeemed)
+            $redeemedQuery = $db->query("
+                SELECT SUM(r.cost) as total 
+                FROM redemptions re 
+                JOIN rewards r ON r.id = re.reward_id 
+                WHERE re.user_id = ?
+            ", [$user['id']]);
+            $spent         = (int) ($redeemedQuery->getRow()->total ?? 0);
+
+            // 2. Current Balance (Available)
+            $current = (int) ($user['points_balance'] ?? 0);
+            // Note: DB column is likely 'points_balance' or just 'points'. Usually 'points_balance'.
+            // Checking UserModel or Schema would confirm, but usually it's 'points_balance'.
+            // If it's 'points', logic still holds if we check both or map it.
+            // Let's assume 'points_balance' based on previous context, but will fallback to 'points' if needed.
+            if (!isset($user['points_balance']) && isset($user['points'])) {
+                $current = (int) $user['points'];
+            }
+
+            // 3. Total Earned (Acumulated)
+            $earned = $current + $spent;
+
+            $user['points_earned'] = $earned;
+            $user['points_spent']  = $spent;
         }
 
         return $this->respond($users);

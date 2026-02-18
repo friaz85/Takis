@@ -536,7 +536,7 @@ export class AdminOrdersComponent implements OnInit {
   }
 
   exportToCSV() {
-    const headers = ['ID', 'Usuario', 'Email', 'Recompensa', 'Puntos', 'Estado', 'Fecha'];
+    const headers = ['ID', 'Usuario', 'Email', 'Recompensa', 'Puntos', 'Estado', 'Fecha', 'Destinatario', 'Teléfono', 'Dirección', 'Colonia', 'Ciudad/Mpio', 'Estado', 'CP', 'Notas Entrega'];
     const rows = this.filteredOrders().map((o: any) => [
       o.id,
       `"${o.user_name}"`,
@@ -544,7 +544,15 @@ export class AdminOrdersComponent implements OnInit {
       `"${o.reward_title}"`,
       o.points_cost,
       o.status,
-      o.created_at
+      o.created_at,
+      `"${o.recipient_name || ''}"`,
+      o.phone || '',
+      `"${o.address || ''}"`,
+      `"${o.colonia || ''}"`,
+      `"${o.city || o.municipio || ''}"`,
+      `"${o.state || ''}"`,
+      o.zip_code || '',
+      `"${o.delivery_instructions || ''}"`
     ]);
 
     const csvContent = "\ufeff" + [headers.join(","), ...rows.map((e: any) => e.join(","))].join("\n");

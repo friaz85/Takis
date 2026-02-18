@@ -44,7 +44,8 @@ import { environment } from '../../environments/environment';
                 <th>Nombre</th>
                 <th>Correo</th>
                 <th class="hide-mobile">Telefono</th>
-                <th class="hide-mobile">Ubicacion</th>
+                <th class="hide-mobile text-right">Puntos Acum.</th>
+                <th class="hide-mobile text-right">Puntos Util.</th>
                 <th>Estado</th>
                 <th class="text-right">Acciones</th>
               </tr>
@@ -54,10 +55,8 @@ import { environment } from '../../environments/environment';
                 <td class="font-bold">{{ user.full_name }}</td>
                 <td>{{ user.email }}</td>
                 <td class="hide-mobile">{{ user.phone || 'N/A' }}</td>
-                <td class="hide-mobile">
-                   {{ user.state || 'N/A' }}
-                   <small class="block text-gray">{{ user.city }}</small>
-                </td>
+                <td class="hide-mobile text-right font-bold text-yellow">{{ user.points_earned | number }}</td>
+                <td class="hide-mobile text-right">{{ user.points_spent | number }}</td>
                 <td>
                   <span class="status-badge" [class.blocked]="user.is_blocked == 1">
                     {{ user.is_blocked == 1 ? '🔒 Bloqueado' : '✅ Activo' }}
@@ -196,6 +195,7 @@ import { environment } from '../../environments/environment';
     .page-number { font-weight: 900; color: #F2E74B; font-size: 1.1rem; margin: 0 0.5rem; }
 
     .block { display: block; }
+    .text-yellow { color: #F2E74B; }
 
     .status-badge {
       padding: 0.4rem 0.8rem; border-radius: 0.5rem; font-size: 0.75rem;
@@ -350,16 +350,15 @@ export class AdminUsersComponent implements OnInit {
   totalPages = computed(() => Math.ceil(this.filteredUsers().length / this.pageSize));
 
   exportToCSV() {
-    const headers = ['ID', 'Nombre', 'Email', 'Teléfono', 'Estado', 'Ciudad', 'Dirección', 'Código Postal', 'Fecha Registro'];
+    const headers = ['ID', 'Nombre', 'Email', 'Teléfono', 'Estado', 'Puntos Acumulados', 'Puntos Utilizados', 'Fecha Registro'];
     const rows = this.filteredUsers().map((u: any) => [
       u.id,
       `"${u.full_name}"`,
       u.email,
       u.phone || '',
-      u.state || '',
-      u.city || '',
-      `"${u.address || ''}"`,
-      u.zip_code || '',
+      u.is_blocked == 1 ? 'Bloqueado' : 'Activo',
+      u.points_earned || 0,
+      u.points_spent || 0,
       u.created_at
     ]);
 
