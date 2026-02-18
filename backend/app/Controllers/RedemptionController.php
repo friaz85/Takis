@@ -349,6 +349,7 @@ class RedemptionController extends ResourceController
             $msg  = "<p>Tu orden #{$redemptionId} ha sido recibida.</p>";
             $msg .= "<p>Hemos recibido tu solicitud para: <br><strong>{$reward['title']}</strong></p>";
             $msg .= "<div style='margin: 20px 0;'><img src='{$imageUrl}' alt='Recompensa' style='max-width: 50%; border-radius: 10px; border: 2px solid #F2E74B;'></div>";
+            $msg .= "<p style='font-size: 10px; color: #999; margin-top: -15px; font-style: italic;'>*Imagen de referencia o ilustrativa</p>";
             $msg .= "<p>Pronto recibirás más noticias sobre tu envío.</p>";
 
             EmailSender::sendEmail($user['email'], $subject, $title, $msg);
