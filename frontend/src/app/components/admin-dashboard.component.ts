@@ -696,7 +696,9 @@ export class AdminDashboardComponent implements OnInit, AfterViewInit {
         type: 'line',
         data: {
           labels: this.stats.chart.map((d: any) => {
-            const date = new Date(d.date);
+            // Fix timezone offset issue: Parse YYYY-MM-DD manually to create local date
+            const parts = d.date.split('-');
+            const date = new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2]));
             return `${date.getDate()} ${date.toLocaleString('es-MX', { month: 'short' })}`;
           }),
           datasets: datasets
