@@ -17,6 +17,7 @@ class AuthController extends ResourceController
     public function register()
     {
         $userModel = new UserModel();
+        $logModel  = new SecurityLogModel();
 
         $rules = [
             'name'  => 'required',
@@ -28,11 +29,9 @@ class AuthController extends ResourceController
             return $this->fail($this->validator->getErrors());
         }
 
-        // Check if IP is Banned due to Anti-Fraud Auto-Block
-        $ip       = $this->request->getIPAddress();
-        $logModel = new SecurityLogModel();
+        $ip = $this->request->getIPAddress();
 
-        // Check if there is ANY auto_block record for this IP
+        // Check if IP is Banned
         $isIpBanned = $logModel->where('ip_address', $ip)
             ->where('action', 'auto_block')
             ->countAllResults() > 0;
@@ -95,20 +94,27 @@ class AuthController extends ResourceController
     public function requestLoginOtp()
     {
         $userModel = new UserModel();
+        $logModel  = new SecurityLogModel();
         $email     = $this->request->getVar('email');
+        $ip        = $this->request->getIPAddress();
 
-        $user = $userModel->where('email', $email)->first();
-
-        // Check if IP is Banned (Recent blocks - 6 hours)
-        $ip         = $this->request->getIPAddress();
-        $logModel   = new SecurityLogModel();
+        // Check if IP is Banned
         $isIpBanned = $logModel->where('ip_address', $ip)
             ->where('action', 'auto_block')
-            ->where('last_attempt >=', date('Y-m-d H:i:s', strtotime('-6 hours')))
             ->countAllResults() > 0;
 
         if ($isIpBanned) {
             return $this->fail('Acceso restringido por seguridad. Código de error (-20)', 403);
+        }
+
+        $user = $userModel->where('email', $email)->first();
+
+        if (!$user) {
+            return $this->failNotFound('El correo aún no se encuentra registrado, verifícalo o regístrate.');
+        }
+
+        if (isset($user['is_blocked']) && (int) $user['is_blocked'] === 1) {
+            return $this->fail("Inicio de sesión restringido, favor de comunicarse al servicio al cliente", 403);
         }
 
         $otp = rand(100000, 999999);
@@ -124,12 +130,16 @@ class AuthController extends ResourceController
 
     public function verifyOtp()
     {
-        // Check if IP is Banned (Recent blocks - 6 hours)
-        $ip         = $this->request->getIPAddress();
-        $logModel   = new SecurityLogModel();
+        $userModel = new UserModel();
+        $logModel  = new SecurityLogModel();
+
+        $email = $this->request->getVar('email');
+        $otp   = $this->request->getVar('otp');
+        $ip    = $this->request->getIPAddress();
+
+        // Check if IP is Banned
         $isIpBanned = $logModel->where('ip_address', $ip)
             ->where('action', 'auto_block')
-            ->where('last_attempt >=', date('Y-m-d H:i:s', strtotime('-6 hours')))
             ->countAllResults() > 0;
 
         if ($isIpBanned) {
@@ -144,10 +154,8 @@ class AuthController extends ResourceController
 
         // Check if user is blocked
         if (isset($user['is_blocked']) && (int) $user['is_blocked'] === 1) {
-            // Log blocked login attempt
-            $logModel = new SecurityLogModel();
             $logModel->save([
-                'ip_address' => $this->request->getIPAddress(),
+                'ip_address' => $ip,
                 'user_id'    => $user['id'],
                 'action'     => 'login_blocked',
                 'details'    => 'Usuario bloqueado intentó acceder'
@@ -156,14 +164,13 @@ class AuthController extends ResourceController
             return $this->fail("Inicio de sesión restringido, favor de comunicarse al servicio al cliente", 403);
         }
 
+        // VERIFY OTP
         if ($user['otp'] == $otp && strtotime($user['otp_expiry']) > time()) {
 
             $userModel->update($user['id'], ['is_verified' => 1, 'otp' => null, 'otp_expiry' => null]);
 
-            // Log Login Success
-            $logModel = new SecurityLogModel();
             $logModel->save([
-                'ip_address' => $this->request->getIPAddress(),
+                'ip_address' => $ip,
                 'user_id'    => $user['id'],
                 'action'     => 'login_success',
                 'details'    => 'OTP Verified'
@@ -172,7 +179,7 @@ class AuthController extends ResourceController
             $payload = [
                 'iat'   => time(),
                 'exp'   => time() + (60 * 60 * 24 * 30),
-                'id'    => $user['id'], // <--- CHANGED FROM uid TO id
+                'id'    => $user['id'],
                 'email' => $user['email']
             ];
 
@@ -192,7 +199,7 @@ class AuthController extends ResourceController
             ]);
         }
 
-        // Log Login Failed
+        // --- OTP FAILED ---
         $logModel->save([
             'ip_address' => $ip,
             'user_id'    => $user['id'],
@@ -203,13 +210,11 @@ class AuthController extends ResourceController
         // 🛡️ ANTI-BRUTE FORCE CHECK (5 attempts in 1 minute)
         $oneMinuteAgo = date('Y-m-d H:i:s', strtotime('-1 minute'));
 
-        // Count failures for this IP
         $ipFailures = $logModel->where('ip_address', $ip)
             ->where('action', 'login_failed')
             ->where('last_attempt >=', $oneMinuteAgo)
             ->countAllResults();
 
-        // Count failures for this User
         $userFailures = $logModel->where('user_id', $user['id'])
             ->where('action', 'login_failed')
             ->where('last_attempt >=', $oneMinuteAgo)
@@ -227,7 +232,7 @@ class AuthController extends ResourceController
                 'ip_address' => $ip,
                 'user_id'    => $user['id'],
                 'action'     => 'auto_block',
-                'details'    => 'IP y Usuario bloqueados por multiples errores de OTP en login'
+                'details'    => 'IP y Usuario bloqueados por fuerza bruta (Login OTP)'
             ]);
 
             return $this->fail('Tu cuenta y acceso han sido bloqueados por seguridad debido a múltiples intentos fallidos.', 403);
