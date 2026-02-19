@@ -617,6 +617,12 @@ export class AdminDashboardComponent implements OnInit, AfterViewInit {
 
     this.http.get(url).subscribe({
       next: (res: any) => {
+        // Force hide visits data for 'takis' role even if API returns it
+        if (this.auth.user()?.role === 'takis') {
+          if (res.cards) res.cards.visits = 0;
+          res.visits_log = [];
+        }
+
         this.stats = {
           cards: {
             users: res.cards?.users ?? 0,
