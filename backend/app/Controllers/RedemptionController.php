@@ -50,7 +50,7 @@ class RedemptionController extends ResourceController
             ->where('last_attempt >=', date('Y-m-d H:i:s', strtotime('-1 minute')))
             ->countAllResults();
 
-        if ($velocityCheck >= 3) {
+        if ($velocityCheck >= 4) {
             // AUTO-BLOCK USER PERMANENTLY (Velocity Violation)
             $userModel->update($userId, [
                 'is_blocked'     => 1,
@@ -64,7 +64,7 @@ class RedemptionController extends ResourceController
                 'ip_address' => $ip,
                 'user_id'    => $userId,
                 'action'     => 'auto_block',
-                'details'    => 'Usuario bloqueado por velocidad excesiva (>3 intentos/min)'
+                'details'    => 'Usuario bloqueado por velocidad excesiva (>4 intentos/min)'
             ]);
 
             return $this->fail('Tu cuenta ha sido bloqueada. No puedes realizar esta accion.', 403);
