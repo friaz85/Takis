@@ -242,7 +242,7 @@ Chart.register(...registerables);
                 <table class="simple-table" *ngIf="!loadingRedemptions">
                     <thead>
                         <tr>
-                            <th>Usuario (Enmascarado)</th>
+                            <th>Correo electrónico</th>
                             <th>Recompensa</th>
                             <th class="text-right">Fecha</th>
                         </tr>
