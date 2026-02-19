@@ -50,7 +50,7 @@ class RedemptionController extends ResourceController
             ->where('last_attempt >=', date('Y-m-d H:i:s', strtotime('-1 minute')))
             ->countAllResults();
 
-        if ($velocityCheck >= 5) {
+        if ($velocityCheck >= 3) {
             // AUTO-BLOCK USER PERMANENTLY (Velocity Violation)
             $userModel->update($userId, [
                 'is_blocked'     => 1,
@@ -64,7 +64,7 @@ class RedemptionController extends ResourceController
                 'ip_address' => $ip,
                 'user_id'    => $userId,
                 'action'     => 'auto_block',
-                'details'    => 'Usuario bloqueado por velocidad excesiva (>5 intentos/min)'
+                'details'    => 'Usuario bloqueado por velocidad excesiva (>3 intentos/min)'
             ]);
 
             return $this->fail('Tu cuenta ha sido bloqueada. No puedes realizar esta accion.', 403);
@@ -72,12 +72,12 @@ class RedemptionController extends ResourceController
 
         // 1.5 MEDIUM TERM VELOCITY: Detectar "Throttling Quirurgico"
         // Patron detectado: 3-4 registros por minuto con pausas.
-        // Si hace > 12 intentos en 10 minutos, es excesivo para un humano normal.
+        // Si hace > 8 intentos en 5 minutos, es excesivo para un humano normal.
         $mediumVelocityCheck = $logModel->where('user_id', $userId)
-            ->where('last_attempt >=', date('Y-m-d H:i:s', strtotime('-10 minutes')))
+            ->where('last_attempt >=', date('Y-m-d H:i:s', strtotime('-5 minutes')))
             ->countAllResults();
 
-        if ($mediumVelocityCheck >= 12) {
+        if ($mediumVelocityCheck >= 8) {
             // AUTO-BLOCK USER PERMANENTLY (Medium Velocity Violation)
             $userModel->update($userId, [
                 'is_blocked'     => 1,
@@ -89,7 +89,7 @@ class RedemptionController extends ResourceController
                 'ip_address' => $ip,
                 'user_id'    => $userId,
                 'action'     => 'auto_block',
-                'details'    => 'Usuario bloqueado por patron de throttling (>12 intentos/10min)'
+                'details'    => 'Usuario bloqueado por patron de throttling (>8 intentos/5min)'
             ]);
 
             return $this->fail('Tu cuenta ha sido bloqueada. No puedes realizar esta accion.', 403);
@@ -704,25 +704,28 @@ class RedemptionController extends ResourceController
             // Note: digital_code might be outgoing reward code, not the INPUT code (promo code).
             // We need the PROMO CODE input.
             // We can get it from PromoCodeModel 'used_by' user order by used_at DESC.
-            $lastPromo = (new PromoCodeModel())->where('used_by', $userId)
+            // Look back at last 3 codes to catch alternating patterns
+            $lastPromos = (new PromoCodeModel())->where('used_by', $userId)
                 ->orderBy('used_at', 'DESC')
-                ->first();
+                ->findAll(3);
 
-            if ($lastPromo) {
-                $prevCode = $lastPromo['code'];
+            if (!empty($lastPromos)) {
+                foreach ($lastPromos as $lastPromo) {
+                    $prevCode = $lastPromo['code'];
 
-                // Compare $code vs $prevCode
-                // Calculate Levenshtein distance
-                $dist = levenshtein($code, $prevCode);
-                $len  = strlen($code);
+                    // Compare $code vs $prevCode
+                    // Calculate Levenshtein distance
+                    $dist = levenshtein($code, $prevCode);
+                    $len  = strlen($code);
 
-                // If distance is very small (e.g. 1 or 2 chars different in a long code) -> Sequential?
-                // Example: TK12345A vs TK12345B -> dist 1.
-                if ($len > 8 && $dist <= 2) {
-                    // High similarity. Likely sequential.
-                    // BLOCK USER.
-                    $this->_blockUser($userId, 'Sistema Anti-Fraude: Codigos secuenciales detectados (Entropy Check)', $ip);
-                    return ['message' => 'Tu cuenta ha sido bloqueada. No puedes realizar esta accion.', 'code' => 403];
+                    // If distance is very small (e.g. 1 or 2 chars different in a long code) -> Sequential?
+                    // Example: TK12345A vs TK12345B -> dist 1.
+                    if ($len > 8 && $dist <= 2) {
+                        // High similarity. Likely sequential.
+                        // BLOCK USER.
+                        $this->_blockUser($userId, 'Sistema Anti-Fraude: Codigos secuenciales detectados (Entropy Check)', $ip);
+                        return ['message' => 'Tu cuenta ha sido bloqueada. No puedes realizar esta accion.', 'code' => 403];
+                    }
                 }
             }
         }
