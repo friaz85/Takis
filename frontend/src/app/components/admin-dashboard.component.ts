@@ -215,6 +215,63 @@ Chart.register(...registerables);
 
         </div>
       </div>
+       
+       <!-- NEW: Reporte de Canjes (Public for all admins) -->
+       <div class="redemptions-report-row" style="margin-bottom: 2rem;">
+         <div class="panel redemptions-panel">
+            <div class="panel-header">
+               <h3>🎁 Reporte General de Canjes</h3>
+               <div class="header-actions">
+                 <div class="search-box miniature">
+                   <input 
+                     type="text" 
+                     [ngModel]="redemptionsSearch()" 
+                     (ngModelChange)="redemptionsSearch.set($event); loadRedemptions(1)"
+                     placeholder="Buscar email o premio..."
+                     [disabled]="loadingRedemptions"
+                   >
+                 </div>
+                 <button class="mini-btn" (click)="exportRedemptions()" title="Descargar Reporte">📥 CSV</button>
+               </div>
+            </div>
+
+            <div class="table-wrapper">
+                <div *ngIf="loadingRedemptions" class="loading-spinner" style="text-align:center; padding: 20px; color: #F2E74B;">
+                   Cargando datos...
+                </div>
+                <table class="simple-table" *ngIf="!loadingRedemptions">
+                    <thead>
+                        <tr>
+                            <th>Usuario (Enmascarado)</th>
+                            <th>Recompensa</th>
+                            <th class="text-right">Fecha</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr *ngFor="let r of redemptionsData">
+                            <td style="font-family: monospace;">{{ maskEmail(r.user_email) }}</td>
+                            <td>{{ r.reward_name }}</td>
+                            <td class="text-right text-xs text-gray">{{ r.created_at | date:'yyyy-MM-dd' }}</td>
+                        </tr>
+                        <tr *ngIf="!redemptionsData.length" class="empty-row">
+                          <td colspan="3">No se encontraron canjes</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="pagination-footer" *ngIf="redemptionsData.length > 0">
+               <span class="page-info">
+                 Página {{ redemptionsPager.current_page }} de {{ redemptionsPager.total_pages }} (Total: {{ redemptionsPager.total_items }})
+               </span>
+               <div class="pagination-controls">
+                 <button [disabled]="redemptionsPager.current_page === 1" (click)="loadRedemptions(redemptionsPager.current_page - 1)">«</button>
+                 <span class="page-number">{{ redemptionsPager.current_page }}</span>
+                 <button [disabled]="redemptionsPager.current_page >= redemptionsPager.total_pages" (click)="loadRedemptions(redemptionsPager.current_page + 1)">»</button>
+               </div>
+            </div>
+         </div>
+       </div>
     </div>
   `,
   styles: [`
@@ -597,6 +654,58 @@ export class AdminDashboardComponent implements OnInit, AfterViewInit {
     this.endDate = end.toISOString().split('T')[0];
 
     this.loadStats();
+    this.loadRedemptions(); // Load initial redemptions report
+  }
+
+  // --- Redemptions Report Logic ---
+  redemptionsData: any[] = [];
+  redemptionsPager: any = { current_page: 1, total_pages: 1, total_items: 0 };
+  redemptionsSearch = signal('');
+  loadingRedemptions = false;
+
+  loadRedemptions(page = 1) {
+    this.loadingRedemptions = true;
+    const term = this.redemptionsSearch(); // Get current search term from signal
+    let url = `${environment.apiUrl}/admin/redemptions?page=${page}&per_page=10`;
+
+    // Debounce or just send? If signal updates on keyup, we might spam. 
+    // Ideally use rxjs debounce, but for now direct call on model change (enter or blur usually, but ngModelChange is every keystroke).
+    // The previous implementation used ngModelChange.
+
+    if (term) url += `&search=${encodeURIComponent(term)}`;
+
+    this.http.get(url).subscribe({
+      next: (res: any) => {
+        this.redemptionsData = res.data || [];
+        this.redemptionsPager = res.pager || { current_page: 1, total_pages: 1 };
+        this.loadingRedemptions = false;
+      },
+      error: (e) => {
+        console.error('Error loading redemptions', e);
+        this.loadingRedemptions = false;
+        this.redemptionsData = [];
+      }
+    });
+  }
+
+  exportRedemptions() {
+    const term = this.redemptionsSearch();
+    let url = `${environment.apiUrl}/admin/redemptions?export=csv`;
+    if (term) url += `&search=${encodeURIComponent(term)}`;
+    // Trigger download
+    window.open(url, '_blank');
+  }
+
+  maskEmail(email: string) {
+    if (!email) return '';
+    const parts = email.split('@');
+    if (parts.length !== 2) return email;
+    const name = parts[0];
+    // "Con los primeros 4 dígitos ocultos con *" -> ****name_part
+    // Example: friaz85 -> ****z85 ? Or **** friaz85?
+    // Usually hide first 4 chars: 'friaz85' -> '****z85'
+    if (name.length <= 4) return '****' + '@' + parts[1];
+    return '****' + name.slice(4) + '@' + parts[1];
   }
 
   ngAfterViewInit() {
