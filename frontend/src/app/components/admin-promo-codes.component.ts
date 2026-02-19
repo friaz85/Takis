@@ -203,23 +203,29 @@ export class AdminPromoCodesComponent implements OnInit {
     this.loading.set(true);
     const params: any = {
       page: this.currentPage(),
-      limit: this.pageSize,
+      per_page: this.pageSize,
       status: this.filterStatus()
     };
     if (this.searchTerm()) {
       params.search = this.searchTerm();
     }
 
-    this.http.get(`${environment.apiUrl}/admin/promo-codes`, { params }).subscribe({
-      next: (res: any) => {
+    this.http.get<any>(`${environment.apiUrl}/admin/promo-codes`, { params }).subscribe({
+      next: (res) => {
         this.codes.set(res.data || []);
-        this.totalRecords.set(res.total || 0);
-        this.totalAvailable.set(res.total_available || 0);
-        this.totalUsed.set(res.total_used || 0);
+
+        if (res.pager) {
+          this.totalRecords.set(res.pager.total_items);
+        } else {
+          this.totalRecords.set(res.total || 0);
+        }
+
         this.loading.set(false);
       },
-      error: () => {
+      error: (e) => {
+        console.error(e);
         this.codes.set([]);
+        this.totalRecords.set(0);
         this.loading.set(false);
       }
     });
