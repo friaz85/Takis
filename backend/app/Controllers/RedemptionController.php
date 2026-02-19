@@ -64,6 +64,31 @@ class RedemptionController extends ResourceController
             return $this->fail('Tu cuenta ha sido bloqueada. No puedes realizar esta accion.', 403);
         }
 
+        // 1.5 MEDIUM TERM VELOCITY: Detectar "Throttling Quirurgico"
+        // Patron detectado: 3-4 registros por minuto con pausas.
+        // Si hace > 12 intentos en 10 minutos, es excesivo para un humano normal.
+        $mediumVelocityCheck = $logModel->where('user_id', $userId)
+            ->where('last_attempt >=', date('Y-m-d H:i:s', strtotime('-10 minutes')))
+            ->countAllResults();
+
+        if ($mediumVelocityCheck >= 12) {
+            // AUTO-BLOCK USER PERMANENTLY (Medium Velocity Violation)
+            $userModel->update($userId, [
+                'is_blocked'     => 1,
+                'blocked_reason' => 'Sistema Anti-Fraude: Patron de canje sospechoso (Throttling)',
+                'blocked_at'     => $now
+            ]);
+
+            $logModel->save([
+                'ip_address' => $ip,
+                'user_id'    => $userId,
+                'action'     => 'auto_block',
+                'details'    => 'Usuario bloqueado por patron de throttling (>12 intentos/10min)'
+            ]);
+
+            return $this->fail('Tu cuenta ha sido bloqueada. No puedes realizar esta accion.', 403);
+        }
+
         // 2. DAILY CAP (USER): Límite estricto de códigos exitosos por día
         // Análisis indica mediana de 1 código. 20 es el límite contractual.
         $userDailyCount = $promoModel->where('used_by', $userId)
@@ -71,6 +96,31 @@ class RedemptionController extends ResourceController
             ->countAllResults();
 
         if ($userDailyCount >= 20) {
+            // 2.1 DETECTAR ABUSO PERSISTENTE: Si sigue intentando tras alcanzar el límite
+            $abuseAttempts = $logModel->where('user_id', $userId)
+                ->where('action', 'daily_limit_reached')
+                ->where('last_attempt >=', $today)
+                ->countAllResults();
+
+            if ($abuseAttempts >= 4) { // Al 5to intento fallido por límite, bloquear.
+                $userModel->update($userId, [
+                    'is_blocked'     => 1,
+                    'blocked_reason' => 'Sistema Anti-Fraude: Abuso de limite diario (Persistencia)',
+                    'blocked_at'     => $now
+                ]);
+
+                $logModel->save(['ip_address' => $ip, 'user_id' => $userId, 'action' => 'auto_block', 'details' => 'Usuario bloqueado por insistencia tras limite diario']);
+                return $this->fail('Tu cuenta ha sido bloqueada. No puedes realizar esta accion.', 403);
+            }
+
+            // Registrar intento fallido por límite
+            $logModel->save([
+                'ip_address' => $ip,
+                'user_id'    => $userId,
+                'action'     => 'daily_limit_reached',
+                'details'    => 'Intento con limite diario alcanzado'
+            ]);
+
             return $this->fail('Has alcanzado tu límite diario de 20 códigos Takis. ¡Vuelve mañana para seguir participando!', 429);
         }
 
