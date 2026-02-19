@@ -567,7 +567,7 @@ export class AdminDashboardComponent implements OnInit, AfterViewInit {
   });
 
   canSeeVisits = computed(() => {
-    return this.auth.user()?.username !== 'takis_admin';
+    return this.auth.user()?.role !== 'takis';
   });
 
   // Date Filters
