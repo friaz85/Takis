@@ -41,11 +41,32 @@ class AdminPromoCodesController extends ResourceController
             $perPage = max(1, (int) ($this->request->getVar('per_page') ?? 20));
             $offset  = ($page - 1) * $perPage;
 
-            // Count Total (Filtered)
-            // Note: casting to avoid db errors if count returns string
-            $total = $builder->countAllResults(false);
+            // Optimization: Clone builder specific for counting to avoid heavy Joins if not needed
+            // If we are NOT searching, we don't need the JOINs to count the rows.
+            $countBuilder = $db->table('promo_codes pc');
 
-            // Sorting
+            // Re-apply filters manually to the count builder
+            if ($status === 'used') {
+                $countBuilder->where('pc.is_used', 1);
+            } elseif ($status === 'available') {
+                $countBuilder->where('pc.is_used', 0);
+            }
+
+            if (!empty($search)) {
+                // Only join if searching (since search involves user fields)
+                $countBuilder->join('users u', 'u.id = pc.used_by', 'left');
+                $countBuilder->groupStart()
+                    ->like('pc.code', $search)
+                    ->orLike('u.email', $search)
+                    ->orLike('u.full_name', $search)
+                    ->groupEnd();
+            }
+
+            // Count Total (Optimized)
+            // Use query caching if possible or simpler logic
+            $total = $countBuilder->countAllResults();
+
+            // Sorting for main query
             // Prioritize used_at desc for used codes/search, otherwise id desc
             if ($status === 'used' || !empty($search)) {
                 $builder->orderBy('pc.used_at', 'DESC');
