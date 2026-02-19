@@ -653,10 +653,17 @@ class RedemptionController extends ResourceController
                 ->where('last_attempt >=', date('Y-m-d H:i:s', strtotime('-1 hour')))
                 ->findAll();
 
-            if (count($fpQuery) >= 3) {
-                // Check if current user is one of them or a new one.
-                // BLOCK THIS USER Immediately.
-                $this->_blockUser($userId, 'Sistema Anti-Fraude: Dispositivo sospechoso (Multicuenta)', $ip);
+            if (count($fpQuery) >= 2) {
+                // Bloquear a TODOS los usuarios implicados (Actual + Anteriores detectados en la última hora)
+                foreach ($fpQuery as $suspicious) {
+                    $reason = ($suspicious['user_id'] == $userId)
+                        ? 'Sistema Anti-Fraude: Dispositivo sospechoso (Multicuenta - Actual)'
+                        : 'Sistema Anti-Fraude: Dispositivo sospechoso (Multicuenta - Retroactivo)';
+
+                    // Bloquear usuario
+                    $this->_blockUser($suspicious['user_id'], $reason, $ip);
+                }
+
                 return ['message' => 'Tu cuenta ha sido bloqueada por actividad sospechosa.', 'code' => 403];
             }
         }
