@@ -99,12 +99,15 @@ class AuthController extends ResourceController
 
         $user = $userModel->where('email', $email)->first();
 
-        if (!$user) {
-            return $this->failNotFound('El correo aún no se encuentra registrado, verifícalo o regístrate.');
-        }
+        // Check if IP is Banned
+        $ip         = $this->request->getIPAddress();
+        $logModel   = new SecurityLogModel();
+        $isIpBanned = $logModel->where('ip_address', $ip)
+            ->where('action', 'auto_block')
+            ->countAllResults() > 0;
 
-        if (isset($user['is_blocked']) && (int) $user['is_blocked'] === 1) {
-            return $this->fail("Inicio de sesión restringido, favor de comunicarse al servicio al cliente", 403);
+        if ($isIpBanned) {
+            return $this->fail('Acceso restringido por seguridad. Código de error (-20)', 403);
         }
 
         $otp = rand(100000, 999999);
@@ -120,9 +123,16 @@ class AuthController extends ResourceController
 
     public function verifyOtp()
     {
-        $userModel = new UserModel();
-        $email     = $this->request->getVar('email');
-        $otp       = $this->request->getVar('otp');
+        // Check if IP is Banned
+        $ip         = $this->request->getIPAddress();
+        $logModel   = new SecurityLogModel();
+        $isIpBanned = $logModel->where('ip_address', $ip)
+            ->where('action', 'auto_block')
+            ->countAllResults() > 0;
+
+        if ($isIpBanned) {
+            return $this->fail('Acceso restringido por seguridad. Código de error (-20)', 403);
+        }
 
         $user = $userModel->where('email', $email)->first();
 
@@ -181,13 +191,45 @@ class AuthController extends ResourceController
         }
 
         // Log Login Failed
-        $logModel = new SecurityLogModel();
         $logModel->save([
-            'ip_address' => $this->request->getIPAddress(),
-            'user_id'    => $user['id'], // We know user exists here, just OTP failed
+            'ip_address' => $ip,
+            'user_id'    => $user['id'],
             'action'     => 'login_failed',
             'details'    => 'Invalid or Expired OTP'
         ]);
+
+        // 🛡️ ANTI-BRUTE FORCE CHECK (5 attempts in 1 minute)
+        $oneMinuteAgo = date('Y-m-d H:i:s', strtotime('-1 minute'));
+
+        // Count failures for this IP
+        $ipFailures = $logModel->where('ip_address', $ip)
+            ->where('action', 'login_failed')
+            ->where('last_attempt >=', $oneMinuteAgo)
+            ->countAllResults();
+
+        // Count failures for this User
+        $userFailures = $logModel->where('user_id', $user['id'])
+            ->where('action', 'login_failed')
+            ->where('last_attempt >=', $oneMinuteAgo)
+            ->countAllResults();
+
+        if ($ipFailures >= 5 || $userFailures >= 5) {
+            // PERMANENT BLOCK USER
+            $userModel->update($user['id'], [
+                'is_blocked'     => 1,
+                'blocked_reason' => 'Sistema Anti-Fraude: Fuerza bruta en Login (>5 intentos/min)'
+            ]);
+
+            // PERMANENT BLOCK IP
+            $logModel->save([
+                'ip_address' => $ip,
+                'user_id'    => $user['id'],
+                'action'     => 'auto_block',
+                'details'    => 'IP y Usuario bloqueados por multiples errores de OTP en login'
+            ]);
+
+            return $this->fail('Tu cuenta y acceso han sido bloqueados por seguridad debido a múltiples intentos fallidos.', 403);
+        }
 
         return $this->fail('Código inválido o expirado.', 401);
     }
