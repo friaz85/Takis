@@ -53,19 +53,14 @@ class AdminAuthFilter implements FilterInterface
                 $uri      = $request->getUri()->getPath();
                 $username = $payload->username ?? null;
 
-                // Allow only dashboard stats and visits analytics
+                // Allow dashboard, stats, analytics, orders, and support for ALL 'takis' role users
                 $isAllowed = (
                     strpos($uri, 'admin/stats') !== false ||
                     strpos($uri, 'admin/dashboard') !== false ||
-                    strpos($uri, 'analytics/stats') !== false
+                    strpos($uri, 'analytics/stats') !== false ||
+                    strpos($uri, 'admin/orders') !== false ||
+                    strpos($uri, 'admin/support') !== false
                 );
-
-                // Special access for takis_admin
-                if ($username === 'takis_admin') {
-                    if (strpos($uri, 'admin/orders') !== false || strpos($uri, 'admin/support') !== false) {
-                        $isAllowed = true;
-                    }
-                }
 
                 if (!$isAllowed) {
                     return Services::response()->setJSON([
