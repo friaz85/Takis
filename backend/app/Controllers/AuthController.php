@@ -99,11 +99,12 @@ class AuthController extends ResourceController
 
         $user = $userModel->where('email', $email)->first();
 
-        // Check if IP is Banned
+        // Check if IP is Banned (Recent blocks - 6 hours)
         $ip         = $this->request->getIPAddress();
         $logModel   = new SecurityLogModel();
         $isIpBanned = $logModel->where('ip_address', $ip)
             ->where('action', 'auto_block')
+            ->where('last_attempt >=', date('Y-m-d H:i:s', strtotime('-6 hours')))
             ->countAllResults() > 0;
 
         if ($isIpBanned) {
@@ -123,11 +124,12 @@ class AuthController extends ResourceController
 
     public function verifyOtp()
     {
-        // Check if IP is Banned
+        // Check if IP is Banned (Recent blocks - 6 hours)
         $ip         = $this->request->getIPAddress();
         $logModel   = new SecurityLogModel();
         $isIpBanned = $logModel->where('ip_address', $ip)
             ->where('action', 'auto_block')
+            ->where('last_attempt >=', date('Y-m-d H:i:s', strtotime('-6 hours')))
             ->countAllResults() > 0;
 
         if ($isIpBanned) {
