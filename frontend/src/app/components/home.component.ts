@@ -56,6 +56,9 @@ import Swal from 'sweetalert2';
             <div class="code-section">
                 <label class="code-label">REGISTRAR CÓDIGO</label>
                 <div class="input-wrapper">
+                    <!-- Honeypot Field (Invisible) -->
+                    <input type="text" name="website_check" [(ngModel)]="websiteCheck" style="display:none" tabindex="-1" autocomplete="off">
+                    
                     <input 
                       type="text" 
                       [(ngModel)]="code" 
@@ -410,6 +413,8 @@ import Swal from 'sweetalert2';
   `]
 })
 export class HomeComponent implements OnInit {
+  websiteCheck = ''; // Honeypot trap
+  renderTs = 0;      // Time trap
   code = '';
   submitting = signal(false);
   userPoints = signal(0);
@@ -421,6 +426,9 @@ export class HomeComponent implements OnInit {
   private auth = inject(AuthService);
 
   ngOnInit() {
+    // START TIME TRAP
+    this.renderTs = Math.floor(Date.now() / 1000);
+
     // Sync with auth user signal
     const user = this.auth.user();
     if (user) {
@@ -463,10 +471,16 @@ export class HomeComponent implements OnInit {
     this.submitting.set(true);
     const user = JSON.parse(localStorage.getItem('takis_session') || '{}')?.user;
 
-    this.http.post(`${environment.apiUrl}/codes/redeem`, {
+    // Advanced Security Payload
+    const payload = {
       code: this.code.toUpperCase(),
-      user_id: user.id
-    }).subscribe({
+      user_id: user.id || 0,
+      website_check: this.websiteCheck,
+      render_ts: this.renderTs,
+      device_fp: this.getDeviceFp()
+    };
+
+    this.http.post(`${environment.apiUrl}/codes/redeem`, payload).subscribe({
       next: (res: any) => {
         this.toastService.show(`CÓDIGO ACEPTADO +${res.points} PUNTO(S)`, 'success', 5000);
         this.code = '';
@@ -504,5 +518,17 @@ export class HomeComponent implements OnInit {
         this.submitting.set(false);
       }
     });
+  }
+
+  // Basic Fingerprint Generation
+  private getDeviceFp(): string {
+    try {
+      // Combine user agent, screen res, language, timezone
+      const raw = navigator.userAgent + screen.width + 'x' + screen.height + navigator.language + (new Date().getTimezoneOffset());
+      // Simple hash-like string (Base64)
+      return btoa(raw).slice(0, 32);
+    } catch (e) {
+      return 'unknown_fp';
+    }
   }
 }
