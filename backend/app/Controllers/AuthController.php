@@ -16,10 +16,8 @@ class AuthController extends ResourceController
 
     public function register()
     {
-        $userModel = new UserModel();
-        $logModel  = new SecurityLogModel();
-
-        $rules = [
+        $logModel = new SecurityLogModel();
+        $rules    = [
             'name'  => 'required',
             'email' => 'required|valid_email',
             'phone' => 'required'
@@ -44,7 +42,7 @@ class AuthController extends ResourceController
         $phone = $this->request->getVar('phone');
 
         // Validate unique phone number
-        $userWithPhone = $userModel->where('phone', $phone)->first();
+        $userWithPhone = $this->model->where('phone', $phone)->first();
         if ($userWithPhone && $userWithPhone['email'] !== $email) {
             return $this->fail('El teléfono ya está registrado', 400);
         }
@@ -52,14 +50,14 @@ class AuthController extends ResourceController
         $otp       = rand(100000, 999999);
         $otpExpiry = date('Y-m-d H:i:s', strtotime('+10 minutes'));
 
-        $existingUser = $userModel->where('email', $email)->first();
+        $existingUser = $this->model->where('email', $email)->first();
 
         if ($existingUser && isset($existingUser['is_blocked']) && (int) $existingUser['is_blocked'] === 1) {
             return $this->fail("Inicio de sesión restringido, favor de comunicarse al servicio al cliente", 403);
         }
 
         if ($existingUser) {
-            $userModel->update($existingUser['id'], [
+            $this->model->update($existingUser['id'], [
                 'otp'        => $otp,
                 'otp_expiry' => $otpExpiry,
                 'phone'      => $this->request->getVar('phone') ?? $existingUser['phone'],
@@ -78,7 +76,7 @@ class AuthController extends ResourceController
                 'password_hash' => password_hash($randomPass, PASSWORD_BCRYPT)
             ];
 
-            $userId      = $userModel->insert($data);
+            $userId      = $this->model->insert($data);
             $contactName = $data['full_name'];
 
             if (!$userId) {
@@ -93,10 +91,9 @@ class AuthController extends ResourceController
 
     public function requestLoginOtp()
     {
-        $userModel = new UserModel();
-        $logModel  = new SecurityLogModel();
-        $email     = $this->request->getVar('email');
-        $ip        = $this->request->getIPAddress();
+        $logModel = new SecurityLogModel();
+        $email    = $this->request->getVar('email');
+        $ip       = $this->request->getIPAddress();
 
         // Check if IP is Banned
         $isIpBanned = $logModel->where('ip_address', $ip)
@@ -107,7 +104,7 @@ class AuthController extends ResourceController
             return $this->fail('Acceso restringido por seguridad. Código de error (-20)', 403);
         }
 
-        $user = $userModel->where('email', $email)->first();
+        $user = $this->model->where('email', $email)->first();
 
         if (!$user) {
             return $this->failNotFound('El correo aún no se encuentra registrado, verifícalo o regístrate.');
@@ -118,7 +115,7 @@ class AuthController extends ResourceController
         }
 
         $otp = rand(100000, 999999);
-        $userModel->update($user['id'], [
+        $this->model->update($user['id'], [
             'otp'        => $otp,
             'otp_expiry' => date('Y-m-d H:i:s', strtotime('+10 minutes'))
         ]);
@@ -130,12 +127,10 @@ class AuthController extends ResourceController
 
     public function verifyOtp()
     {
-        $userModel = new UserModel();
-        $logModel  = new SecurityLogModel();
-
-        $email = $this->request->getVar('email');
-        $otp   = $this->request->getVar('otp');
-        $ip    = $this->request->getIPAddress();
+        $logModel = new SecurityLogModel();
+        $email    = $this->request->getVar('email');
+        $otp      = $this->request->getVar('otp');
+        $ip       = $this->request->getIPAddress();
 
         // Check if IP is Banned
         $isIpBanned = $logModel->where('ip_address', $ip)
@@ -146,7 +141,7 @@ class AuthController extends ResourceController
             return $this->fail('Acceso restringido por seguridad. Código de error (-20)', 403);
         }
 
-        $user = $userModel->where('email', $email)->first();
+        $user = $this->model->where('email', $email)->first();
 
         if (!$user) {
             return $this->failNotFound('Usuario no encontrado.');
@@ -167,7 +162,7 @@ class AuthController extends ResourceController
         // VERIFY OTP
         if ($user['otp'] == $otp && strtotime($user['otp_expiry']) > time()) {
 
-            $userModel->update($user['id'], ['is_verified' => 1, 'otp' => null, 'otp_expiry' => null]);
+            $this->model->update($user['id'], ['is_verified' => 1, 'otp' => null, 'otp_expiry' => null]);
 
             $logModel->save([
                 'ip_address' => $ip,
@@ -222,7 +217,7 @@ class AuthController extends ResourceController
 
         if ($ipFailures >= 5 || $userFailures >= 5) {
             // PERMANENT BLOCK USER
-            $userModel->update($user['id'], [
+            $this->model->update($user['id'], [
                 'is_blocked'     => 1,
                 'blocked_reason' => 'Sistema Anti-Fraude: Fuerza bruta en Login (>5 intentos/min)'
             ]);
