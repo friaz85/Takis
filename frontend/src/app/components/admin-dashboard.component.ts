@@ -692,8 +692,19 @@ export class AdminDashboardComponent implements OnInit, AfterViewInit {
     const term = this.redemptionsSearch();
     let url = `${environment.apiUrl}/admin/redemptions?export=csv`;
     if (term) url += `&search=${encodeURIComponent(term)}`;
-    // Trigger download
-    window.open(url, '_blank');
+
+    // Use HttpClient to include Auth Headers
+    this.http.get(url, { responseType: 'blob' }).subscribe({
+      next: (blob: Blob) => {
+        const link = document.createElement('a');
+        const objectUrl = URL.createObjectURL(blob);
+        link.href = objectUrl;
+        link.download = `reporte_canjes_${new Date().toISOString().split('T')[0]}.csv`;
+        link.click();
+        URL.revokeObjectURL(objectUrl);
+      },
+      error: (e) => console.error('Error downloading CSV', e)
+    });
   }
 
   maskEmail(email: string) {
