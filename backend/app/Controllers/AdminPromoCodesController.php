@@ -10,86 +10,59 @@ class AdminPromoCodesController extends ResourceController
 {
     public function index()
     {
-        try {
-            $db      = \Config\Database::connect();
-            $builder = $db->table('promo_codes pc');
+        $db      = \Config\Database::connect();
+        $builder = $db->table('promo_codes pc');
 
-            // Select relevant fields
-            $builder->select('pc.*, u.email as user_email, u.full_name as user_name');
-            $builder->join('users u', 'u.id = pc.used_by', 'left');
+        // Query Params
+        // Default to 'used' to avoid scanning 73M records by default
+        $status = $this->request->getVar('status') ?? 'used';
+        $search = $this->request->getVar('search');
+        $page   = intval($this->request->getVar('page') ?? 1);
+        $limit  = intval($this->request->getVar('limit') ?? 50); // Lower default limit
+        $offset = ($page - 1) * $limit;
 
-            // Search Filter
-            $search = $this->request->getVar('search');
-            if (!empty($search)) {
-                $builder->groupStart()
-                    ->like('pc.code', $search)
-                    ->orLike('u.email', $search)
-                    ->orLike('u.full_name', $search)
-                    ->groupEnd();
-            }
+        $builder->select('pc.*, u.full_name as user_name, u.email as user_email');
+        $builder->join('users u', 'u.id = pc.used_by', 'left');
 
-            // Status Filter
-            $status = $this->request->getVar('status');
-            if ($status === 'used') {
-                $builder->where('pc.is_used', 1);
-            } elseif ($status === 'available') {
-                $builder->where('pc.is_used', 0);
-            }
-
-            // Pagination Params
-            $page    = max(1, (int) ($this->request->getVar('page') ?? 1));
-            $perPage = max(1, (int) ($this->request->getVar('per_page') ?? 20));
-            $offset  = ($page - 1) * $perPage;
-
-            // Optimization: Clone builder specific for counting to avoid heavy Joins if not needed
-            // If we are NOT searching, we don't need the JOINs to count the rows.
-            $countBuilder = $db->table('promo_codes pc');
-
-            // Re-apply filters manually to the count builder
-            if ($status === 'used') {
-                $countBuilder->where('pc.is_used', 1);
-            } elseif ($status === 'available') {
-                $countBuilder->where('pc.is_used', 0);
-            }
-
-            if (!empty($search)) {
-                // Only join if searching (since search involves user fields)
-                $countBuilder->join('users u', 'u.id = pc.used_by', 'left');
-                $countBuilder->groupStart()
-                    ->like('pc.code', $search)
-                    ->orLike('u.email', $search)
-                    ->orLike('u.full_name', $search)
-                    ->groupEnd();
-            }
-
-            // Count Total (Optimized)
-            // Use query caching if possible or simpler logic
-            $total = $countBuilder->countAllResults();
-
-            // Sorting for main query
-            // Prioritize used_at desc for used codes/search, otherwise id desc
-            if ($status === 'used' || !empty($search)) {
-                $builder->orderBy('pc.used_at', 'DESC');
-            } else {
-                $builder->orderBy('pc.id', 'DESC');
-            }
-
-            // Fetch Data
-            $data = $builder->get($perPage, $offset)->getResultArray();
-
-            return $this->respond([
-                'data'  => $data,
-                'pager' => [
-                    'current_page' => $page,
-                    'per_page'     => $perPage,
-                    'total_items'  => $total,
-                    'total_pages'  => ceil($total / $perPage)
-                ]
-            ]);
-
-        } catch (\Exception $e) {
-            return $this->failServerError($e->getMessage());
+        // Filters
+        if ($status === 'available') {
+            $builder->where('pc.is_used', 0);
+        } elseif ($status === 'used') {
+            $builder->where('pc.is_used', 1);
         }
+
+        if (!empty($search)) {
+            $builder->groupStart()
+                ->like('pc.code', $search)
+                ->orLike('u.full_name', $search)
+                ->orLike('u.email', $search)
+                ->groupEnd();
+        }
+
+        // Clone builder for totals before limit/offset
+        $countBuilder = clone $builder;
+        $total        = $countBuilder->countAllResults(false);
+
+        // Fetch totals only if needed or keep them simplified
+        // Counting used is fast with index, available is slow.
+        $usedCount = $db->table('promo_codes')->where('is_used', 1)->countAllResults();
+
+        // We only fetch available if explicitly requested to avoid lag
+        $availCount = ($status === 'available') ? $total : 0;
+
+        $builder->orderBy('pc.used_at', 'DESC'); // Sort by used_at for better relevance
+        $builder->limit($limit, $offset);
+
+        $codes = $builder->get()->getResult();
+
+        return $this->respond([
+            'data'            => $codes,
+            'total'           => $total,
+            'total_available' => $availCount,
+            'total_used'      => $usedCount,
+            'page'            => $page,
+            'limit'           => $limit
+        ]);
     }
 
     public function generate()
