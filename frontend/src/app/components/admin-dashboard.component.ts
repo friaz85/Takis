@@ -39,6 +39,10 @@ Chart.register(...registerables);
             </div>
           </div>
 
+          <button class="export-btn" (click)="resetFilters()">
+             <span class="icon">🔄</span> <span class="btn-text">Restablecer</span>
+          </button>
+
           <button class="export-btn" (click)="exportFullReport()">
              <span class="icon">📥</span> <span class="btn-text">Exportar Reporte</span>
           </button>
@@ -88,6 +92,7 @@ Chart.register(...registerables);
             <div class="chart-toggles">
               <button [class.active]="showRedemptions" (click)="toggleMetric('redemptions')">Canjes</button>
               <button [class.active]="showUsers" (click)="toggleMetric('users')">Usuarios</button>
+              <button [class.active]="showCodes" (click)="toggleMetric('codes')">Códigos</button>
             </div>
           </div>
           <div class="canvas-wrapper">
@@ -634,6 +639,7 @@ export class AdminDashboardComponent implements OnInit, AfterViewInit {
   // Chart Toggles
   showRedemptions = true;
   showUsers = true;
+  showCodes = true;
 
   private http = inject(HttpClient);
   private auth = inject(AuthService);
@@ -647,14 +653,22 @@ export class AdminDashboardComponent implements OnInit, AfterViewInit {
 
   ngOnInit() {
     // Init dates (Last 30 days)
+    this.resetFilters(false);
+    this.loadRedemptions(); // Load initial redemptions report
+  }
+
+  resetFilters(fetchData: boolean = true) {
     const end = new Date();
     const start = new Date();
     start.setDate(start.getDate() - 30);
     this.startDate = start.toISOString().split('T')[0];
     this.endDate = end.toISOString().split('T')[0];
 
-    this.loadStats();
-    this.loadRedemptions(); // Load initial redemptions report
+    if (fetchData) {
+      this.loadStats();
+    } else {
+      setTimeout(() => this.loadStats(), 0);
+    }
   }
 
   // --- Redemptions Report Logic ---
@@ -776,9 +790,10 @@ export class AdminDashboardComponent implements OnInit, AfterViewInit {
     });
   }
 
-  toggleMetric(metric: 'redemptions' | 'users') {
+  toggleMetric(metric: 'redemptions' | 'users' | 'codes') {
     if (metric === 'redemptions') this.showRedemptions = !this.showRedemptions;
     if (metric === 'users') this.showUsers = !this.showUsers;
+    if (metric === 'codes') this.showCodes = !this.showCodes;
     this.initCharts();
   }
 
@@ -818,6 +833,19 @@ export class AdminDashboardComponent implements OnInit, AfterViewInit {
         });
       }
 
+      if (this.showCodes) {
+        datasets.push({
+          label: 'Códigos Registrados',
+          data: this.stats.chart.map((d: any) => d.promo_used || 0),
+          borderColor: '#9d4edd',
+          backgroundColor: 'rgba(157, 78, 221, 0.1)',
+          fill: true,
+          tension: 0.4,
+          pointBackgroundColor: '#fff',
+          pointBorderColor: '#9d4edd'
+        });
+      }
+
       this.activityChart = new Chart(activityCtx, {
         type: 'line',
         data: {
@@ -848,10 +876,21 @@ export class AdminDashboardComponent implements OnInit, AfterViewInit {
       this.rewardsChart = new Chart(rewardsCtx, {
         type: 'doughnut',
         data: {
-          labels: this.stats.top_rewards.map((r: any) => r.title),
+          labels: this.stats.top_rewards.map((r: any) => `${r.title} (${r.count})`),
           datasets: [{
             data: this.stats.top_rewards.map((r: any) => r.count),
-            backgroundColor: ['#6C1DDA', '#F2E74B', '#ff4444', '#00cc66', '#00aaff'],
+            backgroundColor: this.stats.top_rewards.map((r: any, index: number) => {
+              if (r.title.toLowerCase().includes('audífonos')) {
+                return '#FFFFFF'; // Color blanco exclusivo y totalmente distinto para Audífonos
+              }
+              const defaultColors = [
+                '#0000FF', '#32CD32', '#FF0000', '#FFA500', '#800080',
+                '#00FFFF', '#FFD700', '#FF00FF', '#008000', '#000080',
+                '#800000', '#008080', '#FF1493', '#8B4513', '#7B68EE',
+                '#FF6347', '#ADFF2F', '#4B0082', '#00BFFF', '#D2691E'
+              ];
+              return defaultColors[index % defaultColors.length];
+            }),
             borderWidth: 0,
           }]
         },

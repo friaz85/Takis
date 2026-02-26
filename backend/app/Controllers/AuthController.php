@@ -202,24 +202,26 @@ class AuthController extends ResourceController
             'details'    => 'Invalid or Expired OTP'
         ]);
 
-        // 🛡️ ANTI-BRUTE FORCE CHECK (5 attempts in 1 minute)
-        $oneMinuteAgo = date('Y-m-d H:i:s', strtotime('-1 minute'));
+        // 🛡️ ANTI-BRUTE FORCE CHECK (3 attempts in 15 minutes)
+        $timeWindow = date('Y-m-d H:i:s', strtotime('-15 minutes'));
 
         $ipFailures = $logModel->where('ip_address', $ip)
             ->where('action', 'login_failed')
-            ->where('last_attempt >=', $oneMinuteAgo)
+            ->where('details', 'Invalid or Expired OTP')
+            ->where('last_attempt >=', $timeWindow)
             ->countAllResults();
 
         $userFailures = $logModel->where('user_id', $user['id'])
             ->where('action', 'login_failed')
-            ->where('last_attempt >=', $oneMinuteAgo)
+            ->where('details', 'Invalid or Expired OTP')
+            ->where('last_attempt >=', $timeWindow)
             ->countAllResults();
 
-        if ($ipFailures >= 5 || $userFailures >= 5) {
+        if ($ipFailures >= 3 || $userFailures >= 3) {
             // PERMANENT BLOCK USER
             $this->model->update($user['id'], [
                 'is_blocked'     => 1,
-                'blocked_reason' => 'Sistema Anti-Fraude: Fuerza bruta en Login (>5 intentos/min)'
+                'blocked_reason' => 'Sistema Anti-Fraude: Fuerza bruta en Login (3 intentos fallidos)'
             ]);
 
             // PERMANENT BLOCK IP
@@ -227,10 +229,10 @@ class AuthController extends ResourceController
                 'ip_address' => $ip,
                 'user_id'    => $user['id'],
                 'action'     => 'auto_block',
-                'details'    => 'IP y Usuario bloqueados por fuerza bruta (Login OTP)'
+                'details'    => 'IP y Usuario bloqueados por fuerza bruta (Login OTP - 3 intentos fallidos)'
             ]);
 
-            return $this->fail('Tu cuenta y acceso han sido bloqueados por seguridad debido a múltiples intentos fallidos.', 403);
+            return $this->fail('Tu cuenta ha sido bloqueada. No puedes realizar esta accion.', 403);
         }
 
         return $this->fail('Código inválido o expirado.', 401);

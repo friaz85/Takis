@@ -601,16 +601,21 @@ class RedemptionController extends ResourceController
         }
 
         // 2. ⏱️ TIME TRAP (Trampa de Velocidad)
-        // El frontend debe enviar 'render_ts' (timestamp cuando cargó el form).
-        // Si (now - render_ts) < 2 segundos -> BLOQUEO (Humanamente imposible).
-        $renderTs = $request->getVar('render_ts');
-        if ($renderTs) {
-            $interactionTime = time() - (int) $renderTs;
+        // [ACTIVADO y CORREGIDO]: En lugar de depender de 'render_ts' del cliente (que sufre de clock drift),
+        // utilizamos la sesión del servidor (PHP) para llevar el control del tiempo real entre solicitudes.
+        $session         = \Config\Services::session();
+        $lastRequestTime = $session->get('last_redeem_attempt_time');
+        $currentTime     = time();
+
+        // Guardamos el timestamp actual para la próxima petición
+        $session->set('last_redeem_attempt_time', $currentTime);
+
+        if ($lastRequestTime) {
+            $interactionTime = $currentTime - $lastRequestTime;
+            // Si hace una solicitud en menos de 2 segundos desde la INTERACCIÓN ANTERIOR
             if ($interactionTime < 2) {
-                // No bloqueamos permanente, pero rechazamos la petición.
-                // Opcional: Bloquear si es reincidente. Por ahora, rechazo silencioso.
-                log_message('warning', "Security: Time Trap Triggered. Interaction: {$interactionTime}s. User: {$userId}");
-                return ['message' => 'Error de validación. Por favor intenta de nuevo más despacio.', 'code' => 400];
+                log_message('warning', "Security: Session Time Trap Triggered. Interaction: {$interactionTime}s. User: {$userId}");
+                return ['message' => 'Error de validación. Por favor intenta de nuevo.', 'code' => 400];
             }
         }
 
@@ -674,8 +679,10 @@ class RedemptionController extends ResourceController
         if (strlen($prefix) >= 5) {
             // Count distinct users who tried this prefix in last 5 mins
             $batchCheck = $logModel->select('user_id')->distinct()
+                ->groupStart()
                 ->like('details', "Code Redeemed: {$prefix}", 'after') // Adjust match
                 ->orLike('details', "Invalid Code: {$prefix}", 'after')
+                ->groupEnd()
                 ->where('last_attempt >=', date('Y-m-d H:i:s', strtotime('-5 minutes')))
                 ->findAll();
 

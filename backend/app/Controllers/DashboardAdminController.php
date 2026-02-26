@@ -55,7 +55,6 @@ class DashboardAdminController extends ResourceController
             WHERE $redemptionWhereJoined
             GROUP BY r.id, r.title 
             ORDER BY count DESC 
-            LIMIT 5
         ", $params)->getResultArray();
 
         // Chart Data (Last 7 Days)
@@ -63,9 +62,10 @@ class DashboardAdminController extends ResourceController
         for ($i = 6; $i >= 0; $i--) {
             $date         = date('Y-m-d', strtotime("-$i days"));
             $dates[$date] = [
-                'date'  => $date,
-                'count' => 0, // Redemptions
-                'users' => 0  // New Users
+                'date'       => $date,
+                'count'      => 0, // Redemptions
+                'users'      => 0, // New Users
+                'promo_used' => 0  // Codes Registered
             ];
         }
 
@@ -85,21 +85,37 @@ class DashboardAdminController extends ResourceController
                 GROUP BY DATE(created_at)
             ", $params)->getResultArray();
 
-            // For custom range, we might want to rebuild the dates array if it's large,
-            // but for simplicity let's just use the results.
+            $promoByDay = $db->query("
+                SELECT DATE(used_at) as date, COUNT(*) as count 
+                FROM promo_codes 
+                WHERE is_used = 1 AND used_at BETWEEN ? AND ?
+                GROUP BY DATE(used_at)
+            ", $params)->getResultArray();
+
             $customActivity = [];
+            foreach ([$redemptionsByDay, $usersByDay, $promoByDay] as $dataset) {
+                foreach ($dataset as $row) {
+                    if (!isset($customActivity[$row['date']])) {
+                        $customActivity[$row['date']] = [
+                            'date'       => $row['date'],
+                            'count'      => 0,
+                            'users'      => 0,
+                            'promo_used' => 0
+                        ];
+                    }
+                }
+            }
+
             foreach ($redemptionsByDay as $row) {
-                $customActivity[$row['date']]['date']  = $row['date'];
                 $customActivity[$row['date']]['count'] = (int) $row['count'];
-                $customActivity[$row['date']]['users'] = 0;
             }
             foreach ($usersByDay as $row) {
-                if (!isset($customActivity[$row['date']])) {
-                    $customActivity[$row['date']]['date']  = $row['date'];
-                    $customActivity[$row['date']]['count'] = 0;
-                }
                 $customActivity[$row['date']]['users'] = (int) $row['count'];
             }
+            foreach ($promoByDay as $row) {
+                $customActivity[$row['date']]['promo_used'] = (int) $row['count'];
+            }
+
             ksort($customActivity);
             $dailyActivity = array_values($customActivity);
         } else {
@@ -118,6 +134,13 @@ class DashboardAdminController extends ResourceController
                 GROUP BY DATE(created_at)
             ")->getResultArray();
 
+            $promoByDay = $db->query("
+                SELECT DATE(used_at) as date, COUNT(*) as count 
+                FROM promo_codes 
+                WHERE is_used = 1 AND used_at >= DATE(NOW()) - INTERVAL 7 DAY 
+                GROUP BY DATE(used_at)
+            ")->getResultArray();
+
             foreach ($redemptionsByDay as $row) {
                 if (isset($dates[$row['date']])) {
                     $dates[$row['date']]['count'] = (int) $row['count'];
@@ -126,6 +149,11 @@ class DashboardAdminController extends ResourceController
             foreach ($usersByDay as $row) {
                 if (isset($dates[$row['date']])) {
                     $dates[$row['date']]['users'] = (int) $row['count'];
+                }
+            }
+            foreach ($promoByDay as $row) {
+                if (isset($dates[$row['date']])) {
+                    $dates[$row['date']]['promo_used'] = (int) $row['count'];
                 }
             }
             $dailyActivity = array_values($dates);

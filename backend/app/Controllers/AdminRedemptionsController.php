@@ -15,8 +15,17 @@ class AdminRedemptionsController extends ResourceController
             $db      = \Config\Database::connect();
             $builder = $db->table('redemptions');
 
-            // Select required fields
-            $builder->select('redemptions.id, redemptions.created_at, users.email as user_email, rewards.title as reward_name');
+            // Select required fields for both Dashboard and Entry Codes view
+            $builder->select('
+                redemptions.id, 
+                redemptions.created_at, 
+                redemptions.status,
+                users.full_name as user_name,
+                users.email as user_email, 
+                rewards.title as reward_name,
+                rewards.type as reward_type,
+                rewards.cost as points_cost
+            ');
             $builder->join('users', 'users.id = redemptions.user_id', 'left');
             $builder->join('rewards', 'rewards.id = redemptions.reward_id', 'left');
 
@@ -25,6 +34,7 @@ class AdminRedemptionsController extends ResourceController
             if ($search) {
                 $builder->groupStart()
                     ->like('users.email', $search)
+                    ->orLike('users.full_name', $search)
                     ->orLike('rewards.title', $search)
                     ->groupEnd();
             }
@@ -67,7 +77,15 @@ class AdminRedemptionsController extends ResourceController
             }
 
             // Pagination Logic
-            $page    = (int) ($this->request->getGet('page') ?? 1);
+            $pageParam = $this->request->getGet('page');
+
+            if ($pageParam === null) {
+                // Return all entries when no page is specified
+                $data = $builder->get()->getResultArray();
+                return $this->respond($data);
+            }
+
+            $page    = (int) $pageParam;
             $perPage = (int) ($this->request->getGet('per_page') ?? 10);
             $offset  = ($page - 1) * $perPage;
 

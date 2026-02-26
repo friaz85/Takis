@@ -58,6 +58,7 @@ class AdminAuthFilter implements FilterInterface
                 $isAllowed = (
                     strpos($uri, 'admin/stats') !== false ||
                     strpos($uri, 'admin/dashboard') !== false ||
+                    strpos($uri, 'admin/redemptions') !== false ||
                     strpos($uri, 'analytics/stats') !== false
                 );
 
