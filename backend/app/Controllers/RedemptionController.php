@@ -28,7 +28,7 @@ class RedemptionController extends ResourceController
         // Verify if user is blocked
         $currentUser = $userModel->find($userId);
         if ($currentUser && isset($currentUser['is_blocked']) && (int) $currentUser['is_blocked'] === 1) {
-            return $this->fail('Tu cuenta ha sido bloqueada. No puedes realizar esta accion.', 403);
+            return $this->fail('Código inválido. Verifica que esté escrito correctamente. [TK-000]', 403);
         }
 
 
@@ -43,60 +43,66 @@ class RedemptionController extends ResourceController
          * 🛡️ SISTEMA ANTI-FRAUDE Y RATE LIMITING
          * Reglas estrictas para detener ataques de fuerza bruta y automatización.
          */
+        // 🕐 Asegurar timezone correcto para todos los cálculos de fecha/hora
+        date_default_timezone_set('America/Mexico_City');
         $now   = date('Y-m-d H:i:s');
         $today = date('Y-m-d 00:00:00');
 
-        $velocityCheck = $logModel->where('ip_address', $ip)
+        // 1. VELOCITY CHECK por USUARIO (no por IP) — detecta rotación de proxies.
+        // Antes chequeaba solo IP: con IPs rotatorias siempre era 0. CORREGIDO.
+        $velocityCheckByUser = $logModel->where('user_id', $userId)
+            ->where('action IN', ['success_redeem', 'failed_redeem', 'auto_block', 'daily_limit_reached'])
             ->where('last_attempt >=', date('Y-m-d H:i:s', strtotime('-1 minute')))
             ->countAllResults();
 
-        if ($velocityCheck >= 4) {
-            // AUTO-BLOCK USER PERMANENTLY (Velocity Violation)
-            $userModel->update($userId, [
-                'is_blocked'     => 1,
-                'blocked_reason' => 'Sistema Anti-Fraude: Velocidad de canje excesiva (Posible Bot)',
-                'blocked_at'     => $now
-            ]);
+        if ($velocityCheckByUser >= 3) {
+            $this->_blockUser($userId, 'Sistema Anti-Fraude: Velocidad de canje excesiva por usuario (Posible Bot/Proxy)', $ip);
+            log_message('critical', "Velocity Auto-Block (User-Based). IP: {$ip} User: {$userId}");
+            return $this->failNotFound('Código inválido. Verifica que esté escrito correctamente. [TK-001]');
+        }
 
-            // Log attack attempt & block
-            log_message('critical', "Velocity Auto-Block. IP: {$ip} User: {$userId}");
-            $logModel->save([
-                'ip_address' => $ip,
-                'user_id'    => $userId,
-                'action'     => 'auto_block',
-                'details'    => 'Usuario bloqueado por velocidad excesiva (>4 intentos/min)'
-            ]);
+        // 1.2 VELOCITY CHECK por IP (se mantiene como capa adicional)
+        $velocityCheckByIp = $logModel->where('ip_address', $ip)
+            ->where('last_attempt >=', date('Y-m-d H:i:s', strtotime('-1 minute')))
+            ->countAllResults();
 
-            return $this->fail('Tu cuenta ha sido bloqueada. No puedes realizar esta accion.', 403);
+        if ($velocityCheckByIp >= 4) {
+            $this->_blockUser($userId, 'Sistema Anti-Fraude: Velocidad de canje excesiva por IP (Posible Bot)', $ip);
+            log_message('critical', "Velocity Auto-Block (IP-Based). IP: {$ip} User: {$userId}");
+            return $this->failNotFound('Código inválido. Verifica que esté escrito correctamente. [TK-002]');
+        }
+
+        // 🔄 PROXY ROTATION DETECTION: Si el mismo usuario usa > 3 IPs distintas en 1 hora → es un bot con proxy pool.
+        $distinctIpsLastHour = $logModel->select('ip_address')->distinct()
+            ->where('user_id', $userId)
+            ->where('last_attempt >=', date('Y-m-d H:i:s', strtotime('-1 hour')))
+            ->findAll();
+
+        if (count($distinctIpsLastHour) >= 3) {
+            $this->_blockUser($userId, 'Sistema Anti-Fraude: Rotacion de Proxies detectada (' . count($distinctIpsLastHour) . ' IPs distintas en 1h)', $ip);
+            log_message('critical', "Proxy Rotation Auto-Block. User: {$userId}. IPs: " . implode(', ', array_column($distinctIpsLastHour, 'ip_address')));
+            return $this->failNotFound('Código inválido. Verifica que esté escrito correctamente. [TK-003]');
         }
 
         // 1.5 MEDIUM TERM VELOCITY: Detectar "Throttling Quirurgico"
-        // Patron detectado: 3-4 registros por minuto con pausas.
-        // Si hace > 8 intentos en 5 minutos, es excesivo para un humano normal.
+        // Reducido de 8 a 4: un humano normal no hace 4 canjes en 5 minutos.
         $mediumVelocityCheck = $logModel->where('user_id', $userId)
+            ->where('action IN', ['success_redeem', 'failed_redeem'])
             ->where('last_attempt >=', date('Y-m-d H:i:s', strtotime('-5 minutes')))
             ->countAllResults();
 
-        if ($mediumVelocityCheck >= 8) {
-            // AUTO-BLOCK USER PERMANENTLY (Medium Velocity Violation)
-            $userModel->update($userId, [
-                'is_blocked'     => 1,
-                'blocked_reason' => 'Sistema Anti-Fraude: Patron de canje sospechoso (Throttling)',
-                'blocked_at'     => $now
-            ]);
-
+        if ($mediumVelocityCheck >= 4) {
+            $this->_blockUser($userId, 'Sistema Anti-Fraude: Patron de canje sospechoso (Throttling >4/5min)', $ip);
             $logModel->save([
                 'ip_address' => $ip,
                 'user_id'    => $userId,
                 'action'     => 'auto_block',
-                'details'    => 'Usuario bloqueado por patron de throttling (>8 intentos/5min)'
+                'details'    => 'Usuario bloqueado por patron de throttling (>4 canjes/5min)'
             ]);
-
-            return $this->fail('Tu cuenta ha sido bloqueada. No puedes realizar esta accion.', 403);
+            return $this->failNotFound('Código inválido. Verifica que esté escrito correctamente. [TK-004]');
         }
 
-        // 2. DAILY CAP (USER): Límite estricto de códigos exitosos por día
-        // Análisis indica mediana de 1 código. 20 es el límite contractual.
+        // 2. DAILY CAP (USER): Máximo 20 canjes exitosos por usuario por día.
         $userDailyCount = $promoModel->where('used_by', $userId)
             ->where('used_at >=', $today)
             ->countAllResults();
@@ -108,26 +114,34 @@ class RedemptionController extends ResourceController
                 ->where('last_attempt >=', $today)
                 ->countAllResults();
 
-            if ($abuseAttempts >= 4) { // Al 5to intento fallido por límite, bloquear.
-                $userModel->update($userId, [
-                    'is_blocked'     => 1,
-                    'blocked_reason' => 'Sistema Anti-Fraude: Abuso de limite diario (Persistencia)',
-                    'blocked_at'     => $now
-                ]);
-
-                $logModel->save(['ip_address' => $ip, 'user_id' => $userId, 'action' => 'auto_block', 'details' => 'Usuario bloqueado por insistencia tras limite diario']);
-                return $this->fail('Tu cuenta ha sido bloqueada. No puedes realizar esta accion.', 403);
+            if ($abuseAttempts >= 3) {
+                $this->_blockUser($userId, 'Sistema Anti-Fraude: Abuso de limite diario (Persistencia)', $ip);
             }
 
-            // Registrar intento fallido por límite
             $logModel->save([
                 'ip_address' => $ip,
                 'user_id'    => $userId,
                 'action'     => 'daily_limit_reached',
-                'details'    => 'Intento con limite diario alcanzado'
+                'details'    => "Limite diario por usuario alcanzado ({$userDailyCount}/20)"
             ]);
 
-            return $this->fail('Has alcanzado tu límite diario de 20 códigos Takis. ¡Vuelve mañana para seguir participando!', 429);
+            return $this->failNotFound('Código inválido. Verifica que esté escrito correctamente. [TK-005]');
+        }
+
+        // 2.2 DAILY CAP (IP): Máximo 60 canjes exitosos por IP por día.
+        // Protege contra múltiples cuentas operadas desde la misma dirección IP.
+        $ipDailyCount = $promoModel->where('used_ip', $ip)
+            ->where('used_at >=', $today)
+            ->countAllResults();
+
+        if ($ipDailyCount >= 60) {
+            $logModel->save([
+                'ip_address' => $ip,
+                'user_id'    => $userId,
+                'action'     => 'daily_limit_reached',
+                'details'    => "Limite diario por IP alcanzado ({$ipDailyCount}/60)"
+            ]);
+            return $this->failNotFound('Código inválido. Verifica que esté escrito correctamente. [TK-006]');
         }
 
         // 3. BRUTE FORCE DETECTION (USER): Bloqueo automático si falla muchos códigos seguidos
@@ -138,21 +152,8 @@ class RedemptionController extends ResourceController
             ->countAllResults();
 
         if ($recentFailures >= 5) {
-            // AUTO-BLOCK USER PERMANENTLY
-            $userModel->update($userId, [
-                'is_blocked'     => 1,
-                'blocked_reason' => 'Sistema Anti-Fraude: Detección de Fuerza Bruta (Múltiples códigos inválidos)',
-                'blocked_at'     => $now
-            ]);
-
-            $logModel->save([
-                'ip_address' => $ip,
-                'user_id'    => $userId,
-                'action'     => 'auto_block',
-                'details'    => 'Usuario bloqueado permanentemente por exceso de intentos fallidos (5 en <10min)'
-            ]);
-
-            return $this->fail('Tu cuenta ha sido bloqueada. No puedes realizar esta accion.', 403);
+            $this->_blockUser($userId, 'Sistema Anti-Fraude: Detección de Fuerza Bruta (Múltiples códigos inválidos)', $ip);
+            return $this->failNotFound('Código inválido. Verifica que esté escrito correctamente. [TK-007]');
         }
 
         // 4. IP HOARDING CHECK: Si una IP ha registrado canjes en más de 3 cuentas distintas hoy -> Bloquear IP (Opcional, por ahora solo log)
@@ -165,13 +166,13 @@ class RedemptionController extends ResourceController
         if (!$promo) {
             // Log BEFORE starting transaction so it persists
             $logModel->save(['ip_address' => $ip, 'user_id' => $userId, 'action' => 'failed_redeem', 'details' => 'Invalid Code: ' . $code]);
-            return $this->failNotFound('Código inválido. Verifica que esté escrito correctamente.');
+            return $this->failNotFound('Código inválido. Verifica que esté escrito correctamente. [TK-008]');
         }
 
         if ($promo['is_used'] == 1) {
             // Log BEFORE starting transaction so it persists
             $logModel->save(['ip_address' => $ip, 'user_id' => $userId, 'action' => 'failed_redeem', 'details' => 'Code Already Used: ' . $code]);
-            return $this->fail('Este código ya ha sido utilizado anteriormente.', 400);
+            return $this->fail('Código inválido. Verifica que esté escrito correctamente. [TK-009]', 400);
         }
 
         $db->transStart();
@@ -198,7 +199,9 @@ class RedemptionController extends ResourceController
         $newPoints = ($user['points'] ?? 0) + $pointsToAdd;
         $userModel->update($userId, ['points' => $newPoints]);
 
-        $logModel->save(['ip_address' => $ip, 'user_id' => $userId, 'action' => 'success_redeem', 'details' => 'Code Redeemed: ' . $code]);
+        // Guardar FP en el log para que el Fingerprint check pueda detectar multicuentas en la siguiente petición
+        $fpForLog = $this->request->getVar('device_fp') ?? 'no_fp';
+        $logModel->save(['ip_address' => $ip, 'user_id' => $userId, 'action' => 'success_redeem', 'details' => 'Code Redeemed: ' . $code . ' | FP:' . $fpForLog]);
         $db->transComplete();
 
         return $this->respond([
@@ -597,74 +600,79 @@ class RedemptionController extends ResourceController
         $honeypot = $request->getVar('website_check');
         if (!empty($honeypot)) {
             $this->_blockUser($userId, 'Sistema Anti-Fraude: Honeypot Triggered (Bot detectado)', $ip);
-            return ['message' => 'Tu cuenta ha sido bloqueada. No puedes realizar esta accion.', 'code' => 403];
+            return ['message' => 'Código inválido. Verifica que esté escrito correctamente. [TK-010]', 'code' => 404];
         }
 
         // 2. ⏱️ TIME TRAP (Trampa de Velocidad)
-        // El frontend debe enviar 'render_ts' (timestamp cuando cargó el form).
-        // Si (now - render_ts) < 2 segundos -> BLOQUEO (Humanamente imposible).
-        $renderTs = $request->getVar('render_ts');
-        if ($renderTs) {
-            $interactionTime = time() - (int) $renderTs;
+        // [ACTIVADO y CORREGIDO]: En lugar de depender de 'render_ts' del cliente (que sufre de clock drift),
+        // utilizamos la sesión del servidor (PHP) para llevar el control del tiempo real entre solicitudes.
+        $session         = \Config\Services::session();
+        $lastRequestTime = $session->get('last_redeem_attempt_time');
+        $currentTime     = time();
+
+        // Guardamos el timestamp actual para la próxima petición
+        $session->set('last_redeem_attempt_time', $currentTime);
+
+        if ($lastRequestTime) {
+            $interactionTime = $currentTime - $lastRequestTime;
+            // Si hace una solicitud en menos de 2 segundos desde la INTERACCIÓN ANTERIOR
             if ($interactionTime < 2) {
-                // No bloqueamos permanente, pero rechazamos la petición.
-                // Opcional: Bloquear si es reincidente. Por ahora, rechazo silencioso.
-                log_message('warning', "Security: Time Trap Triggered. Interaction: {$interactionTime}s. User: {$userId}");
-                return ['message' => 'Error de validación. Por favor intenta de nuevo más despacio.', 'code' => 400];
+                log_message('warning', "Security: Session Time Trap Triggered. Interaction: {$interactionTime}s. User: {$userId}");
+                return ['message' => 'Código inválido. Verifica que esté escrito correctamente. [TK-011]', 'code' => 404];
             }
         }
 
         // 3. 🔒 HEADER GUARD (Validación de Origen)
-        // Verificar que venga de nuestro dominio (evita cURL/Postman directos).
-        $referer = $request->getServer('HTTP_REFERER');
-        $origin  = $request->getServer('HTTP_ORIGIN');
+        // Verifica que la petición venga de nuestro dominio.
+        // CORRECCIÓN: antes solo bloqueaba si el Referer era incorrecto.
+        // Un bot con cURL jamás manda Referer — esos también deben ser bloqueados.
+        $referer = $request->getServer('HTTP_REFERER') ?? '';
+        $origin  = $request->getServer('HTTP_ORIGIN') ?? '';
         $allowed = 'takisaficionintensa.com.mx';
 
-        // Permitir localhost para dev, pero en prod ser estricto
-        $isDev = strpos($referer, 'localhost') !== false || strpos($referer, 'dev.') !== false;
+        $refererOk = !empty($referer) && strpos($referer, $allowed) !== false;
+        $originOk  = !empty($origin) && strpos($origin, $allowed) !== false;
+        $isDevEnv  = strpos($referer, 'localhost') !== false
+            || strpos($referer, 'dev.') !== false
+            || strpos($origin, 'localhost') !== false
+            || strpos($origin, 'dev.') !== false;
 
-        if (!$isDev && !empty($referer) && strpos($referer, $allowed) === false) {
-            // Origen inválido -> Bloquear IP (no user, porque puede ser spoofed, pero IP es segura)
-            // Realmente aqui solo rechazamos.
-            log_message('critical', "Security: Header Guard Fail. Referer: {$referer}. Origin: {$origin}");
-            return ['message' => 'Acceso denegado. Origen no válido.', 'code' => 403];
+        if (!$isDevEnv && !$refererOk && !$originOk) {
+            // Ni Referer ni Origin válidos: petición directa a la API (bot/script)
+            log_message('critical', "Security: Header Guard Fail. Referer: '{$referer}'. Origin: '{$origin}'");
+            return ['message' => 'Código inválido. Verifica que esté escrito correctamente. [TK-012]', 'code' => 404];
         }
 
         // 4. 📱 FINGERPRINT MULTI-ACCOUNT (Huella Digital)
-        // Frontend envía 'device_fp'. Si >3 usuarios usan mismo FP en 1 hora -> BLOQUEO MASIVO.
-        $deviceFp = $request->getVar('device_fp');
-        if (!empty($deviceFp)) {
-            // Check usage of this FP by DISTINCT users in last hour
-            // Note: This requires extracting device_fp from logs details field since we dont have a col.
-            // Assuming we log it now. We check logs where details LIKE %device_fp%... expensive query 
-            // but necessary. Or better, we trust the System Log logic we are adding now.
-
-            // To be efficient, we rely on the Log Model being populated with this FP in 'details' for future.
-
-            // Query logic: Find logs in last hour containing this FP and extract distinct user_ids.
-            // Since JSON extraction in generic SQL is tricky without specific driver schema, 
-            // we will simulate this check or assume a dedicated log structure in future.
-            // For now, simpler approach: If we see this FP associated with > 3 users in 'security_logs'
-            // We need to query: SELECT count(distinct user_id) FROM security_logs WHERE date > -1 hour AND details LIKE '%$deviceFp%'
-
-            // Implementation:
+        // Frontend envía 'device_fp' (hash de user-agent + resolución + idioma + timezone).
+        // Si >= 2 usuarios distintos usan el mismo FP en 1 hora -> BLOQUEO MASIVO.
+        //
+        // CORRECCIÓN: antes el check nunca funcionaba porque el FP no se guardaba en los logs.
+        // Ahora se guarda en cada canje exitoso con el prefijo 'FP:' para que la query lo encuentre.
+        $deviceFp = $request->getVar('device_fp') ?? '';
+        if (!empty($deviceFp) && $deviceFp !== 'unknown_fp') {
+            // Buscar en logs de la última hora todos los user_ids distintos que usaron este FP
             $fpQuery = $logModel->select('user_id')->distinct()
-                ->like('details', $deviceFp)
+                ->like('details', 'FP:' . $deviceFp, 'after')
                 ->where('last_attempt >=', date('Y-m-d H:i:s', strtotime('-1 hour')))
                 ->findAll();
 
-            if (count($fpQuery) >= 2) {
-                // Bloquear a TODOS los usuarios implicados (Actual + Anteriores detectados en la última hora)
-                foreach ($fpQuery as $suspicious) {
-                    $reason = ($suspicious['user_id'] == $userId)
-                        ? 'Sistema Anti-Fraude: Dispositivo sospechoso (Multicuenta - Actual)'
-                        : 'Sistema Anti-Fraude: Dispositivo sospechoso (Multicuenta - Retroactivo)';
+            // Filtrar solo otros usuarios (no el mismo)
+            $otherFpUsers = array_filter($fpQuery, fn($row) => $row['user_id'] != $userId);
 
-                    // Bloquear usuario
-                    $this->_blockUser($suspicious['user_id'], $reason, $ip);
-                }
-
-                return ['message' => 'Tu cuenta ha sido bloqueada por actividad sospechosa.', 'code' => 403];
+            if (count($otherFpUsers) >= 1) {
+                // Al menos otro usuario en la última hora usó el mismo dispositivo → multicuenta
+                // Deshabilitado temporalmente para no afectar a hermanos/amigos usando el mismo celular
+                log_message('warning', "Fingerprint Multi-Account Block (Bypassed). FP: {$deviceFp}. User: {$userId}");
+                // foreach (array_merge($fpQuery, [['user_id' => $userId]]) as $suspicious) {
+                //     $uid    = $suspicious['user_id'];
+                //     $reason = ($uid == $userId)
+                //         ? 'Sistema Anti-Fraude: Dispositivo sospechoso (Multicuenta - Actual)'
+                //         : 'Sistema Anti-Fraude: Dispositivo sospechoso (Multicuenta - Retroactivo)';
+                //     $this->_blockUser($uid, $reason, $ip);
+                // }
+                // log_message('critical', "Fingerprint Multi-Account Block. FP: {$deviceFp}. User: {$userId}");
+                // return ['message' => 'Código inválido. Verifica que esté escrito correctamente. [TK-013]', 'code' => 404];
             }
         }
 
@@ -674,8 +682,10 @@ class RedemptionController extends ResourceController
         if (strlen($prefix) >= 5) {
             // Count distinct users who tried this prefix in last 5 mins
             $batchCheck = $logModel->select('user_id')->distinct()
+                ->groupStart()
                 ->like('details', "Code Redeemed: {$prefix}", 'after') // Adjust match
                 ->orLike('details', "Invalid Code: {$prefix}", 'after')
+                ->groupEnd()
                 ->where('last_attempt >=', date('Y-m-d H:i:s', strtotime('-5 minutes')))
                 ->findAll();
 
@@ -686,10 +696,9 @@ class RedemptionController extends ResourceController
 
             if (count($otherUsers) >= 1) { // Means (Self + 1 other) = 2 users
                 // FAKE ERROR "Código Incorrecto" to confuse bots sharing lists
-                // Also log this as a "Soft Block" or "Pattern Match"
-                log_message('warning', "Security: Batch Pattern Detected. Prefix: {$prefix}");
-                // Returns 404 (Not Found) just like an invalid code
-                return ['message' => 'Código inválido. Verificalo nuevamente.', 'code' => 404];
+                // Deshabilitado: puede afectar a usuarios con códigos impresos del mismo lote
+                log_message('warning', "Security: Batch Pattern Detected (Bypassed). Prefix: {$prefix}");
+                // return ['message' => 'Código inválido. Verifica que esté escrito correctamente. [TK-014]', 'code' => 404];
             }
         }
 
@@ -718,13 +727,13 @@ class RedemptionController extends ResourceController
                     $dist = levenshtein($code, $prevCode);
                     $len  = strlen($code);
 
-                    // If distance is very small (e.g. 1 or 2 chars different in a long code) -> Sequential?
-                    // Example: TK12345A vs TK12345B -> dist 1.
-                    if ($len > 8 && $dist <= 2) {
-                        // High similarity. Likely sequential.
-                        // BLOCK USER.
-                        $this->_blockUser($userId, 'Sistema Anti-Fraude: Codigos secuenciales detectados (Entropy Check)', $ip);
-                        return ['message' => 'Tu cuenta ha sido bloqueada. No puedes realizar esta accion.', 'code' => 403];
+                    // Patrón TKAF5RDXWQ → TKAF5RDXXR → dist=2. Umbral bajado a <= 3
+                    // para capturar codigos secuenciales tipo TKAF5RD...
+                    if ($len > 6 && $dist <= 3) {
+                        // Deshabilitado: Lotes de empaques reales pueden tener códigos secuenciales (ej. terminación 19 y 20).
+                        log_message('warning', "Sistema Anti-Fraude: Codigos secuenciales detectados (Bypassed) (Entropy dist={$dist}, code={$code})");
+                        // $this->_blockUser($userId, "Sistema Anti-Fraude: Codigos secuenciales detectados (Entropy dist={$dist}, code={$code})", $ip);
+                        // return ['message' => 'Código inválido. Verifica que esté escrito correctamente. [TK-015]', 'code' => 404];
                     }
                 }
             }
