@@ -268,6 +268,10 @@ export class HowItWorksComponent {
 
   faqs = [
     {
+      question: '¿Cuál es la vigencia de la promoción?',
+      answer: 'La promoción tiene una vigencia del 16 de febrero al 30 de abril del 2026'
+    },
+    {
       question: '¿Qué productos participan?',
       answer: `Participan los productos Takis marcados con el logo de la campaña Takis: La Botana de la Afición más Intensa, los cuales son:
 Canal Detalle: Takis Fuego 70g, Takis Blue Heat 70g, Takis Huakamoles 70g, Takis Salsa Brava 70g, Takis Original 70g, Takis Chile Limón 70g, Takis Intense Nacho 70g y Takis Fuego 200g.

@@ -22,7 +22,6 @@ import { AuthService } from '../services/auth.service';
             </div>
           </div>
           
-          
           <div class="hero-right login-card" [style.backgroundImage]="'linear-gradient(rgba(86, 14, 140, 0.85), rgba(86, 14, 140, 0.85)), url(/assets/img/BG_landing.jpg)'">
             <h1 class="takis-title" style="color: #F2E74B">BIENVENIDO</h1>
             <p class="desc">Regístrate o inicia sesión</p>
@@ -31,6 +30,7 @@ import { AuthService } from '../services/auth.service';
               <a routerLink="/auth/login" class="takis-btn outline">INICIAR SESIÓN</a>
             </div>
             <img src="/assets/img/Logo-Takis.png" class="corner-logo" alt="Takis Logo">
+            <div class="vigencia-text">Vigencia 16 de febrero al 30 de abril 2026</div>
           </div>
         </div>
       </div>
@@ -124,6 +124,18 @@ import { AuthService } from '../services/auth.service';
       width: 80px;
       height: auto;
       filter: drop-shadow(0 2px 5px rgba(0,0,0,0.3));
+    }
+
+    .vigencia-text {
+      position: absolute;
+      bottom: 25px;
+      left: 0;
+      width: 100%;
+      text-align: center;
+      color: rgba(255, 255, 255, 0.9);
+      font-size: 0.85rem;
+      font-weight: 500;
+      z-index: 5;
     }
 
     .logo-wrapper {

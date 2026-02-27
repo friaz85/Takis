@@ -78,6 +78,7 @@ import Swal from 'sweetalert2';
             </div>
 
             <img src="/assets/img/Logo-Takis.png" class="corner-logo" alt="Takis Logo">
+            <div class="vigencia-text">Vigencia 16 de febrero al 30 de abril 2026</div>
           </div>
 
         </div>
@@ -355,6 +356,18 @@ import Swal from 'sweetalert2';
       height: auto;
       filter: drop-shadow(0 2px 5px rgba(0,0,0,0.3));
       z-index: 10;
+    }
+
+    .vigencia-text {
+      position: absolute;
+      bottom: 25px;
+      left: 0;
+      width: 100%;
+      text-align: center;
+      color: rgba(255, 255, 255, 0.9);
+      font-size: 0.85rem;
+      font-weight: 500;
+      z-index: 5;
     }
 
 
