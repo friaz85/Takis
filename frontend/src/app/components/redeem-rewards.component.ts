@@ -795,6 +795,11 @@ export class RedeemRewardsComponent implements OnInit {
 
     this.http.post(`${environment.apiUrl}/redeem`, { reward_id: reward.id }).subscribe({
       next: (res: any) => {
+        (window as any).dataLayer = (window as any).dataLayer || [];
+        (window as any).dataLayer.push({
+          'event': 'canje_recompensa'
+        });
+
         // Optimistic update
         this.userPoints.update(p => p - reward.cost);
 
