@@ -87,6 +87,11 @@ $routes->group('admin', ['filter' => 'admin_auth'], function ($routes) {
     $routes->get('entry-codes', 'AdminEntryCodeController::index');
     $routes->get('redemptions', 'AdminRedemptionsController::index');
 
+    // Blocked Domains Management
+    $routes->get('blocked-domains', 'AdminDomainsController::index');
+    $routes->post('blocked-domains', 'AdminDomainsController::create');
+    $routes->delete('blocked-domains/(:num)', 'AdminDomainsController::delete/$1');
+
     // Promo Codes Management
     $routes->get('promo-codes', 'AdminPromoCodesController::index');
     $routes->post('promo-codes/generate', 'AdminPromoCodesController::generate');

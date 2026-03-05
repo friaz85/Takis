@@ -354,6 +354,12 @@ export class RegisterComponent implements OnInit {
     this.http.post(`${environment.apiUrl}/auth/register`, payload).subscribe({
       next: (res: any) => {
         this.loading.set(false);
+
+        (window as any).dataLayer = (window as any).dataLayer || [];
+        (window as any).dataLayer.push({
+          'event': 'registro_completado'
+        });
+
         this.toast.show(res.message?.toUpperCase() || 'CÓDIGO ENVIADO.', 'success');
         this.router.navigate(['/auth/otp'], { queryParams: { email: this.form.email } });
       },

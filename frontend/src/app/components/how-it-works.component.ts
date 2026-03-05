@@ -296,7 +296,7 @@ Canal Autoservicios: Takis Fuego 240g.`
     },
     {
       question: '¿Qué hago si mi código no funciona?',
-      answer: 'Verifica que hayas ingresado el código correctamente. Recuerda que hay un límite de registro de 20 códigos por día. Si el problema persiste, contacta a soporte vía WhatsApp al 55 3875 9528.'
+      answer: 'Verifica que hayas ingresado el código correctamente. Recuerda que hay un límite de registro de 20 códigos por día. Si el problema persiste, contacta a soporte vía WhatsApp al 55 1274 0626.'
     },
     {
       question: '¿Cuánto tiempo tardan en llegar los premios físicos?',

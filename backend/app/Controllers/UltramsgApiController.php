@@ -22,8 +22,9 @@ class UltramsgApiController extends ResourceController
 
         if (!isset($data['email']) || empty($data['email'])) {
             return $this->respond([
-                'error'   => 1,
-                'message' => 'Email es requerido'
+                'error'     => 1,
+                'idUsuario' => 0,
+                'message'   => 'Email es requerido'
             ]);
         }
 
@@ -34,8 +35,9 @@ class UltramsgApiController extends ResourceController
 
         if (!$user) {
             return $this->respond([
-                'error'   => 1,
-                'message' => 'Usuario no encontrado'
+                'error'     => 1,
+                'idUsuario' => 0,
+                'message'   => 'Usuario no encontrado'
             ]);
         }
 
@@ -44,7 +46,8 @@ class UltramsgApiController extends ResourceController
 
         return $this->respond([
             'error'     => 0,
-            'idUsuario' => (int) $user['id']
+            'idUsuario' => (int) $user['id'],
+            'message'   => 'OK'
         ]);
     }
 

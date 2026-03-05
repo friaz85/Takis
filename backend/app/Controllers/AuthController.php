@@ -41,6 +41,10 @@ class AuthController extends ResourceController
         $email = $this->request->getVar('email');
         $phone = $this->request->getVar('phone');
 
+        if ($this->isDomainBlocked($email)) {
+            return $this->fail('Por el momento no se puede realizar el registro. Favor de comunicarse a atención a clientes.', 403);
+        }
+
         // Validate unique phone number
         $userWithPhone = $this->model->where('phone', $phone)->first();
         if ($userWithPhone && $userWithPhone['email'] !== $email) {
@@ -94,6 +98,10 @@ class AuthController extends ResourceController
         $logModel = new SecurityLogModel();
         $email    = $this->request->getVar('email');
         $ip       = $this->request->getIPAddress();
+
+        if ($this->isDomainBlocked($email)) {
+            return $this->fail('Por el momento no se puede iniciar sesión. Favor de comunicarse a atención a clientes.', 403);
+        }
 
         // Check if IP is Banned
         $isIpBanned = $logModel->where('ip_address', $ip)
@@ -241,6 +249,54 @@ class AuthController extends ResourceController
     public function login()
     {
         return $this->fail('Use OTP Login.', 400);
+    }
+
+    private function isDomainBlocked(string $email): bool
+    {
+        $blockedDomains = [
+            'ostahie.com',
+            'hutudns.com',
+            'creteanu.com',
+            'netoiu.com',
+            'fentaoba.com',
+            'kaoing.com',
+            'bitoini.com',
+            'dolofan.com',
+            'pazuric.com',
+            'bultoc.com',
+            'esyline.com',
+            'seaswar.com',
+            'amiralty.com',
+            'alibto.com',
+            'rivken.com',
+            'boftm.com',
+            'barneu.com',
+            'cosxo.com',
+            'advarm.com',
+            'teszari.com',
+            'cslua.com',
+            'feriwor.com',
+            'daerdy.com'
+        ];
+
+        try {
+            $db        = \Config\Database::connect();
+            $dbDomains = $db->table('blocked_domains')->select('domain')->get()->getResultArray();
+            foreach ($dbDomains as $d) {
+                $blockedDomains[] = strtolower($d['domain']);
+            }
+        } catch (\Throwable $e) {
+            log_message('error', 'AuthController Domain Error: ' . $e->getMessage());
+        }
+
+        $emailParts = explode('@', $email);
+        if (count($emailParts) === 2) {
+            $domain = strtolower($emailParts[1]);
+            if (in_array($domain, $blockedDomains)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     private function sendOtpEmail($email, $name, $otp)

@@ -31,6 +31,52 @@ class RedemptionController extends ResourceController
             return $this->fail('Tu cuenta ha sido bloqueada. No puedes realizar esta accion.', 403);
         }
 
+        // Block specific email domains
+        $blockedDomains = [
+            'ostahie.com',
+            'hutudns.com',
+            'creteanu.com',
+            'netoiu.com',
+            'fentaoba.com',
+            'kaoing.com',
+            'bitoini.com',
+            'dolofan.com',
+            'pazuric.com',
+            'bultoc.com',
+            'esyline.com',
+            'seaswar.com',
+            'amiralty.com',
+            'alibto.com',
+            'rivken.com',
+            'boftm.com',
+            'barneu.com',
+            'cosxo.com',
+            'advarm.com',
+            'teszari.com',
+            'cslua.com',
+            'feriwor.com',
+            'daerdy.com'
+        ];
+        try {
+            $db        = \Config\Database::connect();
+            $dbDomains = $db->table('blocked_domains')->select('domain')->get()->getResultArray();
+            foreach ($dbDomains as $d) {
+                $blockedDomains[] = strtolower($d['domain']);
+            }
+        } catch (\Throwable $e) {
+            log_message('error', 'RedemptionController Domain Error: ' . $e->getMessage());
+        }
+
+        if ($currentUser && !empty($currentUser['email'])) {
+            $emailParts = explode('@', $currentUser['email']);
+            if (count($emailParts) === 2) {
+                $domain = strtolower($emailParts[1]);
+                if (in_array($domain, $blockedDomains)) {
+                    return $this->fail('Por el momento no podemos procesar la solicitud.', 403);
+                }
+            }
+        }
+
 
         // ... (al inicio de redeemCode, antes de rate limiting basico)
         // 🛡️ ADVANCED SECURITY SUITE (Honeypot, Fingerprint, Entropy, etc.)
@@ -228,6 +274,52 @@ class RedemptionController extends ResourceController
         // Verify if user is blocked
         if ($user && isset($user['is_blocked']) && (int) $user['is_blocked'] === 1) {
             return $this->fail('Tu cuenta ha sido bloqueada. No puedes realizar esta accion.', 403);
+        }
+
+        // Block specific email domains
+        $blockedDomains = [
+            'ostahie.com',
+            'hutudns.com',
+            'creteanu.com',
+            'netoiu.com',
+            'fentaoba.com',
+            'kaoing.com',
+            'bitoini.com',
+            'dolofan.com',
+            'pazuric.com',
+            'bultoc.com',
+            'esyline.com',
+            'seaswar.com',
+            'amiralty.com',
+            'alibto.com',
+            'rivken.com',
+            'boftm.com',
+            'barneu.com',
+            'cosxo.com',
+            'advarm.com',
+            'teszari.com',
+            'cslua.com',
+            'feriwor.com',
+            'daerdy.com'
+        ];
+        try {
+            $db        = \Config\Database::connect();
+            $dbDomains = $db->table('blocked_domains')->select('domain')->get()->getResultArray();
+            foreach ($dbDomains as $d) {
+                $blockedDomains[] = strtolower($d['domain']);
+            }
+        } catch (\Throwable $e) {
+            log_message('error', 'RedemptionController Domain Error 2: ' . $e->getMessage());
+        }
+
+        if ($user && !empty($user['email'])) {
+            $emailParts = explode('@', $user['email']);
+            if (count($emailParts) === 2) {
+                $domain = strtolower($emailParts[1]);
+                if (in_array($domain, $blockedDomains)) {
+                    return $this->fail('Por el momento no podemos procesar la solicitud.', 403);
+                }
+            }
         }
 
         $reward = $rewardModel->find($rewardId);

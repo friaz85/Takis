@@ -50,6 +50,9 @@ import { AdminLayoutService } from '../services/admin-layout.service';
         <a *ngIf="getRole() !== 'takis'" routerLink="/admin/entry-codes" routerLinkActive="active" class="nav-item" (click)="onNavItemClick()">
           <span class="icon">🎟️</span> Canjes Realizados
         </a>
+        <a *ngIf="getRole() === 'system_admin'" routerLink="/admin/blocked-domains" routerLinkActive="active" class="nav-item" (click)="onNavItemClick()">
+          <span class="icon">🚫</span> Dominios Bloqueados
+        </a>
       </nav>
 
       <div class="user-footer">

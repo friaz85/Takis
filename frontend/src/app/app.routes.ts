@@ -15,6 +15,7 @@ import { AdminUsersComponent } from './components/admin-users.component';
 import { AdminEntryCodesComponent } from './components/admin-entry-codes.component';
 import { AdminPromoCodesComponent } from './components/admin-promo-codes.component';
 import { AdminLoginComponent } from './components/admin-login.component';
+import { AdminDomainsComponent } from './components/admin-domains.component';
 import { HowItWorksComponent } from './components/how-it-works.component';
 import { authGuard } from './guards/auth.guard';
 import { adminGuard } from './guards/admin.guard';
@@ -95,6 +96,11 @@ export const routes: Routes = [
     {
         path: 'admin/promo-codes',
         component: AdminPromoCodesComponent,
+        canActivate: [authGuard, adminGuard]
+    },
+    {
+        path: 'admin/blocked-domains',
+        component: AdminDomainsComponent,
         canActivate: [authGuard, adminGuard]
     },
 

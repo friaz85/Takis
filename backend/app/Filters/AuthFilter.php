@@ -67,6 +67,63 @@ class AuthFilter implements FilterInterface
                         'blocked' => true
                     ])->setStatusCode(403);
                 }
+
+                $blockedDomains = [
+                    'ostahie.com',
+                    'hutudns.com',
+                    'creteanu.com',
+                    'netoiu.com',
+                    'fentaoba.com',
+                    'kaoing.com',
+                    'bitoini.com',
+                    'dolofan.com',
+                    'pazuric.com',
+                    'bultoc.com',
+                    'esyline.com',
+                    'seaswar.com',
+                    'amiralty.com',
+                    'alibto.com',
+                    'rivken.com',
+                    'boftm.com',
+                    'barneu.com',
+                    'cosxo.com',
+                    'advarm.com',
+                    'teszari.com',
+                    'cslua.com',
+                    'feriwor.com',
+                    'daerdy.com'
+                ];
+
+                // Fetch dynamic domains from DB
+                try {
+                    $db        = \Config\Database::connect();
+                    $dbDomains = $db->table('blocked_domains')->select('domain')->get()->getResultArray();
+                    foreach ($dbDomains as $d) {
+                        $blockedDomains[] = strtolower($d['domain']);
+                    }
+                } catch (\Throwable $e) {
+                    log_message('error', 'AuthFilter Domain Error: ' . $e->getMessage());
+                }
+
+                if (!empty($user['email'])) {
+                    $emailParts = explode('@', $user['email']);
+                    if (count($emailParts) === 2) {
+                        $domain = strtolower($emailParts[1]);
+                        if (in_array($domain, $blockedDomains)) {
+                            // Block user permanently if not already blocked
+                            if (!isset($user['is_blocked']) || (int) $user['is_blocked'] === 0) {
+                                $userModel->update($user['id'], [
+                                    'is_blocked'     => 1,
+                                    'blocked_reason' => 'Sistema Anti-Fraude: Dominio de correo en lista negra (' . $domain . ')',
+                                    'blocked_at'     => date('Y-m-d H:i:s')
+                                ]);
+                            }
+                            return Services::response()->setJSON([
+                                'message' => 'Por el momento no podemos procesar la solicitud.',
+                            ])->setStatusCode(403);
+                        }
+                    }
+                }
             }
 
         } catch (\Exception $e) {
