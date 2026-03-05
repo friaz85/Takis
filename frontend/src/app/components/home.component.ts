@@ -495,6 +495,11 @@ export class HomeComponent implements OnInit {
 
     this.http.post(`${environment.apiUrl}/codes/redeem`, payload).subscribe({
       next: (res: any) => {
+        (window as any).dataLayer = (window as any).dataLayer || [];
+        (window as any).dataLayer.push({
+          'event': 'canje_exitoso'
+        });
+
         this.toastService.show(`CÓDIGO ACEPTADO +${res.points} PUNTO(S)`, 'success', 5000);
         this.code = '';
         this.loadUserPoints();
