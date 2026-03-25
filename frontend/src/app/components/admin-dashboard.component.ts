@@ -101,8 +101,16 @@ Chart.register(...registerables);
         </div>
         <div class="panel chart-container doughnut">
           <h3>🏆 Distribución de Premios</h3>
-          <div class="canvas-wrapper">
+          <div class="canvas-wrapper doughnut-canvas">
             <canvas #rewardsChart></canvas>
+          </div>
+          <div class="custom-legend-overflow" *ngIf="stats?.top_rewards?.length">
+            <ul class="custom-legend">
+              <li *ngFor="let item of stats?.top_rewards; let i = index">
+                <span class="dot" [style.background-color]="getLegendColor(i, item.title)"></span>
+                <span class="label">{{ item.title }} ({{ item.count }})</span>
+              </li>
+            </ul>
           </div>
         </div>
       </div>
@@ -405,6 +413,28 @@ Chart.register(...registerables);
     .pagination-controls button:disabled { opacity: 0.3; cursor: not-allowed; }
     .page-number { font-weight: 900; color: #F2E74B; font-size: 1.1rem; margin: 0 0.5rem; }
 
+    /* Custom Legend Scroll */
+    .doughnut-canvas { min-height: 200px !important; flex: 0 0 200px !important; }
+    .custom-legend-overflow { 
+      flex: 1; 
+      overflow-y: auto; 
+      margin-top: 1rem; 
+      padding: 0.5rem;
+      border-top: 1px solid rgba(108, 29, 218, 0.2);
+    }
+    .custom-legend-overflow::-webkit-scrollbar { width: 6px; }
+    .custom-legend-overflow::-webkit-scrollbar-track { background: rgba(0,0,0,0.2); }
+    .custom-legend-overflow::-webkit-scrollbar-thumb { background: #6C1DDA; border-radius: 10px; }
+    
+    .custom-legend { list-style: none; padding: 0; margin: 0; display: grid; grid-template-columns: 1fr 1fr; gap: 0.8rem; }
+    .custom-legend li { display: flex; align-items: center; gap: 0.5rem; font-size: 0.75rem; color: #ccc; }
+    .custom-legend .dot { width: 10px; height: 10px; border-radius: 2px; flex-shrink: 0; }
+    .custom-legend .label { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+    @media (max-width: 1200px) {
+      .custom-legend { grid-template-columns: 1fr; }
+    }
+
     /* RESPONSIVE */
     @media (max-width: 900px) {
       .dashboard-page { margin-left: 0; padding: 5rem 1.5rem 2rem 1.5rem; }
@@ -659,9 +689,7 @@ export class AdminDashboardComponent implements OnInit, AfterViewInit {
 
   resetFilters(fetchData: boolean = true) {
     const end = new Date();
-    const start = new Date();
-    start.setDate(start.getDate() - 30);
-    this.startDate = start.toISOString().split('T')[0];
+    this.startDate = '2026-02-16';
     this.endDate = end.toISOString().split('T')[0];
 
     if (fetchData) {
@@ -879,18 +907,7 @@ export class AdminDashboardComponent implements OnInit, AfterViewInit {
           labels: this.stats.top_rewards.map((r: any) => `${r.title} (${r.count})`),
           datasets: [{
             data: this.stats.top_rewards.map((r: any) => r.count),
-            backgroundColor: this.stats.top_rewards.map((r: any, index: number) => {
-              if (r.title.toLowerCase().includes('audífonos')) {
-                return '#FFFFFF'; // Color blanco exclusivo y totalmente distinto para Audífonos
-              }
-              const defaultColors = [
-                '#0000FF', '#32CD32', '#FF0000', '#FFA500', '#800080',
-                '#00FFFF', '#FFD700', '#FF00FF', '#008000', '#000080',
-                '#800000', '#008080', '#FF1493', '#8B4513', '#7B68EE',
-                '#FF6347', '#ADFF2F', '#4B0082', '#00BFFF', '#D2691E'
-              ];
-              return defaultColors[index % defaultColors.length];
-            }),
+            backgroundColor: this.stats.top_rewards.map((r: any, index: number) => this.getLegendColor(index, r.title)),
             borderWidth: 0,
           }]
         },
@@ -898,11 +915,24 @@ export class AdminDashboardComponent implements OnInit, AfterViewInit {
           responsive: true,
           maintainAspectRatio: false,
           plugins: {
-            legend: { position: 'bottom', labels: { color: '#ccc', boxWidth: 10, font: { size: 10 } } }
+            legend: { display: false }
           }
         }
       });
     }
+  }
+
+  getLegendColor(index: number, title: string): string {
+    if (title.toLowerCase().includes('audífonos')) {
+      return '#FFFFFF';
+    }
+    const defaultColors = [
+      '#0000FF', '#32CD32', '#FF0000', '#FFA500', '#800080',
+      '#00FFFF', '#FFD700', '#FF00FF', '#008000', '#000080',
+      '#800000', '#008080', '#FF1493', '#8B4513', '#7B68EE',
+      '#FF6347', '#ADFF2F', '#4B0082', '#00BFFF', '#D2691E'
+    ];
+    return defaultColors[index % defaultColors.length];
   }
 
   filteredActivity = computed(() => {

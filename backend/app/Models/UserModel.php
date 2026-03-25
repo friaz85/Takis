@@ -18,6 +18,8 @@ class UserModel extends Model
         'role',
         'points',
         'address',
+        'numero_exterior',
+        'numero_interior',
         'colonia',
         'municipio',
         'city',

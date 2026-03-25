@@ -30,7 +30,7 @@ import { ToastService } from '../services/toast.service';
           <div class="hero-right profile-card">
             <h2 class="form-title">MI PERFIL</h2>
             
-            <form (submit)="save()" class="profile-form">
+            <form (ngSubmit)="save()" class="profile-form">
               
               <div class="form-grid">
                    <div class="field full-width">
@@ -53,13 +53,23 @@ import { ToastService } from '../services/toast.service';
                   </div>
 
                   <div class="field full-width">
-                    <label>NOMBRE DE QUIEN RECIBE</label>
+                    <label>NOMBRE COMPLETO DE QUIEN RECIBE (NOMBRE Y APELLIDOS)</label>
                     <input type="text" [(ngModel)]="profile.recipient_name" name="recipient_name" class="input-flat" placeholder="NOMBRE COMPLETO" [disabled]="addressLocked()">
                   </div>
 
-                  <div class="field full-width">
-                    <label>CALLE Y NÚMERO</label>
-                    <input type="text" [(ngModel)]="profile.address" name="address" required class="input-flat" placeholder="CALLE Y NÚMERO" [disabled]="addressLocked()">
+                  <div class="field">
+                    <label>CALLE</label>
+                    <input type="text" [(ngModel)]="profile.address" name="address" required class="input-flat" placeholder="CALLE" [disabled]="addressLocked()">
+                  </div>
+
+                  <div class="field">
+                    <label>NÚMERO EXTERIOR</label>
+                    <input type="text" [(ngModel)]="profile.numero_exterior" name="numero_exterior" required class="input-flat" placeholder="NÚMERO EXTERIOR" [disabled]="addressLocked()">
+                  </div>
+
+                  <div class="field">
+                    <label>NÚMERO INTERIOR (OPCIONAL)</label>
+                    <input type="text" [(ngModel)]="profile.numero_interior" name="numero_interior" class="input-flat" placeholder="NÚMERO INTERIOR">
                   </div>
 
                   <div class="field">
@@ -87,7 +97,7 @@ import { ToastService } from '../services/toast.service';
 
                   <div class="field full-width">
                     <label>INSTRUCCIONES DE ENTREGA</label>
-                    <textarea [(ngModel)]="profile.delivery_instructions" name="delivery_instructions" class="input-flat textarea-flat" placeholder="INSTRUCCIONES ADICIONALES PARA LA ENTREGA" [disabled]="addressLocked()"></textarea>
+                    <textarea [(ngModel)]="profile.delivery_instructions" name="delivery_instructions" required class="input-flat textarea-flat" placeholder="INSTRUCCIONES ADICIONALES PARA LA ENTREGA" [disabled]="addressLocked()"></textarea>
                   </div>
               </div>
 
@@ -372,7 +382,7 @@ export class UserProfileComponent implements OnInit {
 
   save() {
     // Validations
-    const requiredFields = ['full_name', 'phone', 'address', 'colonia', 'municipio', 'state', 'zip_code'];
+    const requiredFields = ['full_name', 'phone', 'address', 'numero_exterior', 'colonia', 'municipio', 'state', 'zip_code', 'delivery_instructions'];
     const missing = requiredFields.filter(field => !this.profile[field]);
 
     if (missing.length > 0) {
@@ -413,10 +423,12 @@ export class UserProfileComponent implements OnInit {
       p.phone?.toString().trim() &&
       p.recipient_name?.toString().trim() &&
       p.address?.toString().trim() &&
+      p.numero_exterior?.toString().trim() &&
       p.colonia?.toString().trim() &&
       p.municipio?.toString().trim() &&
       p.state?.toString().trim() &&
-      p.zip_code?.toString().trim()
+      p.zip_code?.toString().trim() &&
+      p.delivery_instructions?.toString().trim()
     );
     this.addressLocked.set(isComplete);
     console.log('Profile complete check:', isComplete, p);

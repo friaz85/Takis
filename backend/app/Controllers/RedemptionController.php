@@ -337,7 +337,9 @@ class RedemptionController extends ResourceController
             $city    = !empty($user['city']) ? $user['city'] : ($user['municipio'] ?? '');
             $missing = [];
             if (empty($user['address']))
-                $missing[] = 'Calle y número';
+                $missing[] = 'Calle';
+            if (empty($user['numero_exterior']))
+                $missing[] = 'Número Exterior';
             if (empty($city))
                 $missing[] = 'Municipio/Alcaldía';
             if (empty($user['state']))
@@ -415,6 +417,8 @@ class RedemptionController extends ResourceController
         if (strtolower($reward['type']) === 'physical') {
             $shippingDetails = json_encode([
                 'address'   => $user['address'],
+                'numero_exterior' => $user['numero_exterior'] ?? '',
+                'numero_interior' => $user['numero_interior'] ?? '',
                 'colonia'   => $user['colonia'] ?? '',
                 'municipio' => $user['municipio'] ?? '',
                 'city'      => $user['city'],

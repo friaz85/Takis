@@ -40,7 +40,7 @@ class AdminRedemptionsController extends ResourceController
             }
 
             // Order
-            $builder->orderBy('redemptions.created_at', 'DESC');
+            $builder->orderBy('redemptions.created_at', 'ASC');
 
             // Export CSV Logic
             if ($this->request->getGet('export') === 'csv') {

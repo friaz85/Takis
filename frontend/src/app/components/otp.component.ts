@@ -299,6 +299,14 @@ export class OtpComponent {
 
         this.analytics.trackConversion('registration', user.id, { email: user.email });
 
+        if (typeof (window as any).ttq !== 'undefined' && typeof (window as any).ttq.track === 'function') {
+          (window as any).ttq.track('Iniciar sesion', { 
+            "contents": [ { "content_id": "login", "content_type": "product", "content_name": "Login User" } ], 
+            "value": 0, 
+            "currency": "USD" 
+          });
+        }
+
         // Logic to redirect
         if (user.role === 'admin') {
           this.router.navigate(['/admin/dashboard']);

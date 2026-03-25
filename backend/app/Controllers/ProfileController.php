@@ -62,6 +62,10 @@ class ProfileController extends ResourceController
                 $data["phone"] = $input["phone"];
             if (isset($input["address"]))
                 $data["address"] = $input["address"];
+            if (isset($input["numero_exterior"]))
+                $data["numero_exterior"] = $input["numero_exterior"];
+            if (isset($input["numero_interior"]))
+                $data["numero_interior"] = $input["numero_interior"];
             if (isset($input["colonia"]))
                 $data["colonia"] = $input["colonia"];
             if (isset($input["municipio"]))

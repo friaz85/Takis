@@ -79,7 +79,7 @@ import { environment } from '../../environments/environment';
           <table class="admin-table">
             <thead>
               <tr>
-                <th>Usuario</th>
+                <th>Email</th>
                 <th>Recompensa</th>
                 <th class="hide-mobile">Estado</th>
                 <th class="text-right">Fecha</th>
@@ -87,7 +87,7 @@ import { environment } from '../../environments/environment';
             </thead>
             <tbody>
               <tr *ngFor="let order of paginatedOrders()" (click)="selectOrder(order)" class="clickable-row">
-                <td class="font-bold">{{ order.user_name }}</td>
+                <td class="font-bold">{{ order.user_email }}</td>
                 <td>{{ order.reward_title }}</td>
                 <td class="hide-mobile">
                   <span class="status-pill" [class]="order.status">{{ getStatusLabel(order.status) }}</span>
@@ -154,6 +154,8 @@ import { environment } from '../../environments/environment';
                   <div class="address-details">
                     <p><strong>Recibe:</strong> {{ selectedOrder().recipient_name || selectedOrder().user_name }}</p>
                     <p><strong>Dirección:</strong> {{ selectedOrder().address }}</p>
+                    <p><strong>Número Exterior:</strong> {{ selectedOrder().numero_exterior }}</p>
+                    <p *ngIf="selectedOrder().numero_interior"><strong>Número Interior:</strong> {{ selectedOrder().numero_interior }}</p>
                     <p><strong>CP / Colonia:</strong> {{ selectedOrder().zip_code }} - {{ selectedOrder().colonia }}</p>
                     <p><strong>Mpio / Estado:</strong> {{ selectedOrder().municipio }} / {{ selectedOrder().state }}</p>
                     <p><strong>Teléfono:</strong> {{ selectedOrder().phone }}</p>
@@ -474,6 +476,7 @@ export class AdminOrdersComponent implements OnInit {
     const term = this.searchTerm().toLowerCase();
     return this.orders().filter((o: any) =>
       o.user_name?.toLowerCase().includes(term) ||
+      o.user_email?.toLowerCase().includes(term) ||
       o.reward_title?.toLowerCase().includes(term) ||
       this.getStatusLabel(o.status).toLowerCase().includes(term)
     );
@@ -536,7 +539,7 @@ export class AdminOrdersComponent implements OnInit {
   }
 
   exportToCSV() {
-    const headers = ['ID', 'Usuario', 'Email', 'Recompensa', 'Puntos', 'Estado', 'Fecha', 'Destinatario', 'Teléfono', 'Dirección', 'Colonia', 'Ciudad/Mpio', 'Estado', 'CP', 'Notas Entrega'];
+    const headers = ['ID', 'Usuario', 'Email', 'Recompensa', 'Puntos', 'Estado', 'Fecha', 'Destinatario', 'Teléfono', 'Calle', 'Num Ext', 'Num Int', 'Colonia', 'Ciudad/Mpio', 'Estado', 'CP', 'Notas Entrega'];
     const rows = this.filteredOrders().map((o: any) => [
       o.id,
       `"${o.user_name}"`,
@@ -548,6 +551,8 @@ export class AdminOrdersComponent implements OnInit {
       `"${o.recipient_name || ''}"`,
       o.phone || '',
       `"${o.address || ''}"`,
+      `"${o.numero_exterior || ''}"`,
+      `"${o.numero_interior || ''}"`,
       `"${o.colonia || ''}"`,
       `"${o.city || o.municipio || ''}"`,
       `"${o.state || ''}"`,

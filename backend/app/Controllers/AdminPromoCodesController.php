@@ -10,25 +10,30 @@ class AdminPromoCodesController extends ResourceController
 {
     public function index()
     {
-        $db      = \Config\Database::connect();
-        $builder = $db->table('promo_codes pc');
-
+        $db = \Config\Database::connect();
+        
         // Query Params
-        // Default to 'used' to avoid scanning 73M records by default
         $status = $this->request->getVar('status') ?? 'used';
         $search = $this->request->getVar('search');
         $page   = intval($this->request->getVar('page') ?? 1);
-        $limit  = intval($this->request->getVar('limit') ?? 50); // Lower default limit
+        $limit  = intval($this->request->getVar('limit') ?? 50);
         $offset = ($page - 1) * $limit;
 
+        // Base builder for data (join users)
+        $builder = $db->table('promo_codes pc');
         $builder->select('pc.*, u.full_name as user_name, u.email as user_email');
         $builder->join('users u', 'u.id = pc.used_by', 'left');
 
-        // Filters
+        // Simple builder for counting (no joins for speed)
+        $countBuilder = $db->table('promo_codes');
+
+        // Apply Filters
         if ($status === 'available') {
             $builder->where('pc.is_used', 0);
+            $countBuilder->where('is_used', 0);
         } elseif ($status === 'used') {
             $builder->where('pc.is_used', 1);
+            $countBuilder->where('is_used', 1);
         }
 
         if (!empty($search)) {
@@ -37,29 +42,29 @@ class AdminPromoCodesController extends ResourceController
                 ->orLike('u.full_name', $search)
                 ->orLike('u.email', $search)
                 ->groupEnd();
+            
+            // Search counts are expensive on 73M rows. 
+            // We clone the main builder (with joins) only if searching.
+            $searchCountBuilder = clone $builder;
+            $total = $searchCountBuilder->countAllResults(false);
+        } else {
+            // Fast count using index on is_used
+            $total = $countBuilder->countAllResults(false);
         }
 
-        // Clone builder for totals before limit/offset
-        $countBuilder = clone $builder;
-        $total        = $countBuilder->countAllResults(false);
-
-        // Fetch totals only if needed or keep them simplified
-        // Counting used is fast with index, available is slow.
-        $usedCount = $db->table('promo_codes')->where('is_used', 1)->countAllResults();
-
-        // We only fetch available if explicitly requested to avoid lag
-        $availCount = ($status === 'available') ? $total : 0;
-
-        $builder->orderBy('pc.used_at', 'DESC'); // Sort by used_at for better relevance
+        // Apply logic to fetch only what's needed for the grid
+        $builder->orderBy('pc.used_at', 'DESC');
         $builder->limit($limit, $offset);
 
         $codes = $builder->get()->getResult();
 
+        // Avoid heavy global counts on every request. 
+        // Return 0 for these unless we implement a cache.
         return $this->respond([
             'data'            => $codes,
             'total'           => $total,
-            'total_available' => $availCount,
-            'total_used'      => $usedCount,
+            'total_available' => ($status === 'available') ? $total : 0,
+            'total_used'      => ($status === 'used') ? $total : 0,
             'page'            => $page,
             'limit'           => $limit
         ]);

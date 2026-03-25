@@ -78,7 +78,10 @@ import Swal from 'sweetalert2';
             </div>
 
             <img src="/assets/img/Logo-Takis.png" class="corner-logo" alt="Takis Logo">
-            <div class="vigencia-text">Vigencia 16 de febrero al 30 de abril 2026</div>
+            <div class="vigencia-text">
+              Vigencia 16 de febrero al 30 de abril 2026<br>
+              <a href="https://takisaficionintensa.com.mx/tyc" target="_blank" style="color: white; text-decoration: underline;">Consulta Términos y Condiciones</a>
+            </div>
           </div>
 
         </div>
@@ -482,6 +485,9 @@ export class HomeComponent implements OnInit {
     }
 
     this.submitting.set(true);
+    if (typeof (window as any).fbq === 'function') {
+      (window as any).fbq('trackCustom', 'IniciarPendiente');
+    }
     const user = JSON.parse(localStorage.getItem('takis_session') || '{}')?.user;
 
     // Advanced Security Payload
@@ -499,6 +505,14 @@ export class HomeComponent implements OnInit {
         (window as any).dataLayer.push({
           'event': 'canje_exitoso'
         });
+
+        if (typeof (window as any).ttq !== 'undefined' && typeof (window as any).ttq.track === 'function') {
+          (window as any).ttq.track('Canjear codigo', { 
+            "contents": [ { "content_id": "code-redeem", "content_type": "product", "content_name": "Redeem Takis Code" } ], 
+            "value": parseInt(res.points) || 0, 
+            "currency": "USD" 
+          });
+        }
 
         this.toastService.show(`CÓDIGO ACEPTADO +${res.points} PUNTO(S)`, 'success', 5000);
         this.code = '';

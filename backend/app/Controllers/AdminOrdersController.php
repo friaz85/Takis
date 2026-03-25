@@ -21,7 +21,7 @@ class AdminOrdersController extends ResourceController
 
         // Get all redemptions with user and reward info
         $redemptions = $redemptionModel
-            ->select('redemptions.*, users.full_name as user_name, users.email as user_email, users.recipient_name, users.phone, users.address, users.colonia, users.municipio, users.city, users.state, users.zip_code, users.delivery_instructions, rewards.title as reward_title, rewards.cost as points_cost')
+            ->select('redemptions.*, users.full_name as user_name, users.email as user_email, users.recipient_name, users.phone, users.address, users.numero_exterior, users.numero_interior, users.colonia, users.municipio, users.city, users.state, users.zip_code, users.delivery_instructions, rewards.title as reward_title, rewards.cost as points_cost')
             ->join('users', 'users.id = redemptions.user_id')
             ->join('rewards', 'rewards.id = redemptions.reward_id')
             ->where('rewards.type', 'physical')

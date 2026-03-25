@@ -360,6 +360,18 @@ export class RegisterComponent implements OnInit {
           'event': 'registro_completado'
         });
 
+        if (typeof (window as any).fbq === 'function') {
+          (window as any).fbq('trackCustom', 'RegistroCompletado');
+        }
+
+        if (typeof (window as any).ttq !== 'undefined' && typeof (window as any).ttq.track === 'function') {
+          (window as any).ttq.track('Registrarse', { 
+            "contents": [ { "content_id": "register", "content_type": "product", "content_name": "New User Registration" } ], 
+            "value": 0, 
+            "currency": "USD" 
+          });
+        }
+
         this.toast.show(res.message?.toUpperCase() || 'CÓDIGO ENVIADO.', 'success');
         this.router.navigate(['/auth/otp'], { queryParams: { email: this.form.email } });
       },

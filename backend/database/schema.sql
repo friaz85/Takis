@@ -15,8 +15,13 @@ CREATE TABLE users (
     email VARCHAR(255) NOT NULL UNIQUE,
     password_hash VARCHAR(255) NOT NULL,
     full_name VARCHAR(255) NOT NULL,
+    recipient_name VARCHAR(255),
     phone VARCHAR(20),
     address TEXT,
+    numero_exterior VARCHAR(100),
+    numero_interior VARCHAR(100),
+    colonia VARCHAR(255),
+    municipio VARCHAR(255),
     city VARCHAR(100),
     state VARCHAR(100),
     zip_code VARCHAR(10),
@@ -26,6 +31,9 @@ CREATE TABLE users (
     otp VARCHAR(6),
     otp_expiry DATETIME,
     session_version INT DEFAULT 0,
+    is_blocked TINYINT(1) DEFAULT 0,
+    blocked_reason TEXT,
+    blocked_at DATETIME,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 );

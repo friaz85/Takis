@@ -104,13 +104,23 @@ import Swal from 'sweetalert2';
               </div>
 
                <div class="form-group full">
-                 <label>NOMBRE DE QUIEN RECIBE</label>
+                 <label>NOMBRE COMPLETO DE QUIEN RECIBE (NOMBRE Y APELLIDOS)</label>
                  <input type="text" [(ngModel)]="addressForm.recipient_name" name="recipient_name" placeholder="NOMBRE QUIEN RECIBE" [disabled]="addressLocked()">
                </div>
  
+               <div class="form-group">
+                 <label>CALLE</label>
+                 <input type="text" [(ngModel)]="addressForm.address" name="address" required placeholder="CALLE" [disabled]="addressLocked()">
+               </div>
+               
+               <div class="form-group">
+                 <label>NÚMERO EXTERIOR</label>
+                 <input type="text" [(ngModel)]="addressForm.numero_exterior" name="numero_exterior" required placeholder="NÚMERO EXTERIOR" [disabled]="addressLocked()">
+               </div>
+               
                <div class="form-group full">
-                 <label>CALLE Y NUMERO</label>
-                 <input type="text" [(ngModel)]="addressForm.address" name="address" required placeholder="CALLE Y NUMERO" [disabled]="addressLocked()">
+                 <label>NÚMERO INTERIOR (OPCIONAL)</label>
+                 <input type="text" [(ngModel)]="addressForm.numero_interior" name="numero_interior" placeholder="NÚMERO INTERIOR">
                </div>
                
                <div class="form-group">
@@ -143,7 +153,7 @@ import Swal from 'sweetalert2';
  
                <div class="form-group full">
                  <label>INSTRUCCIONES DE ENTREGA</label>
-                 <textarea [(ngModel)]="addressForm.delivery_instructions" name="delivery_instructions" class="textarea-flat-modal" placeholder="INSTRUCCIONES ADICIONALES PARA LA ENTREGA" [disabled]="addressLocked()"></textarea>
+                 <textarea [(ngModel)]="addressForm.delivery_instructions" name="delivery_instructions" required class="textarea-flat-modal" placeholder="INSTRUCCIONES ADICIONALES PARA LA ENTREGA" [disabled]="addressLocked()"></textarea>
                </div>
             </div>
 
@@ -654,6 +664,8 @@ export class RedeemRewardsComponent implements OnInit {
     full_name: '',
     recipient_name: '',
     address: '',
+    numero_exterior: '',
+    numero_interior: '',
     colonia: '',
     municipio: '',
     state: '',
@@ -703,6 +715,8 @@ export class RedeemRewardsComponent implements OnInit {
           full_name: user.full_name || user.name || '',
           recipient_name: user.recipient_name || '',
           address: user.address || '',
+          numero_exterior: user.numero_exterior || '',
+          numero_interior: user.numero_interior || '',
           colonia: user.colonia || '',
           municipio: user.municipio || '',
           state: this.normalizeState(user.state) || '',
@@ -715,11 +729,13 @@ export class RedeemRewardsComponent implements OnInit {
           this.addressForm.full_name?.toString().trim() &&
           this.addressForm.recipient_name?.toString().trim() &&
           this.addressForm.address?.toString().trim() &&
+          this.addressForm.numero_exterior?.toString().trim() &&
           this.addressForm.colonia?.toString().trim() &&
           this.addressForm.municipio?.toString().trim() &&
           this.addressForm.state?.toString().trim() &&
           this.addressForm.zip_code?.toString().trim() &&
-          this.addressForm.phone?.toString().trim()
+          this.addressForm.phone?.toString().trim() &&
+          this.addressForm.delivery_instructions?.toString().trim()
         );
         this.addressLocked.set(isComplete);
         console.log('Address form complete check:', isComplete, this.addressForm);
@@ -799,6 +815,18 @@ export class RedeemRewardsComponent implements OnInit {
         (window as any).dataLayer.push({
           'event': 'canje_recompensa'
         });
+
+        if (typeof (window as any).fbq === 'function') {
+          (window as any).fbq('trackCustom', 'Compra', {value: 0.00, currency: 'USD'});
+        }
+
+        if (typeof (window as any).ttq !== 'undefined' && typeof (window as any).ttq.track === 'function') {
+          (window as any).ttq.track('Recompensa canjeada', { 
+            "contents": [ { "content_id": String(reward.id), "content_type": "product", "content_name": reward.title } ], 
+            "value": Number(reward.cost) || 0, 
+            "currency": "USD" 
+          });
+        }
 
         // Optimistic update
         this.userPoints.update(p => p - reward.cost);
@@ -903,7 +931,7 @@ export class RedeemRewardsComponent implements OnInit {
     if (this.submittingAddress()) return;
 
     // Basic validation
-    if (!this.addressForm.address || !this.addressForm.phone || !this.addressForm.zip_code || !this.addressForm.state || !this.addressForm.municipio || !this.addressForm.colonia) {
+    if (!this.addressForm.address || !this.addressForm.numero_exterior || !this.addressForm.phone || !this.addressForm.zip_code || !this.addressForm.state || !this.addressForm.municipio || !this.addressForm.colonia || !this.addressForm.recipient_name || !this.addressForm.delivery_instructions) {
       this.toast.show('Por favor completa todos los campos de envío', 'info');
       return;
     }
@@ -923,11 +951,13 @@ export class RedeemRewardsComponent implements OnInit {
           this.addressForm.full_name?.toString().trim() &&
           this.addressForm.recipient_name?.toString().trim() &&
           this.addressForm.address?.toString().trim() &&
+          this.addressForm.numero_exterior?.toString().trim() &&
           this.addressForm.colonia?.toString().trim() &&
           this.addressForm.municipio?.toString().trim() &&
           this.addressForm.state?.toString().trim() &&
           this.addressForm.zip_code?.toString().trim() &&
-          this.addressForm.phone?.toString().trim()
+          this.addressForm.phone?.toString().trim() &&
+          this.addressForm.delivery_instructions?.toString().trim()
         );
         this.addressLocked.set(isNowComplete);
         console.log('Address form update lock check:', isNowComplete);

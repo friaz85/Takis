@@ -30,7 +30,10 @@ import { AuthService } from '../services/auth.service';
               <a routerLink="/auth/login" class="takis-btn outline">INICIAR SESIÓN</a>
             </div>
             <img src="/assets/img/Logo-Takis.png" class="corner-logo" alt="Takis Logo">
-            <div class="vigencia-text">Vigencia 16 de febrero al 30 de abril 2026</div>
+            <div class="vigencia-text">
+              Vigencia 16 de febrero al 30 de abril 2026<br>
+              <a href="https://takisaficionintensa.com.mx/tyc" target="_blank" style="color: white; text-decoration: underline;">Consulta Términos y Condiciones</a>
+            </div>
           </div>
         </div>
       </div>
