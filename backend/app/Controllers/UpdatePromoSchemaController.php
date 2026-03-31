@@ -202,4 +202,31 @@ class UpdatePromoSchemaController extends Controller
 
         return $this->response->setJSON($output);
     }
+
+    public function manualUpdatePoints()
+    {
+        $points = $this->request->getGet('points');
+        
+        if ($points === null || !is_numeric($points)) {
+            return $this->response->setJSON(['error' => 'Please provide a numeric points parameter.']);
+        }
+
+        $db = \Config\Database::connect();
+        $builder = $db->table('promo_codes');
+        
+        try {
+            $builder->where('is_used', 0)
+                    ->set(['points' => (int)$points])
+                    ->update();
+            
+            $affectedRows = $db->affectedRows();
+            return $this->response->setJSON([
+                'success' => true,
+                'message' => "Points updated to $points for $affectedRows codes.",
+                'affected_rows' => $affectedRows
+            ]);
+        } catch (\Exception $e) {
+            return $this->response->setJSON(['error' => $e->getMessage()]);
+        }
+    }
 }

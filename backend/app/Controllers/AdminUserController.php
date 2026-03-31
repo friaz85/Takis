@@ -82,6 +82,7 @@ class AdminUserController extends ResourceController
 
             $result = $userModel->update($id, [
                 'is_blocked'     => 1,
+                'is_whitelisted' => 0,
                 'blocked_reason' => $reason,
                 'blocked_at'     => date('Y-m-d H:i:s')
             ]);
@@ -102,6 +103,7 @@ class AdminUserController extends ResourceController
             // Unblock user
             $result = $userModel->update($id, [
                 'is_blocked'     => 0,
+                'is_whitelisted' => 1,
                 'blocked_reason' => null,
                 'blocked_at'     => null
             ]);

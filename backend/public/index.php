@@ -1,5 +1,9 @@
 <?php
 
+/**
+ * CodeIgniter 4 Web Bootstrap
+ */
+
 // CORS GLOBAL
 header("Access-Control-Allow-Origin: *");
 header("Access-Control-Allow-Methods: GET, POST, OPTIONS, PUT, DELETE");
@@ -9,24 +13,29 @@ if ($_SERVER["REQUEST_METHOD"] == "OPTIONS") {
     exit;
 }
 
+// Set Environment (Earliest possible to avoid naming conflicts in early class loading)
+if (!defined('ENVIRONMENT')) {
+    define('ENVIRONMENT', 'production');
+}
+
 define('FCPATH', __DIR__ . DIRECTORY_SEPARATOR);
 chdir(__DIR__);
+
+// Load Paths
 if (file_exists(FCPATH . 'app/Config/Paths.php')) {
     require FCPATH . 'app/Config/Paths.php';
 } else {
     require FCPATH . '../app/Config/Paths.php';
 }
+
 $paths = new Config\Paths();
+
+// Bootstrap the framework
 require rtrim($paths->systemDirectory, '\\/ ') . DIRECTORY_SEPARATOR . 'bootstrap.php';
 
 // Load DotEnv
 require_once SYSTEMPATH . 'Config/DotEnv.php';
 (new CodeIgniter\Config\DotEnv(ROOTPATH))->load();
-
-// Set Environment
-if (!defined('ENVIRONMENT')) {
-    define('ENVIRONMENT', env('CI_ENVIRONMENT', 'production'));
-}
 
 // Set Mexico timezone (UTC-6)
 date_default_timezone_set('America/Mexico_City');

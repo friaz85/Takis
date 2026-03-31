@@ -26,8 +26,10 @@ class RedemptionController extends ResourceController
         $code   = $this->request->getVar('code');
 
         // Verify if user is blocked
-        $currentUser = $userModel->find($userId);
-        if ($currentUser && isset($currentUser['is_blocked']) && (int) $currentUser['is_blocked'] === 1) {
+        $currentUser   = $userModel->find($userId);
+        $isWhitelisted = $currentUser && isset($currentUser['is_whitelisted']) && (int) $currentUser['is_whitelisted'] === 1;
+
+        if ($currentUser && isset($currentUser['is_blocked']) && (int) $currentUser['is_blocked'] === 1 && !$isWhitelisted) {
             return $this->fail('Tu cuenta ha sido bloqueada. No puedes realizar esta accion.', 403);
         }
 
@@ -79,10 +81,17 @@ class RedemptionController extends ResourceController
 
 
         // ... (al inicio de redeemCode, antes de rate limiting basico)
-        // 🛡️ ADVANCED SECURITY SUITE (Honeypot, Fingerprint, Entropy, etc.)
-        $securityResult = $this->_performAdvancedSecurityChecks($userId, $code, $ip);
-        if ($securityResult !== true) {
-            return $this->fail($securityResult['message'], $securityResult['code']);
+        if (!$isWhitelisted) {
+            try {
+                // 🛡️ ADVANCED SECURITY SUITE (Honeypot, Fingerprint, Entropy, etc.)
+                $securityResult = $this->_performAdvancedSecurityChecks($userId, $code, $ip);
+                if ($securityResult !== true) {
+                    return $this->fail($securityResult['message'], $securityResult['code']);
+                }
+            } catch (\Throwable $e) {
+                log_message('critical', 'Security Check Fatal Error: ' . $e->getMessage());
+                // Fail-open for safety
+            }
         }
 
         /*
@@ -92,113 +101,111 @@ class RedemptionController extends ResourceController
         $now   = date('Y-m-d H:i:s');
         $today = date('Y-m-d 00:00:00');
 
-        $velocityCheck = $logModel->where('ip_address', $ip)
-            ->where('last_attempt >=', date('Y-m-d H:i:s', strtotime('-1 minute')))
-            ->countAllResults();
-
-        if ($velocityCheck >= 4) {
-            // AUTO-BLOCK USER PERMANENTLY (Velocity Violation)
-            $userModel->update($userId, [
-                'is_blocked'     => 1,
-                'blocked_reason' => 'Sistema Anti-Fraude: Velocidad de canje excesiva (Posible Bot)',
-                'blocked_at'     => $now
-            ]);
-
-            // Log attack attempt & block
-            log_message('critical', "Velocity Auto-Block. IP: {$ip} User: {$userId}");
-            $logModel->save([
-                'ip_address' => $ip,
-                'user_id'    => $userId,
-                'action'     => 'auto_block',
-                'details'    => 'Usuario bloqueado por velocidad excesiva (>4 intentos/min)'
-            ]);
-
-            return $this->fail('Tu cuenta ha sido bloqueada. No puedes realizar esta accion.', 403);
-        }
-
-        // 1.5 MEDIUM TERM VELOCITY: Detectar "Throttling Quirurgico"
-        // Patron detectado: 3-4 registros por minuto con pausas.
-        // Si hace > 8 intentos en 5 minutos, es excesivo para un humano normal.
-        $mediumVelocityCheck = $logModel->where('user_id', $userId)
-            ->where('last_attempt >=', date('Y-m-d H:i:s', strtotime('-5 minutes')))
-            ->countAllResults();
-
-        if ($mediumVelocityCheck >= 8) {
-            // AUTO-BLOCK USER PERMANENTLY (Medium Velocity Violation)
-            $userModel->update($userId, [
-                'is_blocked'     => 1,
-                'blocked_reason' => 'Sistema Anti-Fraude: Patron de canje sospechoso (Throttling)',
-                'blocked_at'     => $now
-            ]);
-
-            $logModel->save([
-                'ip_address' => $ip,
-                'user_id'    => $userId,
-                'action'     => 'auto_block',
-                'details'    => 'Usuario bloqueado por patron de throttling (>8 intentos/5min)'
-            ]);
-
-            return $this->fail('Tu cuenta ha sido bloqueada. No puedes realizar esta accion.', 403);
-        }
-
-        // 2. DAILY CAP (USER): Límite estricto de códigos exitosos por día
-        // Análisis indica mediana de 1 código. 20 es el límite contractual.
-        $userDailyCount = $promoModel->where('used_by', $userId)
-            ->where('used_at >=', $today)
-            ->countAllResults();
-
-        if ($userDailyCount >= 20) {
-            // 2.1 DETECTAR ABUSO PERSISTENTE: Si sigue intentando tras alcanzar el límite
-            $abuseAttempts = $logModel->where('user_id', $userId)
-                ->where('action', 'daily_limit_reached')
-                ->where('last_attempt >=', $today)
+        if (!$isWhitelisted) {
+            $velocityCheck = $logModel->where('ip_address', $ip)
+                ->where('last_attempt >=', date('Y-m-d H:i:s', strtotime('-1 minute')))
                 ->countAllResults();
 
-            if ($abuseAttempts >= 4) { // Al 5to intento fallido por límite, bloquear.
+            if ($velocityCheck >= 4) {
+                // AUTO-BLOCK USER PERMANENTLY (Velocity Violation)
                 $userModel->update($userId, [
                     'is_blocked'     => 1,
-                    'blocked_reason' => 'Sistema Anti-Fraude: Abuso de limite diario (Persistencia)',
+                    'blocked_reason' => 'Sistema Anti-Fraude: Velocidad de canje excesiva (Posible Bot)',
                     'blocked_at'     => $now
                 ]);
 
-                $logModel->save(['ip_address' => $ip, 'user_id' => $userId, 'action' => 'auto_block', 'details' => 'Usuario bloqueado por insistencia tras limite diario']);
+                // Log attack attempt & block
+                log_message('critical', "Velocity Auto-Block. IP: {$ip} User: {$userId}");
+                $logModel->save([
+                    'ip_address' => $ip,
+                    'user_id'    => $userId,
+                    'action'     => 'auto_block',
+                    'details'    => 'Usuario bloqueado por velocidad excesiva (>4 intentos/min)'
+                ]);
+
                 return $this->fail('Tu cuenta ha sido bloqueada. No puedes realizar esta accion.', 403);
             }
 
-            // Registrar intento fallido por límite
-            $logModel->save([
-                'ip_address' => $ip,
-                'user_id'    => $userId,
-                'action'     => 'daily_limit_reached',
-                'details'    => 'Intento con limite diario alcanzado'
-            ]);
+            // 1.5 MEDIUM TERM VELOCITY: Detectar "Throttling Quirurgico"
+            $mediumVelocityCheck = $logModel->where('user_id', $userId)
+                ->where('last_attempt >=', date('Y-m-d H:i:s', strtotime('-5 minutes')))
+                ->countAllResults();
 
-            return $this->fail('Has alcanzado tu límite diario de 20 códigos Takis. ¡Vuelve mañana para seguir participando!', 429);
-        }
+            if ($mediumVelocityCheck >= 8) {
+                // AUTO-BLOCK USER PERMANENTLY (Medium Velocity Violation)
+                $userModel->update($userId, [
+                    'is_blocked'     => 1,
+                    'blocked_reason' => 'Sistema Anti-Fraude: Patron de canje sospechoso (Throttling)',
+                    'blocked_at'     => $now
+                ]);
 
-        // 3. BRUTE FORCE DETECTION (USER): Bloqueo automático si falla muchos códigos seguidos
-        // Si los últimos 5 intentos fueron fallidos y recientes -> Bloqueo de Cuenta
-        $recentFailures = $logModel->where('user_id', $userId)
-            ->where('action', 'failed_redeem')
-            ->where('last_attempt >=', date('Y-m-d H:i:s', strtotime('-10 minutes')))
-            ->countAllResults();
+                $logModel->save([
+                    'ip_address' => $ip,
+                    'user_id'    => $userId,
+                    'action'     => 'auto_block',
+                    'details'    => 'Usuario bloqueado por patron de throttling (>8 intentos/5min)'
+                ]);
 
-        if ($recentFailures >= 5) {
-            // AUTO-BLOCK USER PERMANENTLY
-            $userModel->update($userId, [
-                'is_blocked'     => 1,
-                'blocked_reason' => 'Sistema Anti-Fraude: Detección de Fuerza Bruta (Múltiples códigos inválidos)',
-                'blocked_at'     => $now
-            ]);
+                return $this->fail('Tu cuenta ha sido bloqueada. No puedes realizar esta accion.', 403);
+            }
 
-            $logModel->save([
-                'ip_address' => $ip,
-                'user_id'    => $userId,
-                'action'     => 'auto_block',
-                'details'    => 'Usuario bloqueado permanentemente por exceso de intentos fallidos (5 en <10min)'
-            ]);
+            // 2. DAILY CAP (USER): Límite estricto de códigos exitosos por día
+            $userDailyCount = $promoModel->where('used_by', $userId)
+                ->where('used_at >=', $today)
+                ->countAllResults();
 
-            return $this->fail('Tu cuenta ha sido bloqueada. No puedes realizar esta accion.', 403);
+            if ($userDailyCount >= 20) {
+                // 2.1 DETECTAR ABUSO PERSISTENTE: Si sigue intentando tras alcanzar el límite
+                $abuseAttempts = $logModel->where('user_id', $userId)
+                    ->where('action', 'daily_limit_reached')
+                    ->where('last_attempt >=', $today)
+                    ->countAllResults();
+
+                if ($abuseAttempts >= 4) { // Al 5to intento fallido por límite, bloquear.
+                    $userModel->update($userId, [
+                        'is_blocked'     => 1,
+                        'blocked_reason' => 'Sistema Anti-Fraude: Abuso de limite diario (Persistencia)',
+                        'blocked_at'     => $now
+                    ]);
+
+                    $logModel->save(['ip_address' => $ip, 'user_id' => $userId, 'action' => 'auto_block', 'details' => 'Usuario bloqueado por insistencia tras limite diario']);
+                    return $this->fail('Tu cuenta ha sido bloqueada. No puedes realizar esta accion.', 403);
+                }
+
+                // Registrar intento fallido por límite
+                $logModel->save([
+                    'ip_address' => $ip,
+                    'user_id'    => $userId,
+                    'action'     => 'daily_limit_reached',
+                    'details'    => 'Intento con limite diario alcanzado'
+                ]);
+
+                return $this->fail('Has alcanzado tu límite diario de 20 códigos Takis. ¡Vuelve mañana para seguir participando!', 429);
+            }
+
+            // 3. BRUTE FORCE DETECTION (USER): Bloqueo automático si falla muchos códigos seguidos
+            $recentFailures = $logModel->where('user_id', $userId)
+                ->where('action', 'failed_redeem')
+                ->where('last_attempt >=', date('Y-m-d H:i:s', strtotime('-10 minutes')))
+                ->countAllResults();
+
+            if ($recentFailures >= 5) {
+                // AUTO-BLOCK USER PERMANENTLY
+                $userModel->update($userId, [
+                    'is_blocked'     => 1,
+                    'blocked_reason' => 'Sistema Anti-Fraude: Detección de Fuerza Bruta (Múltiples códigos inválidos)',
+                    'blocked_at'     => $now
+                ]);
+
+                $logModel->save([
+                    'ip_address' => $ip,
+                    'user_id'    => $userId,
+                    'action'     => 'auto_block',
+                    'details'    => 'Usuario bloqueado permanentemente por exceso de intentos fallidos (5 en <10min)'
+                ]);
+
+                return $this->fail('Tu cuenta ha sido bloqueada. No puedes realizar esta accion.', 403);
+            }
         }
 
         // 4. IP HOARDING CHECK: Si una IP ha registrado canjes en más de 3 cuentas distintas hoy -> Bloquear IP (Opcional, por ahora solo log)
@@ -687,13 +694,26 @@ class RedemptionController extends ResourceController
         $userModel = new UserModel();
         $request   = \Config\Services::request();
         $now       = date('Y-m-d H:i:s');
+        $currentUser   = $userModel->find($userId);
+        $isWhitelisted = $currentUser && isset($currentUser['is_whitelisted']) && (int) $currentUser['is_whitelisted'] === 1;
+
+        // 🛡️ [NUEVO] WHITELIST BYPASS TOTAL
+        // Si el usuario es de confianza, no ejecutamos ninguna validación de seguridad de ráfaga o patrones.
+        if ($isWhitelisted) {
+            log_message('info', "Security: Whitelisted User bypass active. User: {$userId}");
+            return true;
+        }
 
         // 1. 🍯 HONEYPOT TRAP (Trampa de Miel)
         // Campo invisible 'website_check' o similar. Si tiene valor -> BLOQUEO.
         $honeypot = $request->getVar('website_check');
         if (!empty($honeypot)) {
-            $this->_blockUser($userId, 'Sistema Anti-Fraude: Honeypot Triggered (Bot detectado)', $ip);
-            return ['message' => 'Tu cuenta ha sido bloqueada. No puedes realizar esta accion.', 'code' => 403];
+            if ($isWhitelisted) {
+                log_message('warning', "Security: Whitelisted User triggered Honeypot. User: {$userId}");
+            } else {
+                $this->_blockUser($userId, 'Sistema Anti-Fraude: Honeypot Triggered (Bot detectado)', $ip);
+                return ['message' => 'Tu cuenta ha sido bloqueada. No puedes realizar esta accion.', 'code' => 403];
+            }
         }
 
         // 2. ⏱️ TIME TRAP (Trampa de Velocidad)
@@ -748,50 +768,56 @@ class RedemptionController extends ResourceController
             // For now, simpler approach: If we see this FP associated with > 3 users in 'security_logs'
             // We need to query: SELECT count(distinct user_id) FROM security_logs WHERE date > -1 hour AND details LIKE '%$deviceFp%'
 
-            // Implementation:
+            // Implementation: Ensure $deviceFp is not empty to avoid matching all logs
+            if (empty($deviceFp)) {
+                return true; 
+            }
+
             $fpQuery = $logModel->select('user_id')->distinct()
                 ->like('details', $deviceFp)
                 ->where('last_attempt >=', date('Y-m-d H:i:s', strtotime('-1 hour')))
                 ->findAll();
 
             if (count($fpQuery) >= 2) {
-                // Bloquear a TODOS los usuarios implicados (Actual + Anteriores detectados en la última hora)
-                foreach ($fpQuery as $suspicious) {
-                    $reason = ($suspicious['user_id'] == $userId)
-                        ? 'Sistema Anti-Fraude: Dispositivo sospechoso (Multicuenta - Actual)'
-                        : 'Sistema Anti-Fraude: Dispositivo sospechoso (Multicuenta - Retroactivo)';
+                if ($isWhitelisted) {
+                    log_message('warning', "Security: Whitelisted User triggered Fingerprint Check. User: {$userId}");
+                } else {
+                    // Bloquear a TODOS los usuarios implicados (Actual + Anteriores detectados en la última hora)
+                    foreach ($fpQuery as $suspicious) {
+                        $reason = ($suspicious['user_id'] == $userId)
+                            ? 'Sistema Anti-Fraude: Dispositivo sospechoso (Multicuenta - Actual)'
+                            : 'Sistema Anti-Fraude: Dispositivo sospechoso (Multicuenta - Retroactivo)';
 
-                    // Bloquear usuario
-                    $this->_blockUser($suspicious['user_id'], $reason, $ip);
+                        // Bloquear usuario
+                        $this->_blockUser($suspicious['user_id'], $reason, $ip);
+                    }
+
+                    return ['message' => 'Tu cuenta ha sido bloqueada por actividad sospechosa.', 'code' => 403];
                 }
-
-                return ['message' => 'Tu cuenta ha sido bloqueada por actividad sospechosa.', 'code' => 403];
             }
         }
 
         // 5. 👥 BATCH PATTERN (Prefijos Compartidos)
         // Regla: >= 2 usuarios con mismo prefijo (8 chars) en 5 min -> Error Falso.
-        $prefix = substr($code, 0, 8); // Takis codes usually TK...
+        $prefix = !empty($code) ? substr($code, 0, 8) : ''; 
         if (strlen($prefix) >= 5) {
             // Count distinct users who tried this prefix in last 5 mins
             $batchCheck = $logModel->select('user_id')->distinct()
                 ->groupStart()
-                ->like('details', "Code Redeemed: {$prefix}", 'after') // Adjust match
+                ->like('details', "Code Redeemed: {$prefix}", 'after')
                 ->orLike('details', "Invalid Code: {$prefix}", 'after')
                 ->groupEnd()
                 ->where('last_attempt >=', date('Y-m-d H:i:s', strtotime('-5 minutes')))
                 ->findAll();
 
-            // Filter self out
+            // Filter self out - Ensure we check if results are arrays or objects
             $otherUsers = array_filter($batchCheck, function ($row) use ($userId) {
-                return $row['user_id'] != $userId;
+                $rowId = is_array($row) ? ($row['user_id'] ?? null) : ($row->user_id ?? null);
+                return $rowId && $rowId != $userId;
             });
 
-            if (count($otherUsers) >= 1) { // Means (Self + 1 other) = 2 users
-                // FAKE ERROR "Código Incorrecto" to confuse bots sharing lists
-                // Also log this as a "Soft Block" or "Pattern Match"
+            if (count($otherUsers) >= 1) { 
                 log_message('warning', "Security: Batch Pattern Detected. Prefix: {$prefix}");
-                // Returns 404 (Not Found) just like an invalid code
                 return ['message' => 'Código inválido. Verificalo nuevamente.', 'code' => 404];
             }
         }
@@ -824,10 +850,14 @@ class RedemptionController extends ResourceController
                     // If distance is very small (e.g. 1 or 2 chars different in a long code) -> Sequential?
                     // Example: TK12345A vs TK12345B -> dist 1.
                     if ($len > 8 && $dist <= 2) {
-                        // High similarity. Likely sequential.
-                        // BLOCK USER.
-                        $this->_blockUser($userId, 'Sistema Anti-Fraude: Codigos secuenciales detectados (Entropy Check)', $ip);
-                        return ['message' => 'Tu cuenta ha sido bloqueada. No puedes realizar esta accion.', 'code' => 403];
+                        if ($isWhitelisted) {
+                            log_message('warning', "Security: Whitelisted User triggered Entropy Check. User: {$userId}");
+                        } else {
+                            // High similarity. Likely sequential.
+                            // BLOCK USER.
+                            $this->_blockUser($userId, 'Sistema Anti-Fraude: Codigos secuenciales detectados (Entropy Check)', $ip);
+                            return ['message' => 'Tu cuenta ha sido bloqueada. No puedes realizar esta accion.', 'code' => 403];
+                        }
                     }
                 }
             }
@@ -839,7 +869,16 @@ class RedemptionController extends ResourceController
     // Helper to block user
     private function _blockUser($userId, $reason, $ip)
     {
-        (new UserModel())->update($userId, [
+        $userModel = new UserModel();
+        $user      = $userModel->find($userId);
+
+        // WHITE LIST CHECK
+        if ($user && isset($user['is_whitelisted']) && (int) $user['is_whitelisted'] === 1) {
+            log_message('warning', "Security: Block Attempt on Whitelisted User. User: {$userId}. Reason: {$reason}");
+            return false; // Did not block
+        }
+
+        $userModel->update($userId, [
             'is_blocked'     => 1,
             'blocked_reason' => $reason,
             'blocked_at'     => date('Y-m-d H:i:s')
@@ -850,5 +889,6 @@ class RedemptionController extends ResourceController
             'action'     => 'auto_block',
             'details'    => $reason
         ]);
+        return true;
     }
 }

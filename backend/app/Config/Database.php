@@ -29,21 +29,21 @@ class Database extends Config
     public array $default = [
         'DSN'          => '',
         'hostname'     => 'localhost',
-        'username'     => 'uhyhullgum8ns',
-        'password'     => 'Or1144ck3@@b',
-        'database'     => 'dbjv4vqfqbqfgj',
-        'DBDriver'     => 'Postgre',
+        'username'     => 'uja2i2v274lkm',
+        'password'     => '31q)+2&I&5%4',
+        'database'     => 'dbemgylpsiadtp',
+        'DBDriver'     => 'MySQLi',
         'DBPrefix'     => '',
         'pConnect'     => false,
         'DBDebug'      => true,
         'charset'      => 'utf8',
-        'DBCollat'     => '',
+        'DBCollat'     => 'utf8_general_ci',
         'swapPre'      => '',
         'encrypt'      => false,
         'compress'     => false,
         'strictOn'     => false,
         'failover'     => [],
-        'port'         => 5432,
+        'port'         => 3306,
         'numberNative' => false,
     ];
 
@@ -59,18 +59,11 @@ class Database extends Config
             $this->default['password'] = env('database.default.password') ?? '';
             $this->default['database'] = env('database.default.database') ?? '';
             $this->default['port']     = (int) (env('database.default.port') ?? 3306);
-
-            // Set session timezone for MySQL
-            if (isset($this->default['DBDriver']) && strpos($this->default['DBDriver'], 'MySQL') !== false) {
-                // We can't easily run a query here without a connection, 
-                // but we can ensure appTimezone is used by CI4 models.
-            }
         }
 
-        // Ensure that we always set the database group to 'tests' if
-        // we are currently running an automated test suite, so that
-        // we don't overwrite live data on accident.
-        if (ENVIRONMENT === 'testing') {
+        // Using defined() to safely check for ENVIRONMENT
+        $env = defined('ENVIRONMENT') ? \ENVIRONMENT : 'production';
+        if ($env === 'testing') {
             $this->defaultGroup = 'tests';
         }
     }
@@ -88,7 +81,7 @@ class Database extends Config
         'password'    => '',
         'database'    => ':memory:',
         'DBDriver'    => 'SQLite3',
-        'DBPrefix'    => 'db_',  // Needed to ensure we're working correctly with prefixes live. DO NOT REMOVE FOR CI DEVS
+        'DBPrefix'    => 'db_',
         'pConnect'    => false,
         'DBDebug'     => true,
         'charset'     => 'utf8',

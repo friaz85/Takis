@@ -226,6 +226,11 @@ class AuthController extends ResourceController
             ->countAllResults();
 
         if ($ipFailures >= 3 || $userFailures >= 3) {
+            // WHITE LIST CHECK
+            if (isset($user['is_whitelisted']) && (int) $user['is_whitelisted'] === 1) {
+                return $this->fail('Código inválido o expirado.', 401);
+            }
+
             // PERMANENT BLOCK USER
             $this->model->update($user['id'], [
                 'is_blocked'     => 1,

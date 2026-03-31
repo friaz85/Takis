@@ -30,6 +30,7 @@ class UserModel extends Model
         'otp',
         'otp_expiry',
         'is_blocked',
+        'is_whitelisted',
         'blocked_reason',
         'blocked_at'
     ];

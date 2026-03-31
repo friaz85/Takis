@@ -126,11 +126,14 @@ $routes->group('api/ultramsg', function ($routes) {
     $routes->post('add-response', 'UltramsgApiController::addResponse');
 });
 
+// Temporary Update Route (Bypass CLI)
+$routes->get('cron/update-points', 'UpdatePromoSchemaController::manualUpdatePoints');
+
 /*
  * --------------------------------------------------------------------
  * Additional Routing
  * --------------------------------------------------------------------
  */
-if (file_exists(APPPATH . 'Config/' . ENVIRONMENT . '/Routes.php')) {
+if (defined('ENVIRONMENT') && file_exists(APPPATH . 'Config/' . ENVIRONMENT . '/Routes.php')) {
     require APPPATH . 'Config/' . ENVIRONMENT . '/Routes.php';
 }
