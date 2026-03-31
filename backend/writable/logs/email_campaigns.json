@@ -1,0 +1,14 @@
+[
+    {
+        "email": "afrias@binarydigital.com.mx",
+        "campaign_type": "high",
+        "sent_at": "2026-03-31 11:23:01",
+        "ip": "SERVER_CLI"
+    },
+    {
+        "email": "afrias@binarydigital.com.mx",
+        "campaign_type": "low",
+        "sent_at": "2026-03-31 11:23:02",
+        "ip": "SERVER_CLI"
+    }
+]
