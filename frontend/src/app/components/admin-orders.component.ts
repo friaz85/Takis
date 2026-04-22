@@ -40,6 +40,13 @@ import { environment } from '../../environments/environment';
             <span class="stat-value">{{ pendingStats() }}</span>
           </div>
         </div>
+        <div class="stat-card review">
+          <div class="stat-icon">🔍</div>
+          <div class="stat-info">
+            <span class="stat-label">En Revisión</span>
+            <span class="stat-value">{{ reviewStats() }}</span>
+          </div>
+        </div>
         <div class="stat-card processing">
           <div class="stat-icon">⚙️</div>
           <div class="stat-info">
@@ -170,6 +177,7 @@ import { environment } from '../../environments/environment';
                 <label>Estado del Pedido</label>
                 <select [(ngModel)]="selectedOrder().status" class="status-select">
                   <option value="pending">Pendiente</option>
+                  <option value="review">En revisión</option>
                   <option value="processing">En Proceso</option>
                   <option value="shipped">Enviado</option>
                   <option value="delivered">Entregado</option>
@@ -255,7 +263,18 @@ import { environment } from '../../environments/environment';
     .export-btn:hover { background: #F2E74B; color: #1A0B2E; transform: translateY(-2px); }
     .export-btn:hover .icon { color: inherit; }
 
-    .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1.5rem; margin-bottom: 2rem; }
+    .stats-grid { 
+      display: grid; 
+      grid-template-columns: repeat(3, 1fr); 
+      gap: 1.5rem; 
+      margin-bottom: 2rem; 
+    }
+    @media (max-width: 900px) {
+      .stats-grid { grid-template-columns: repeat(2, 1fr); }
+    }
+    @media (max-width: 600px) {
+      .stats-grid { grid-template-columns: 1fr; }
+    }
     .stat-card { background: rgba(108, 29, 218, 0.1); border: 2px solid rgba(108, 29, 218, 0.3); border-radius: 1.5rem; padding: 1.5rem; display: flex; align-items: center; gap: 1.2rem; transition: 0.3s; }
     .stat-card:hover { transform: translateY(-5px); border-color: #6C1DDA; background: rgba(108, 29, 218, 0.2); }
     .stat-card.pending { border-color: rgba(255, 170, 0, 0.3); }
@@ -266,6 +285,8 @@ import { environment } from '../../environments/environment';
     .stat-card.delivered:hover { border-color: #00cc66; }
     .stat-card.shipped { border-color: rgba(0, 170, 255, 0.3); }
     .stat-card.shipped:hover { border-color: #00aaff; }
+    .stat-card.review { border-color: rgba(255, 68, 68, 0.3); }
+    .stat-card.review:hover { border-color: #ff4444; }
 
     .stat-icon { font-size: 2.5rem; }
     .stat-info { display: flex; flex-direction: column; }
@@ -274,6 +295,7 @@ import { environment } from '../../environments/environment';
     .stat-card.pending .stat-value { color: #ffaa00; }
     .stat-card.delivered .stat-value { color: #00cc66; }
     .stat-card.shipped .stat-value { color: #00aaff; }
+    .stat-card.review .stat-value { color: #ff4444; }
 
     .table-container { background: rgba(255,255,255,0.05); border: 2px solid #6C1DDA; border-radius: 1.5rem; overflow: hidden; }
     .table-header { padding: 1.5rem; border-bottom: 1px solid rgba(108, 29, 218, 0.2); }
@@ -293,6 +315,7 @@ import { environment } from '../../environments/environment';
     .status-pill.pending { background: #ffaa00; color: #1A0B2E; }
     .status-pill.processing { background: #6C1DDA; color: white; }
     .status-pill.shipped { background: #00aaff; color: white; }
+    .status-pill.review { background: #ff4444; color: white; }
     .clickable-row { cursor: pointer; transition: 0.2s; }
     .clickable-row:hover { background: rgba(242, 231, 75, 0.1) !important; }
 
@@ -309,7 +332,7 @@ import { environment } from '../../environments/environment';
     .info-item label { display: block; color: #F2E74B; font-size: 0.75rem; font-weight: bold; text-transform: uppercase; }
     .info-item span { color: white; font-size: 1rem; }
     .info-item.full { grid-column: span 2; }
-    .reward-text { font-weight: bold; font-size: 1.1rem !important; color: #F2E74B; }
+    .reward-text { font-weight: bold; font-size: 0.8rem !important; color: #F2E74B; }
     .points-text { font-weight: bold; color: #00cc66; }
     
     .divider { border: 0; border-top: 1px solid rgba(108, 29, 218, 0.2); margin: 2rem 0; }
@@ -320,7 +343,7 @@ import { environment } from '../../environments/environment';
       width: 100%; background: rgba(0,0,0,0.2); border: 1px solid #6C1DDA; color: white; 
       padding: 1rem; border-radius: 0.6rem; outline: none; font-size: 0.95rem; font-family: inherit;
     }
-    .notes-textarea { resize: vertical; min-height: 100px; }
+    .notes-textarea { resize: vertical; min-height: 100px; font-size: 0.8rem !important; }
     
     .tracking-section { 
       background: rgba(108, 29, 218, 0.1); 
@@ -434,6 +457,7 @@ export class AdminOrdersComponent implements OnInit {
   getStatusLabel(status: string) {
     const labels: any = {
       'pending': 'PENDIENTE',
+      'review': 'EN REVISIÓN',
       'processing': 'EN PROCESO',
       'shipped': 'ENVIADO',
       'delivered': 'ENTREGADO'
@@ -491,6 +515,7 @@ export class AdminOrdersComponent implements OnInit {
   totalPages = computed(() => Math.ceil(this.filteredOrders().length / this.pageSize));
 
   pendingStats = computed(() => this.orders().filter(o => o.status === 'pending').length);
+  reviewStats = computed(() => this.orders().filter(o => o.status === 'review').length);
   processingStats = computed(() => this.orders().filter(o => o.status === 'processing').length);
   shippedStats = computed(() => this.orders().filter(o => o.status === 'shipped').length);
   deliveredStats = computed(() => this.orders().filter(o => o.status === 'delivered').length);
@@ -539,7 +564,7 @@ export class AdminOrdersComponent implements OnInit {
   }
 
   exportToCSV() {
-    const headers = ['ID', 'Usuario', 'Email', 'Recompensa', 'Puntos', 'Estado', 'Fecha', 'Destinatario', 'Teléfono', 'Calle', 'Num Ext', 'Num Int', 'Colonia', 'Ciudad/Mpio', 'Estado', 'CP', 'Notas Entrega'];
+    const headers = ['ID', 'Usuario', 'Email', 'Recompensa', 'Puntos', 'Estado', 'Fecha', 'Destinatario', 'Teléfono', 'Calle', 'Num Ext', 'Num Int', 'Colonia', 'Ciudad/Mpio', 'Estado', 'CP', 'Notas Entrega', 'Comentarios/Notas'];
     const rows = this.filteredOrders().map((o: any) => [
       o.id,
       `"${o.user_name}"`,
@@ -557,7 +582,8 @@ export class AdminOrdersComponent implements OnInit {
       `"${o.city || o.municipio || ''}"`,
       `"${o.state || ''}"`,
       o.zip_code || '',
-      `"${o.delivery_instructions || ''}"`
+      `"${o.delivery_instructions || ''}"`,
+      `"${o.admin_notes || ''}"`
     ]);
 
     const csvContent = "\ufeff" + [headers.join(","), ...rows.map((e: any) => e.join(","))].join("\n");

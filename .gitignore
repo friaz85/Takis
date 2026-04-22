@@ -58,9 +58,17 @@ backend/generated_pdfs/*
 # Explicitly allow the main project folders
 !/backend/
 !/frontend/
+!/deploy/
 
 # Explicitly allow configuration and documentation files in root
 !.gitignore
 !README.md
 !DEPLOYMENT.md
 !DEPLOYMENT_GUIDE.md
+!MEMORY_TECNICA_CAMPANAS.md
+!HISTORIAL_PROYECTO_COMPLETO.md
+!deploy_dev.sh
+!deploy_prod.sh
+!deploy_prod_full.sh
+!deploy_silent.sh
+!deploy/dev/.env

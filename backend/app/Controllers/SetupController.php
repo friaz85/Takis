@@ -64,7 +64,7 @@ class SetupController extends Controller
                 id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
                 user_id INT UNSIGNED NOT NULL,
                 reward_id INT UNSIGNED NOT NULL,
-                status ENUM('pending', 'processing', 'shipped', 'delivered', 'completed') DEFAULT 'pending',
+                status ENUM('pending', 'review', 'processing', 'shipped', 'delivered', 'completed') DEFAULT 'pending',
                 shipping_details JSON,
                 digital_code TEXT,
                 pdf_path VARCHAR(255),

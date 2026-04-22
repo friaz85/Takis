@@ -13,7 +13,8 @@ NC='\033[0m' # No Color
 
 # Load environment configuration
 if [ -f "deploy/dev/.env" ]; then
-    export $(cat deploy/dev/.env | grep -v '^#' | grep -v 'app.baseURL' | xargs)
+    # Only export variables needed for the script to avoid issues with spaces/accents in other variables
+    export $(grep -E "^(SERVER_|SSH_|DB_)" deploy/dev/.env | xargs)
 else
     echo -e "${RED}Error: deploy/dev/.env no encontrado${NC}"
     exit 1
@@ -39,6 +40,7 @@ cp -r backend/app $DEPLOY_DIR/api/
 cp -a backend/public/. $DEPLOY_DIR/api/
 cp backend/composer.json $DEPLOY_DIR/api/
 cp backend/composer.lock $DEPLOY_DIR/api/
+cp backend/spark $DEPLOY_DIR/api/
 cp backend/database/schema.sql $DEPLOY_DIR/api/
 # Use dev database config
 cp deploy/dev/Database.php $DEPLOY_DIR/api/app/Config/Database.php

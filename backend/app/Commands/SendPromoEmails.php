@@ -22,6 +22,7 @@ class SendPromoEmails extends BaseCommand
         '--dry-run' => 'Simular envio sin mandar correos',
         '--summary' => 'Solo mostrar conteo de usuarios por segmento',
         '--delay'   => 'Pausa en milisegundos entre correos (default: 100)',
+        '--limit'   => 'Límite de correos a procesar (para pruebas)',
         '--force'   => 'Ignorar validación de fecha programada (1 de Abril 17:00)'
     ];
 
@@ -31,6 +32,7 @@ class SendPromoEmails extends BaseCommand
         $dryRun  = CLI::getOption('dry-run');
         $summary = CLI::getOption('summary');
         $delay   = (int) (CLI::getOption('delay') ?? 100);
+        $limit   = (int) (CLI::getOption('limit') ?? 0);
         $force   = CLI::getOption('force');
 
         if ($mode === 'test') {
@@ -51,7 +53,7 @@ class SendPromoEmails extends BaseCommand
                 return;
             }
 
-            $this->handleMassMode($dryRun, $summary, $delay);
+            $this->handleMassMode($dryRun, $summary, $delay, $limit);
         }
     }
 
@@ -78,39 +80,32 @@ class SendPromoEmails extends BaseCommand
         }
     }
 
-    private function handleMassMode($dryRun = false, $summary = false, $delay = 100)
+    private function handleMassMode($dryRun = false, $summary = false, $delay = 100, $limit = 0)
     {
         $userModel = new UserModel();
         
-        $highCount = $userModel->where('points >=', 300)->where('points <=', 500)->where('is_blocked', 0)->countAllResults();
         $lowCount  = $userModel->where('points >=', 0)->where('points <=', 100)->where('is_blocked', 0)->countAllResults();
 
         CLI::write("--- RESUMEN DE SEGMENTOS ---");
-        CLI::write("Usuarios Segmento Alto (300-500 pts): " . CLI::color($highCount, "yellow"));
         CLI::write("Usuarios Segmento Bajo (0-100 pts): " . CLI::color($lowCount, "yellow"));
-        CLI::write("Total de envíos programados: " . CLI::color($highCount + $lowCount, "green"));
+        CLI::write("Total de envíos disponibles: " . CLI::color($lowCount, "green"));
         
         if ($summary) {
             return;
         }
 
-        $highUsers = $userModel->where('points >=', 300)->where('points <=', 500)->where('is_blocked', 0)->findAll();
-        $lowUsers  = $userModel->where('points >=', 0)->where('points <=', 100)->where('is_blocked', 0)->findAll();
+        $lowUsers = $userModel->where('points >=', 0)
+                              ->where('points <=', 100)
+                              ->where('is_blocked', 0)
+                              ->findAll($limit > 0 ? $limit : 0);
 
         CLI::write("--- INICIO DE PROCESAMIENTO MASIVO ---");
         
         if ($dryRun) {
-            CLI::write(CLI::color("⚠️ MODO DRY-RUN: No se enviarán correos reales.", "yellow"));
+            CLI::write(CLI::color("⚠️ MODO DRY-RUN: Simulación activa. No se enviarán correos reales.", "yellow"));
         }
 
         $totalSent = 0;
-
-        foreach ($highUsers as $user) {
-            if ($this->processSend($user['email'], 'high', $dryRun, $user['id'] ?? null)) {
-                $totalSent++;
-                if (!$dryRun && $delay > 0) usleep($delay * 1000);
-            }
-        }
 
         foreach ($lowUsers as $user) {
             if ($this->processSend($user['email'], 'low', $dryRun, $user['id'] ?? null)) {
@@ -144,19 +139,20 @@ class SendPromoEmails extends BaseCommand
 
     private function getEmailContent($type)
     {
-        if ($type === 'high') {
+        if ($type === 'low') {
             return [
-                'subject' => "¡Ya eres parte de la afición más intensa! ¡Estás a un paso de la moto, no te detengas!",
-                'title'   => "¡VAS INCREÍBLE!",
-                'message' => "¡Vas increíble, estás entre los que más puntos han acumulado! ¡Cada compra y cada código que registras te acerca un poco más para llevarte una moto! este es el momento de acelerar y dar el último impulso.<br><br><strong>¡Aprovecha que el 3 y 4 de abril los códigos que registres valen el doble!</strong><br><br>Recuerda que la promoción termina el 30 de abril. Sigue acumulando y demostrando que eres parte de La Afición Más Intensa."
-            ];
-        } else {
-            return [
-                'subject' => "¡Ya eres parte de la afición más intensa! ¡Estás a tiempo de empezar a ganar increíbles premios!",
-                'title'   => "¡AÚN HAY TIEMPO!",
-                'message' => "Cada punto que acumulas te da mejores premios y más emoción.<br><br><strong>¡Aprovecha que el 3 y 4 de abril los códigos que registres valen el doble!</strong><br><br>Recuerda que la promoción termina el 30 de abril. Seguí acumulando y demostrando que eres parte de La Afición Más Intensa."
+                'subject' => "¡Ya eres parte de la afición más intensa! ¡Registra y obtén puntos dobles !",
+                'title'   => "¡APROVECHA LOS PUNTOS DOBLES!",
+                'message' => "Cada punto que acumulas te da mejores premios y más emoción.<br><br>¡Aprovecha que el 3 y 4 de abril los códigos que registres valen el doble!<br><br>Recuerda que la promoción termina el 30 de abril. Sigue acumulando y demostrando que eres parte de La Afición Más Intensa."
             ];
         }
+
+        // Segmento High (Inactivo por ahora)
+        return [
+            'subject' => "",
+            'title'   => "",
+            'message' => ""
+        ];
     }
 
     private function logEmail($email, $type, $userId = null)

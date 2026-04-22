@@ -38,13 +38,6 @@ class EmailSender
         $email->setSubject(self::removeAccents($subject));
 
         // Clean message content
-        $cleanTitle = self::buildHtml($title, $messageHtml, $actionText, $actionUrl); // We pass raw here, buildHtml will clean it? No, let's clean before
-        // Actually, messageHtml might contain HTML tags. We should only clean text content, but that's hard. 
-        // The user request is "quitar los acentos". 
-        // Simple str_replace on the whole HTML might break attributes if they had accents (unlikely for standard tags).
-        // Let's assume messageHtml is mostly text provided by us.
-
-        // Re-implementing logic to be cleaner:
         $cleanTitleText   = self::removeAccents($title);
         $cleanMessageHtml = self::removeAccents($messageHtml);
         $cleanActionText  = $actionText ? self::removeAccents($actionText) : null;
@@ -56,8 +49,50 @@ class EmailSender
         if ($email->send()) {
             return true;
         } else {
-            // Log error but don't crash app if possible, or debug
             log_message('error', 'Email Error: ' . $email->printDebugger(['headers']));
+            return false;
+        }
+    }
+
+    public static function sendPromotionalEmail($to, $subject, $title, $messageHtml, $actionText = null, $actionUrl = null)
+    {
+        $email = \Config\Services::email();
+
+        // Use PROM SMTP configuration from .env
+        $config['protocol']   = 'smtp';
+        $config['SMTPHost']   = env('PROM_EMAIL_HOST') ?? env('EMAIL_HOST');
+        $config['SMTPUser']   = env('PROM_EMAIL_USERNAME') ?? env('EMAIL_USERNAME');
+        $config['SMTPPass']   = env('PROM_EMAIL_PASSWORD') ?? env('EMAIL_PASSWORD');
+        $config['SMTPPort']   = env('PROM_EMAIL_PORT') ?? env('EMAIL_PORT');
+        $config['SMTPCrypto'] = env('PROM_EMAIL_SMTP_CRYPTO') ?? env('EMAIL_SMTP_CRYPTO');
+
+        $config['mailType'] = 'html';
+        $config['charset']  = 'utf-8';
+        $config['wordWrap'] = true;
+        $config['newline']  = "\r\n";
+        $config['CRLF']     = "\r\n";
+
+        $email->initialize($config);
+
+        $fromEmail = env('PROM_EMAIL_FROM') ?? env('EMAIL_FROM');
+        $fromName  = env('PROM_EMAIL_FROM_NAME') ?? env('EMAIL_FROM_NAME');
+
+        $email->setFrom($fromEmail, self::removeAccents($fromName));
+        $email->setTo($to);
+        $email->setSubject(self::removeAccents($subject));
+
+        $cleanTitleText   = self::removeAccents($title);
+        $cleanMessageHtml = self::removeAccents($messageHtml);
+        $cleanActionText  = $actionText ? self::removeAccents($actionText) : null;
+
+        $html = self::buildHtml($cleanTitleText, $cleanMessageHtml, $cleanActionText, $actionUrl);
+
+        $email->setMessage($html);
+
+        if ($email->send()) {
+            return true;
+        } else {
+            log_message('error', 'Promotional Email Error: ' . $email->printDebugger(['headers']));
             return false;
         }
     }

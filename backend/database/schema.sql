@@ -60,7 +60,7 @@ CREATE TABLE redemptions (
     id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     user_id INT UNSIGNED NOT NULL,
     reward_id INT UNSIGNED NOT NULL,
-    status ENUM('pending', 'processing', 'shipped', 'delivered', 'completed') DEFAULT 'pending',
+    status ENUM('pending', 'review', 'processing', 'shipped', 'delivered', 'completed') DEFAULT 'pending',
     shipping_details JSON,
     pdf_path VARCHAR(255),
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,

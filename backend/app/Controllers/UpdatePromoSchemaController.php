@@ -100,6 +100,15 @@ class UpdatePromoSchemaController extends Controller
                 $output[] = "Added column 'delivery_date' to redemptions.";
             }
 
+            // Update redemptions status ENUM to include 'review'
+            $output[] = "Updating redemptions status ENUM...";
+            try {
+                $db->query("ALTER TABLE redemptions MODIFY COLUMN status ENUM('pending', 'review', 'processing', 'shipped', 'delivered', 'completed') DEFAULT 'pending'");
+                $output[] = "Successfully added 'review' to redemptions status.";
+            } catch (\Exception $e) {
+                $output[] = "Could not update redemptions status (might not be MySQL or already updated): " . $e->getMessage();
+            }
+
             // Update Security Logs Table
             $slFields     = $db->getFieldData('security_logs');
             $hasUserIdSL  = false;

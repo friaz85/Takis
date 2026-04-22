@@ -52,7 +52,7 @@ CREATE TABLE redemptions (
     id SERIAL PRIMARY KEY,
     user_id INT NOT NULL,
     reward_id INT NOT NULL,
-    status VARCHAR(20) DEFAULT 'pending' CHECK (status IN ('pending', 'processing', 'shipped', 'delivered', 'completed')),
+    status VARCHAR(20) DEFAULT 'pending' CHECK (status IN ('pending', 'review', 'processing', 'shipped', 'delivered', 'completed')),
     shipping_details JSON,
     pdf_path VARCHAR(255),
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,

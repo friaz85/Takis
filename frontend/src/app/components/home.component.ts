@@ -17,7 +17,21 @@ import Swal from 'sweetalert2';
   template: `
     <user-navbar></user-navbar>
     <app-whatsapp-bubble></app-whatsapp-bubble>
-    
+
+    <!-- Splash Promo Modal -->
+    <div *ngIf="showSplash()" class="landing-splash-overlay" (click)="closeSplash()">
+      <div class="landing-splash-modal" (click)="$event.stopPropagation()">
+        <button class="landing-splash-close" (click)="closeSplash()">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="18" y1="6" x2="6" y2="18"></line>
+            <line x1="6" y1="6" x2="18" y2="18"></line>
+          </svg>
+        </button>
+        <div class="landing-splash-content">
+          <img src="/assets/img/promo-puntos-dobles.png" alt="Promo Takis" class="promo-splash-img">
+        </div>
+      </div>
+    </div>
     <div class="landing">
       <div class="hero">
         <div class="hero-flex">
@@ -426,9 +440,93 @@ import Swal from 'sweetalert2';
     ::ng-deep .takis-swal-confirm:hover { transform: translateY(-2px); box-shadow: 0 10px 0 #b8af2e !important; }
     ::ng-deep .takis-swal-confirm:active { transform: translateY(4px); box-shadow: 0 2px 0 #b8af2e !important; }
 
+    /* Splash Modal Styles */
+    .landing-splash-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      background: rgba(26, 11, 46, 0.85);
+      backdrop-filter: blur(8px);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 10000;
+      animation: fadeIn 0.4s ease-out;
+    }
+
+    .landing-splash-modal {
+      position: relative;
+      max-width: 90vw;
+      max-height: 85vh;
+      background: #5d1f87;
+      border-radius: 1.5rem;
+      padding: 5px;
+      box-shadow: 0 25px 50px rgba(0,0,0,0.8), 0 0 30px rgba(242, 231, 75, 0.3);
+      border: 2px solid #F2E74B;
+      animation: scaleIn 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+
+    .landing-splash-content {
+      overflow: hidden;
+      border-radius: 1.2rem;
+      display: flex;
+    }
+
+    .promo-splash-img {
+      max-width: 100%;
+      max-height: 80vh;
+      object-fit: contain;
+      display: block;
+    }
+
+    .landing-splash-close {
+      position: absolute;
+      top: -15px;
+      right: -15px;
+      width: 40px;
+      height: 40px;
+      background: #F2E74B;
+      border: none;
+      border-radius: 50%;
+      color: #5d1f87;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      box-shadow: 0 5px 15px rgba(0,0,0,0.4);
+      z-index: 10001;
+      transition: 0.2s;
+    }
+
+    .landing-splash-close:hover {
+      transform: scale(1.1) rotate(90deg);
+    }
+
+    .landing-splash-close svg {
+      width: 20px;
+      height: 20px;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+
+    @keyframes scaleIn {
+      from { opacity: 0; transform: scale(0.8) translateY(20px); }
+      to { opacity: 1; transform: scale(1) translateY(0); }
+    }
+
+    @media (max-width: 768px) {
+      .landing-splash-modal { max-width: 95vw; }
+      .landing-splash-close { top: -10px; right: -10px; width: 35px; height: 35px; }
+    }
   `]
 })
 export class HomeComponent implements OnInit {
+  showSplash = signal(false);
   websiteCheck = ''; // Honeypot trap
   renderTs = 0;      // Time trap
   code = '';
@@ -444,6 +542,8 @@ export class HomeComponent implements OnInit {
   ngOnInit() {
     // START TIME TRAP
     this.renderTs = Math.floor(Date.now() / 1000);
+
+    this.checkSplashVisibility();
 
     // Sync with auth user signal
     const user = this.auth.user();
@@ -561,6 +661,24 @@ export class HomeComponent implements OnInit {
       return btoa(raw).slice(0, 32);
     } catch (e) {
       return 'unknown_fp';
+    }
+  }
+
+  closeSplash() {
+    this.showSplash.set(false);
+  }
+
+  private checkSplashVisibility() {
+    const now = new Date();
+    const year = now.getFullYear();
+    const month = now.getMonth() + 1; // getMonth() is 0-indexed
+    const day = now.getDate();
+
+    // Show only on April 3 and 4, 2026 (CDMX local time)
+    if (year === 2026 && month === 4 && (day === 3 || day === 4)) {
+      this.showSplash.set(true);
+    } else {
+      this.showSplash.set(false);
     }
   }
 }
