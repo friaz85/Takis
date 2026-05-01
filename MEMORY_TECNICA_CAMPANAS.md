@@ -6,8 +6,8 @@ Este documento registra la configuración y lógica de los correos promocionales
 **Keyword:** `TAKIS_AFICION_INTENSA_2024`
 **Ambiente:** Solo DEV (Desarrollo)
 
-## Lógica de Selección de Usuarios (12,490 correos por sprint)
-El sistema selecciona automáticamente hasta 12,490 usuarios bajo los siguientes criterios de prioridad:
+## Lógica de Selección de Usuarios (12,480 correos por sprint)
+El sistema selecciona automáticamente hasta 12,480 usuarios bajo los siguientes criterios de prioridad:
 
 1.  **Segmento A:** Usuarios con **5 o más puntos** acumulados.
 2.  **Segmento B:** Usuarios con **de 1 a 4 puntos** que hayan tenido **actividad (login) en el último mes**.

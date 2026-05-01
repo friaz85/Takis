@@ -811,23 +811,6 @@ export class RedeemRewardsComponent implements OnInit {
 
     this.http.post(`${environment.apiUrl}/redeem`, { reward_id: reward.id }).subscribe({
       next: (res: any) => {
-        (window as any).dataLayer = (window as any).dataLayer || [];
-        (window as any).dataLayer.push({
-          'event': 'canje_recompensa'
-        });
-
-        if (typeof (window as any).fbq === 'function') {
-          (window as any).fbq('trackCustom', 'Compra', {value: 0.00, currency: 'USD'});
-        }
-
-        if (typeof (window as any).ttq !== 'undefined' && typeof (window as any).ttq.track === 'function') {
-          (window as any).ttq.track('Recompensa canjeada', { 
-            "contents": [ { "content_id": String(reward.id), "content_type": "product", "content_name": reward.title } ], 
-            "value": Number(reward.cost) || 0, 
-            "currency": "USD" 
-          });
-        }
-
         // Optimistic update
         this.userPoints.update(p => p - reward.cost);
 

@@ -32,7 +32,7 @@ class SendSprintPromoEmails extends BaseCommand
         $dryRun   = CLI::getOption('dry-run');
         $summary  = CLI::getOption('summary');
         $delay    = (int) (CLI::getOption('delay') ?? 100);
-        $limit    = (int) (CLI::getOption('limit') ?? 12490);
+        $limit    = (int) (CLI::getOption('limit') ?? 11912);
 
         if (!$emailNum || !in_array($emailNum, [1, 2, 3, 4])) {
             CLI::error("ERROR: Debes especificar --email [1|2|3|4]");
@@ -76,45 +76,46 @@ class SendSprintPromoEmails extends BaseCommand
         }
     }
 
-    private function handleMassMode($emailNum, $dryRun = false, $summary = false, $delay = 100, $limit = 12490)
+    private function handleMassMode($emailNum, $dryRun = false, $summary = false, $delay = 100, $limit = 11912)
     {
         $db = \Config\Database::connect();
 
-        // SEGMENT A: Points >= 5
-        $segmentAQuery = "SELECT id, email, full_name, points FROM users WHERE points >= 5 AND is_blocked = 0";
-        $usersA = $db->query($segmentAQuery)->getResultArray();
-        foreach ($usersA as &$u) $u['segment'] = 'A';
-        $countA = count($usersA);
-
-        // SEGMENT B: Points > 0 AND Points < 5 AND Active in last month
-        $oneMonthAgo = date('Y-m-d H:i:s', strtotime('-1 month'));
-        $segmentBQuery = "
-            SELECT u.id, u.email, u.full_name, u.points 
-            FROM users u
-            WHERE u.points > 0 AND u.points < 5 AND u.is_blocked = 0
-            AND EXISTS (
-                SELECT 1 FROM site_visits v 
-                WHERE v.user_id = u.id 
-                AND v.created_at >= '$oneMonthAgo'
-            )
+        // Optimized Query: Segment A (Priority 1) then Segment B (Priority 2) up to $limit
+        $mainQuery = "
+            SELECT * FROM (
+                (SELECT id, email, full_name, points, 'A' as segment, 1 as priority
+                 FROM users 
+                 WHERE points >= 5 AND is_blocked = 0)
+                UNION ALL
+                (SELECT u.id, u.email, u.full_name, u.points, 'B' as segment, 2 as priority
+                 FROM users u
+                 WHERE u.points > 0 AND u.points < 5 AND u.is_blocked = 0
+                 AND EXISTS (
+                     SELECT 1 FROM site_visits v 
+                     WHERE v.user_id = u.id 
+                     AND v.created_at >= DATE_SUB(NOW(), INTERVAL 1 MONTH)
+                 ))
+            ) AS combined
+            ORDER BY priority ASC
+            LIMIT $limit
         ";
-        $usersB = $db->query($segmentBQuery)->getResultArray();
-        foreach ($usersB as &$u) $u['segment'] = 'B';
-        $countB = count($usersB);
+
+        $allUsers = $db->query($mainQuery)->getResultArray();
+        
+        $countA = 0;
+        $countB = 0;
+        foreach ($allUsers as $u) {
+            if ($u['segment'] === 'A') $countA++;
+            else $countB++;
+        }
 
         CLI::write("--- RESUMEN DE SEGMENTOS ---", "cyan");
         CLI::write("Segmento A (5+ pts): " . CLI::color($countA, "green"));
         CLI::write("Segmento B (1-4 pts + Actividad): " . CLI::color($countB, "green"));
-        CLI::write("Total Potencial: " . ($countA + $countB));
+        CLI::write("Total a procesar: " . ($countA + $countB));
         CLI::write("Límite de este Sprint: " . CLI::color($limit, "yellow"));
 
         if ($summary) return;
-
-        // Merge and limit
-        $allUsers = array_merge($usersA, $usersB);
-        if (count($allUsers) > $limit) {
-            $allUsers = array_slice($allUsers, 0, $limit);
-        }
 
         CLI::write("--- INICIO DE ENVÍO MASIVO (Correo $emailNum) ---", "cyan");
         if ($dryRun) CLI::write("⚠️ MODO DRY-RUN ACTIVO", "yellow");
@@ -124,6 +125,16 @@ class SendSprintPromoEmails extends BaseCommand
             $content = $this->getEmailContent($emailNum);
             $campaignLabel = "Correo $emailNum - Segmento " . $user['segment'];
             
+            // Check if already sent in this campaign
+            $alreadySent = $db->table('email_campaign_logs')
+                             ->where('email', $user['email'])
+                             ->where('campaign_type', $campaignLabel)
+                             ->countAllResults();
+
+            if ($alreadySent > 0) {
+                continue; // Skip if already logged as sent
+            }
+
             if ($dryRun) {
                 CLI::write("Simulando envío [$campaignLabel] a: " . $user['email']);
                 $totalSent++;

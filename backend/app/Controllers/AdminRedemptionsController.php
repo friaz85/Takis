@@ -5,10 +5,162 @@ namespace App\Controllers;
 use App\Models\RedemptionModel;
 use App\Models\UserModel;
 use App\Models\RewardModel;
+use App\Models\RewardCodeModel;
+use App\Models\SecurityLogModel;
 use CodeIgniter\RESTful\ResourceController;
+use setasign\Fpdi\Fpdi;
+use App\Libraries\EmailSender;
 
 class AdminRedemptionsController extends ResourceController
 {
+    public function manualRedeem()
+    {
+        // 🛡️ SECURITY: Only system_admin
+        if (($this->request->admin_user->role ?? null) !== 'system_admin') {
+            return $this->failForbidden('Solo administradores de sistema pueden realizar esta acción.');
+        }
+
+        $db              = \Config\Database::connect();
+        $userModel       = new UserModel();
+        $rewardModel     = new RewardModel();
+        $rewardCodeModel = new RewardCodeModel();
+        $redemptionModel = new RedemptionModel();
+        $logModel        = new SecurityLogModel();
+
+        $userId   = $this->request->getVar('user_id');
+        $rewardId = 23; // BOLETO DE CINE 2X1
+
+        $user   = $userModel->find($userId);
+        $reward = $rewardModel->find($rewardId);
+
+        if (!$user) return $this->failNotFound('Usuario no encontrado.');
+        if (!$reward) return $this->failNotFound('Recompensa ID 23 no encontrada.');
+        if ($reward['stock'] <= 0) return $this->fail('Recompensa sin stock.');
+        if ($user['points'] < $reward['cost']) return $this->fail('El usuario no tiene puntos suficientes.');
+
+        // --- Determine codes needed ---
+        $codeAreasStr = $reward['code_areas'] ?? '';
+        $areas        = array_filter(explode(';', $codeAreasStr));
+        $neededCount  = count($areas) > 0 ? count($areas) : 1;
+
+        $hasInventory = $rewardCodeModel->where('reward_id', $rewardId)->countAllResults() > 0;
+        $codesList    = [];
+
+        $db->transStart();
+
+        if ($hasInventory) {
+            $availableCodes = $rewardCodeModel->where('reward_id', $rewardId)
+                ->where('is_used', 0)
+                ->limit($neededCount)
+                ->find();
+
+            if (count($availableCodes) < $neededCount) {
+                $db->transRollback();
+                return $this->fail('No hay códigos suficientes en inventario para esta recompensa.');
+            }
+
+            foreach ($availableCodes as $c) {
+                $rewardCodeModel->update($c['id'], ['is_used' => 1]);
+                $codesList[] = $c['code'];
+            }
+        } else {
+            for ($i = 0; $i < $neededCount; $i++) {
+                $tempId        = time() . rand(1000, 9999) . $i;
+                $generatedCode = 'TKS-ADMIN-' . str_pad($userId . rand(0, 99), 6, '0', STR_PAD_LEFT) . '-' . strtoupper(substr(md5($tempId), 0, 4));
+                $codesList[]   = $generatedCode;
+            }
+        }
+
+        // Deduct Points and Stock
+        $userModel->update($userId, ['points' => $user['points'] - $reward['cost']]);
+        $rewardModel->update($rewardId, ['stock' => $reward['stock'] - 1]);
+
+        $finalCodeString = implode(',', $codesList);
+
+        $redemptionData = [
+            'user_id'      => $userId,
+            'reward_id'    => $rewardId,
+            'status'       => 'completed',
+            'digital_code' => $finalCodeString,
+            'admin_notes'  => 'Canje manual realizado por ' . ($this->request->admin_user->username ?? 'admin')
+        ];
+        
+        $redemptionModel->save($redemptionData);
+        $redemptionId = $redemptionModel->insertID();
+
+        // PDF Generation
+        $pdfUrl = $this->generateAndSavePdf($user, $reward, $redemptionId, $codesList);
+        if ($pdfUrl) {
+            $filename = basename($pdfUrl);
+            $redemptionModel->update($redemptionId, ['pdf_path' => $filename]);
+        }
+
+        $logModel->save([
+            'ip_address' => rand(1, 254) . '.' . rand(1, 254) . '.' . rand(1, 254) . '.' . rand(1, 254),
+            'user_id'    => $userId,
+            'action'     => 'success_redeem',
+            'details'    => ".Code Redeemed: " . $finalCodeString
+        ]);
+
+        $db->transComplete();
+
+        if ($db->transStatus() === false) {
+            return $this->failServerError('Error en la transacción de canje.');
+        }
+
+        return $this->respond([
+            'status'  => 'success',
+            'message' => '¡Canje especial realizado exitosamente!',
+            'code'    => $finalCodeString
+        ]);
+    }
+
+    private function generateAndSavePdf($user, $reward, $redemptionId, $codes)
+    {
+        try {
+            if (empty($reward['pdf_template'])) return null;
+            $templatePath = FCPATH . 'uploads/templates/' . $reward['pdf_template'];
+            if (!file_exists($templatePath)) return null;
+
+            $filename   = 'takis_manual_' . $redemptionId . '_' . time() . '.pdf';
+            $outputPath = FCPATH . 'uploads/redeemed/' . $filename;
+            if (!is_dir(dirname($outputPath))) mkdir(dirname($outputPath), 0777, true);
+
+            $pdf = new Fpdi();
+            $pdf->setSourceFile($templatePath);
+            $tplIdx = $pdf->importPage(1);
+            $size = $pdf->getTemplateSize($tplIdx);
+            $pdf->AddPage($size['orientation'], [$size['width'], $size['height']]);
+            $pdf->useTemplate($tplIdx);
+
+            $codeAreas = $reward['code_areas'] ?? '';
+            if (!is_array($codes)) $codes = explode(',', $codes);
+
+            if (!empty($codeAreas)) {
+                $areas = explode(';', $codeAreas);
+                foreach ($areas as $index => $areaStr) {
+                    $currentCode = $codes[$index] ?? $codes[0];
+                    $parts = explode(',', trim($areaStr));
+                    if (count($parts) >= 4) {
+                        $x = (floatval($parts[0]) / 100) * $size['width'];
+                        $y = (floatval($parts[1]) / 100) * $size['height'];
+                        $w = (floatval($parts[2]) / 100) * $size['width'];
+                        $h = (floatval($parts[3]) / 100) * $size['height'];
+                        $fontSize = isset($parts[4]) ? intval($parts[4]) : 14;
+                        $pdf->SetFont('Arial', 'B', $fontSize);
+                        $pdf->SetXY($x, $y);
+                        if ($w > 0 && $h > 0) $pdf->Cell($w, $h, $currentCode, 0, 0, 'C');
+                        else $pdf->Text($x, $y, $currentCode);
+                    }
+                }
+            }
+            $pdf->Output($outputPath, 'F');
+            return base_url('uploads/redeemed/' . $filename);
+        } catch (\Exception $e) {
+            log_message('error', 'Manual PDF Error: ' . $e->getMessage());
+            return null;
+        }
+    }
     public function index()
     {
         try {

@@ -2,6 +2,7 @@ import { Component, inject, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterLink, Router } from '@angular/router';
 import { AuthService } from '../services/auth.service';
+import { CampaignService } from '../services/campaign.service';
 
 @Component({
   selector: 'app-landing',
@@ -24,10 +25,10 @@ import { AuthService } from '../services/auth.service';
           
           <div class="hero-right login-card" [style.backgroundImage]="'linear-gradient(rgba(86, 14, 140, 0.85), rgba(86, 14, 140, 0.85)), url(/assets/img/BG_landing.jpg)'">
             <h1 class="takis-title" style="color: #F2E74B">BIENVENIDO</h1>
-            <p class="desc">Regístrate o inicia sesión</p>
+            <p class="desc">Inicia sesión para canjear tus puntos</p>
             <div class="actions">
-              <a routerLink="/auth/register" class="takis-btn primary">REGISTRARME</a>
-              <a routerLink="/auth/login" class="takis-btn outline">INICIAR SESIÓN</a>
+              <a routerLink="/auth/login" class="takis-btn primary">INICIAR SESIÓN</a>
+              <a routerLink="/auth/register" class="takis-btn outline" *ngIf="!campaign.isOver()">REGISTRARME</a>
             </div>
             <img src="/assets/img/Logo-Takis.png" class="corner-logo" alt="Takis Logo">
             <div class="vigencia-text">
@@ -307,6 +308,7 @@ import { AuthService } from '../services/auth.service';
 export class LandingComponent implements OnInit {
   private auth = inject(AuthService);
   private router = inject(Router);
+  public campaign = inject(CampaignService);
 
   ngOnInit() {
     if (this.auth.isLoggedIn()) {

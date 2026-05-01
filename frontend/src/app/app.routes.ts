@@ -1,7 +1,7 @@
 import { Routes } from '@angular/router';
 import { LandingComponent } from './components/landing.component';
 import { LoginComponent } from './components/login.component';
-import { RegisterComponent } from './components/register.component';
+
 import { OtpComponent } from './components/otp.component';
 import { HomeComponent } from './components/home.component';
 import { UserProfileComponent } from './components/user-profile.component';
@@ -16,9 +16,18 @@ import { AdminEntryCodesComponent } from './components/admin-entry-codes.compone
 import { AdminPromoCodesComponent } from './components/admin-promo-codes.component';
 import { AdminLoginComponent } from './components/admin-login.component';
 import { AdminDomainsComponent } from './components/admin-domains.component';
+import { AdminManualRedeemComponent } from './components/admin-manual-redeem.component';
 import { HowItWorksComponent } from './components/how-it-works.component';
+import { RegisterComponent } from './components/register.component';
 import { authGuard } from './guards/auth.guard';
 import { adminGuard } from './guards/admin.guard';
+import { inject } from '@angular/core';
+import { Router } from '@angular/router';
+
+const campaignGuard = () => {
+  const end = new Date('2026-05-01T00:00:00');
+  return new Date() < end || inject(Router).createUrlTree(['/']);
+};
 
 export const routes: Routes = [
     { path: '', component: LandingComponent },
@@ -26,7 +35,8 @@ export const routes: Routes = [
     // Auth
     { path: 'auth', component: LoginComponent },
     { path: 'auth/login', component: LoginComponent },
-    { path: 'auth/register', component: RegisterComponent },
+    { path: 'auth/register', component: RegisterComponent, canActivate: [campaignGuard] },
+
     { path: 'auth/otp', component: OtpComponent },
 
     // User Portal (Protected)
@@ -101,6 +111,11 @@ export const routes: Routes = [
     {
         path: 'admin/blocked-domains',
         component: AdminDomainsComponent,
+        canActivate: [authGuard, adminGuard]
+    },
+    {
+        path: 'admin/manual-redeem',
+        component: AdminManualRedeemComponent,
         canActivate: [authGuard, adminGuard]
     },
 

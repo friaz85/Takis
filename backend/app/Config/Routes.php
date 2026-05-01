@@ -81,6 +81,8 @@ $routes->group('admin', ['filter' => 'admin_auth'], function ($routes) {
     // Stats and Dashboard
     $routes->get('dashboard', 'DashboardAdminController::getStats');
     $routes->get('stats', 'DashboardAdminController::getStats');
+    $routes->get('special-redeem-users', 'AdminStatsController::getSpecialRedeemUsers');
+    $routes->post('manual-redeem', 'AdminRedemptionsController::manualRedeem');
     $routes->get('users', 'AdminUserController::index');
     $routes->get('users/stats', 'AdminUserController::getStats');
     $routes->post('users/(:num)/toggle-block', 'AdminUserController::toggleBlock/$1');

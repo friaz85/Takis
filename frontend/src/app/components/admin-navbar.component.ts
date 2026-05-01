@@ -53,6 +53,9 @@ import { AdminLayoutService } from '../services/admin-layout.service';
         <a *ngIf="getRole() === 'system_admin'" routerLink="/admin/blocked-domains" routerLinkActive="active" class="nav-item" (click)="onNavItemClick()">
           <span class="icon">🚫</span> Dominios Bloqueados
         </a>
+        <a *ngIf="getRole() === 'system_admin'" routerLink="/admin/manual-redeem" routerLinkActive="active" class="nav-item" (click)="onNavItemClick()">
+          <span class="icon">🍿</span> Canje Especial
+        </a>
       </nav>
 
       <div class="user-footer">

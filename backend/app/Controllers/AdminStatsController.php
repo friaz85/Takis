@@ -37,4 +37,23 @@ class AdminStatsController extends ResourceController
             'low_stock_alerts'    => $lowStock
         ]);
     }
+
+    public function getSpecialRedeemUsers()
+    {
+        $db = \Config\Database::connect();
+        $builder = $db->table('users u');
+        
+        $builder->select('u.id, u.full_name, u.email, u.points, MAX(sl.last_attempt) as ultimo_login');
+        $builder->join('security_logs sl', 'u.id = sl.user_id', 'inner');
+        $builder->where('sl.action', 'login_success');
+        $builder->where('u.points >=', 3);
+        $builder->where('u.points <=', 5);
+        $builder->groupBy('u.id');
+        $builder->having('ultimo_login <', date('Y-m-d H:i:s', strtotime('-1 month')));
+        $builder->orderBy('ultimo_login', 'DESC');
+
+        $users = $builder->get()->getResultArray();
+
+        return $this->respond($users);
+    }
 }

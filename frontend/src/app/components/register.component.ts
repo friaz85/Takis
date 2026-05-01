@@ -6,6 +6,7 @@ import { Router, RouterLink } from '@angular/router';
 import { ToastService } from '../services/toast.service';
 import { environment } from '../../environments/environment';
 import { AuthService } from '../services/auth.service';
+import { CampaignService } from '../services/campaign.service';
 
 @Component({
   selector: 'app-register',
@@ -25,38 +26,58 @@ import { AuthService } from '../services/auth.service';
             </div>
           </div>
 
-          <!-- Right Column: Register Form -->
-          <div class="hero-right register-card">
-            <h2 class="form-title">CREAR CUENTA</h2>
+          <!-- Right Column: Registration (Show only if campaign is NOT over) -->
+          <div class="hero-right register-card" *ngIf="!campaign.isOver()">
+            <h2 class="form-title">REGÍSTRATE</h2>
             
-            <form (submit)="onSubmit()" class="register-form">
+            <form (submit)="onSubmit()" class="login-form">
               <div class="field">
-                <label>NOMBRE</label>
-                <input type="text" [(ngModel)]="form.name" name="name" required class="input-flat" placeholder="Juan Perez">
+                <label>NOMBRE COMPLETO</label>
+                <input type="text" [(ngModel)]="form.name" name="name" required class="input-flat" placeholder="TU NOMBRE">
               </div>
 
               <div class="field">
-                <label>CORREO</label>
-                <input type="email" [(ngModel)]="form.email" name="email" required class="input-flat" placeholder="ejemplo@correo.com">
+                <label>CORREO ELECTRÓNICO</label>
+                <input type="email" [(ngModel)]="form.email" name="email" required class="input-flat" placeholder="tu@correo.com">
               </div>
 
               <div class="field">
-                <label>TELÉFONO</label>
-                <input type="tel" [(ngModel)]="form.phone" name="phone" required class="input-flat" placeholder="10 dígitos">
+                <label>TELÉFONO (10 DÍGITOS)</label>
+                <input type="tel" [(ngModel)]="form.phone" name="phone" required class="input-flat" maxlength="10" placeholder="5512345678">
               </div>
 
               <div class="check-group">
                 <label class="checkbox-container">
-                    HE LEÍDO Y ACEPTO <a href="https://takisaficionintensa.com.mx/tyc" target="_blank">TÉRMINOS Y CONDICIONES Y AVISO DE PRIVACIDAD</a>
-                    <input type="checkbox" [(ngModel)]="form.acceptedLegal" name="acceptedLegal" required>
-                    <span class="checkmark"></span>
+                  ACEPTO <a href="https://takisaficionintensa.com.mx/tyc" target="_blank">TÉRMINOS Y CONDICIONES</a>
+                  <input type="checkbox" [(ngModel)]="form.acceptedLegal" name="acceptedLegal">
+                  <span class="checkmark"></span>
+                </label>
+                <label class="checkbox-container">
+                  ACEPTO <a href="https://takisaficionintensa.com.mx/aviso-privacidad" target="_blank">AVISO DE PRIVACIDAD</a>
+                  <input type="checkbox" name="acceptedPrivacy" checked disabled>
+                  <span class="checkmark"></span>
                 </label>
               </div>
 
               <button type="submit" class="submit-btn" [disabled]="loading()">
-                {{ loading() ? 'ENVIANDO...' : 'REGISTRARME' }}
+                {{ loading() ? 'REGISTRANDO...' : 'REGISTRARME' }}
               </button>
             </form>
+          </div>
+
+          <!-- Right Column: Registration Closed Message (Show only if campaign is OVER) -->
+          <div class="hero-right register-card" *ngIf="campaign.isOver()">
+            <h2 class="form-title">REGISTRO CERRADO</h2>
+            
+            <div class="message-container">
+              <p class="announcement">
+                El registro de nuevos usuarios ha finalizado. Te invitamos a estar atento a próximas dinámicas de Takis.
+              </p>
+            </div>
+
+            <a routerLink="/auth/login" class="takis-btn-outline">
+              INICIAR SESIÓN
+            </a>
           </div>
         </div>
       </div>
@@ -136,19 +157,45 @@ import { AuthService } from '../services/auth.service';
         margin: 0 0 2rem 0;
         text-transform: uppercase;
         letter-spacing: 1px;
-        /* Add texture effect if possible, simplified for CSS */
         background: url('/assets/img/texture-purple.png'), #560E8C;
         background-size: cover;
         -webkit-background-clip: text;
         background-clip: text;
-        /* Fallback color */
         color: #560E8C; 
     }
 
-    .register-form {
-        display: flex;
-        flex-direction: column;
-        gap: 1.2rem;
+    .message-container {
+      background: #f8f9fa;
+      border: 2px dashed #560E8C;
+      border-radius: 1rem;
+      padding: 2rem;
+      margin-bottom: 2rem;
+    }
+
+    .announcement {
+      color: #560E8C;
+      font-size: 1.2rem;
+      font-weight: 700;
+      line-height: 1.5;
+      margin: 0;
+    }
+
+    .takis-btn-outline {
+      display: inline-block;
+      padding: 1rem 2.5rem;
+      border: 3px solid #560E8C;
+      color: #560E8C;
+      border-radius: 1rem;
+      font-weight: 900;
+      font-size: 1.2rem;
+      text-decoration: none;
+      transition: all 0.3s ease;
+    }
+
+    .takis-btn-outline:hover {
+      background: #560E8C;
+      color: white;
+      transform: translateY(-3px);
     }
 
     .field { text-align: left; }
@@ -323,6 +370,7 @@ export class RegisterComponent implements OnInit {
   private router = inject(Router);
   private toast = inject(ToastService);
   private auth = inject(AuthService);
+  public campaign = inject(CampaignService);
 
   ngOnInit() {
     if (this.auth.isLoggedIn()) {
@@ -354,24 +402,6 @@ export class RegisterComponent implements OnInit {
     this.http.post(`${environment.apiUrl}/auth/register`, payload).subscribe({
       next: (res: any) => {
         this.loading.set(false);
-
-        (window as any).dataLayer = (window as any).dataLayer || [];
-        (window as any).dataLayer.push({
-          'event': 'registro_completado'
-        });
-
-        if (typeof (window as any).fbq === 'function') {
-          (window as any).fbq('trackCustom', 'RegistroCompletado');
-        }
-
-        if (typeof (window as any).ttq !== 'undefined' && typeof (window as any).ttq.track === 'function') {
-          (window as any).ttq.track('Registrarse', { 
-            "contents": [ { "content_id": "register", "content_type": "product", "content_name": "New User Registration" } ], 
-            "value": 0, 
-            "currency": "USD" 
-          });
-        }
-
         this.toast.show(res.message?.toUpperCase() || 'CÓDIGO ENVIADO.', 'success');
         this.router.navigate(['/auth/otp'], { queryParams: { email: this.form.email } });
       },

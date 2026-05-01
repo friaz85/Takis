@@ -16,6 +16,14 @@ class RedemptionController extends ResourceController
 {
     public function redeemCode()
     {
+        // Force Mexico City timezone for campaign end check
+        date_default_timezone_set('America/Mexico_City');
+
+        // AUTOMATIC DISABLE AT MAY 1st, 2026 00:00:00
+        if (strtotime(date('Y-m-d H:i:s')) >= strtotime('2026-05-01 00:00:00')) {
+            return $this->fail('El registro de códigos ha terminado.', 403);
+        }
+
         $db         = \Config\Database::connect();
         $promoModel = new PromoCodeModel();
         $userModel  = new UserModel();

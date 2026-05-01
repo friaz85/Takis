@@ -35,16 +35,6 @@ export class AppComponent {
       filter(event => event instanceof NavigationEnd)
     ).subscribe((event: any) => {
       this.analytics.logVisit(event.urlAfterRedirects);
-      
-      // Fire Meta Pixel PageView on route change (SPA support)
-      if (typeof (window as any).fbq === 'function') {
-        (window as any).fbq('track', 'PageView');
-      }
-
-      // Fire TikTok Pixel PageView on route change (SPA support)
-      if (typeof (window as any).ttq === 'object' && typeof (window as any).ttq.page === 'function') {
-        (window as any).ttq.page();
-      }
     });
   }
 }

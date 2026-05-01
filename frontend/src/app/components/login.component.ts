@@ -4,6 +4,7 @@ import { CommonModule } from '@angular/common';
 import { Router, RouterLink } from '@angular/router';
 import { AuthService } from '../services/auth.service';
 import { ToastService } from '../services/toast.service';
+import { CampaignService } from '../services/campaign.service';
 
 @Component({
   selector: 'app-login',
@@ -36,11 +37,11 @@ import { ToastService } from '../services/toast.service';
               <button type="submit" class="submit-btn" [disabled]="loading()">
                 {{ loading() ? 'ENVIANDO...' : 'ENVIAR CÓDIGO DE ACCESO' }}
               </button>
-              
-              <div class="register-link">
-                 ¿No tienes cuenta? <a routerLink="/auth/register">Regístrate aquí</a>
-              </div>
             </form>
+
+            <div class="register-link" *ngIf="!campaign.isOver()">
+                ¿Aún no tienes cuenta? <a routerLink="/auth/register">Regístrate aquí</a>
+            </div>
           </div>
         </div>
       </div>
@@ -241,6 +242,7 @@ export class LoginComponent implements OnInit {
   private auth = inject(AuthService);
   private router = inject(Router);
   private toast = inject(ToastService);
+  public campaign = inject(CampaignService);
 
   ngOnInit() {
     if (this.auth.isLoggedIn()) {
