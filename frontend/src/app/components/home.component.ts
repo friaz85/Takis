@@ -60,7 +60,6 @@ import Swal from 'sweetalert2';
                 <div class="registration-closed-container">
                     <p class="registration-closed-text">
                         El registro de códigos ha terminado, te invitamos a canjear todos tus puntos.<br>
-                        Tienes hasta el 4 de mayo.<br>
                         Te esperamos en <a href="https://www.golacticosbarcel.com" target="_blank" style="color: #F2E74B; text-decoration: underline;">www.golacticosbarcel.com</a>
                     </p>
                     <button (click)="goToRewards()" class="rewards-btn">

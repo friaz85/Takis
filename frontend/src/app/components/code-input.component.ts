@@ -19,7 +19,6 @@ import { environment } from '../../environments/environment';
         <div class="message-container" *ngIf="campaign.isOver()">
           <p class="announcement">
             El registro de códigos ha terminado, te invitamos a canjear todos tus puntos.<br>
-            Tienes hasta el 4 de mayo.<br>
             Te esperamos en <a href="https://www.golacticosbarcel.com" target="_blank" style="color: white; text-decoration: underline;">www.golacticosbarcel.com</a>
           </p>
         </div>
