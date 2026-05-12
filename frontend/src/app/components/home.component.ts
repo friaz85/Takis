@@ -55,8 +55,19 @@ import Swal from 'sweetalert2';
                 <div class="score-end right-end"></div>
             </div>
 
-            <!-- Registration Closed Message -->
-            <div class="code-section" *ngIf="campaign.isOver()">
+            <!-- Promotion Fully Ended Message -->
+            <div class="code-section" *ngIf="campaign.isFullyOver()">
+                <div class="registration-closed-container finale-container">
+                    <p class="registration-closed-text">
+                        ¡GRACIAS POR PARTICIPAR!<br>
+                        La promoción <strong>Takis Afición Intensa</strong> ha finalizado y ya no es posible registrar códigos ni canjear puntos.<br>
+                        Mantente atento a nuestras próximas dinámicas. 😎🔥
+                    </p>
+                </div>
+            </div>
+
+            <!-- Registration Closed Message (But redemptions allowed) -->
+            <div class="code-section" *ngIf="campaign.isOver() && !campaign.isFullyOver()">
                 <div class="registration-closed-container">
                     <p class="registration-closed-text">
                         El registro de códigos ha terminado, te invitamos a canjear todos tus puntos.<br>
@@ -68,8 +79,8 @@ import Swal from 'sweetalert2';
                 </div>
             </div>
 
-            <!-- Code Form (Show only if campaign is NOT over) -->
-            <div class="code-section" *ngIf="!campaign.isOver()">
+            <!-- Code Form (Show only if campaign is NOT over at all) -->
+            <div class="code-section" *ngIf="!campaign.isOver() && !campaign.isFullyOver()">
                 <label class="code-label">REGISTRAR CÓDIGO</label>
                 <div class="input-wrapper">
                     <!-- Honeypot Field (Invisible) -->
@@ -355,6 +366,11 @@ import Swal from 'sweetalert2';
         text-align: center;
         box-shadow: 0 10px 25px rgba(0,0,0,0.4);
         animation: fadeIn 0.5s ease-out;
+    }
+
+    .finale-container {
+        border-color: #ff4444;
+        background: rgba(255, 68, 68, 0.1);
     }
 
     .registration-closed-text {

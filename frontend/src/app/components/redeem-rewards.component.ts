@@ -9,6 +9,7 @@ import { ToastService } from '../services/toast.service';
 import { AuthService } from '../services/auth.service';
 import { AnalyticsService } from '../services/analytics.service';
 import { environment } from '../../environments/environment';
+import { CampaignService } from '../services/campaign.service';
 import Swal from 'sweetalert2';
 
 @Component({
@@ -49,6 +50,13 @@ import Swal from 'sweetalert2';
                     </div>
                 </div>
                 <div class="score-end right-end"></div>
+            </div>
+
+            <!-- Promotion Fully Ended Banner -->
+            <div class="registration-closed-container finale-container" *ngIf="campaign.isFullyOver()" style="margin-bottom: 2rem;">
+                <p class="registration-closed-text" style="margin-bottom: 0;">
+                    LA PROMOCIÓN HA FINALIZADO Y YA NO ES POSIBLE REALIZAR CANJES.
+                </p>
             </div>
 
             <h2 class="catalog-title">CATÁLOGO DE RECOMPENSAS</h2>
@@ -612,6 +620,29 @@ import Swal from 'sweetalert2';
         
         .form-grid { grid-template-columns: 1fr; }
     }
+
+    /* Registration Closed Styles */
+    .registration-closed-container {
+        background: rgba(26, 11, 46, 0.6);
+        border: 2px solid #F2E74B;
+        padding: 1.5rem;
+        border-radius: 1rem;
+        text-align: center;
+        box-shadow: 0 10px 25px rgba(0,0,0,0.4);
+    }
+
+    .finale-container {
+        border-color: #ff4444;
+        background: rgba(255, 68, 68, 0.1);
+    }
+
+    .registration-closed-text {
+        color: white;
+        font-weight: 700;
+        font-size: 1.1rem;
+        line-height: 1.5;
+        text-shadow: 0 2px 4px rgba(0,0,0,0.5);
+    }
   `]
 })
 export class RedeemRewardsComponent implements OnInit {
@@ -695,6 +726,7 @@ export class RedeemRewardsComponent implements OnInit {
   private auth = inject(AuthService);
   private analytics = inject(AnalyticsService);
   private router = inject(Router);
+  public campaign = inject(CampaignService);
 
   ngOnInit() {
     this.loadData();
@@ -763,6 +795,19 @@ export class RedeemRewardsComponent implements OnInit {
 
   redeem(reward: any) {
     if (this.processingId()) return;
+
+    if (this.campaign.isFullyOver()) {
+      Swal.fire({
+        title: 'PROMOCIÓN FINALIZADA',
+        text: 'EL CANJE DE RECOMPENSAS YA NO ESTÁ DISPONIBLE.',
+        icon: 'info',
+        confirmButtonColor: '#F2E74B',
+        customClass: { confirmButton: 'takis-swal-confirm' },
+        buttonsStyling: false
+      });
+      return;
+    }
+
     if (reward.cost > this.userPoints()) {
       Swal.fire({
         title: 'PUNTOS INSUFICIENTES',

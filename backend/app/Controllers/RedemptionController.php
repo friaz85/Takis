@@ -274,6 +274,14 @@ class RedemptionController extends ResourceController
 
     public function redeemReward()
     {
+        // Force Mexico City timezone for campaign end check
+        date_default_timezone_set('America/Mexico_City');
+        
+        // AUTOMATIC DISABLE AT MAY 12th, 2026 00:00:00
+        if (strtotime(date('Y-m-d H:i:s')) >= strtotime('2026-05-12 00:00:00')) {
+            return $this->fail('La promoción ha finalizado. El canje de recompensas ya no está disponible.', 403);
+        }
+
         $db              = \Config\Database::connect();
         $userModel       = new UserModel();
         $rewardModel     = new RewardModel();
