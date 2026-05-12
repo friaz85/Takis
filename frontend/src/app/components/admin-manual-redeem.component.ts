@@ -53,13 +53,23 @@ import { environment } from '../../environments/environment';
                 <td class="text-right font-bold text-yellow">{{ user.points | number }}</td>
                 <td class="text-right">{{ user.ultimo_login | date:'dd/MM/yyyy' }}</td>
                 <td class="text-right">
-                  <button 
-                    class="action-btn" 
-                    (click)="confirmRedeem(user)"
-                    [disabled]="loadingIds.has(user.id)"
-                  >
-                    {{ loadingIds.has(user.id) ? 'Procesando...' : 'Canjear Cine 2x1' }}
-                  </button>
+                  <div class="action-group">
+                    <button 
+                      class="action-btn" 
+                      (click)="confirmRedeem(user, 23, 'BOLETO DE CINE 2X1')"
+                      [disabled]="loadingIds.has(user.id) || user.points < 3 || (rewardsStock()[23] <= 0)"
+                    >
+                      {{ loadingIds.has(user.id) ? '...' : (rewardsStock()[23] <= 0 ? 'Sin Stock' : 'Cine 2x1') }}
+                    </button>
+                    <button 
+                      *ngIf="user.points >= 5"
+                      class="action-btn vix-btn" 
+                      (click)="confirmRedeem(user, 25, 'VIX')"
+                      [disabled]="loadingIds.has(user.id) || (rewardsStock()[25] <= 0)"
+                    >
+                      {{ loadingIds.has(user.id) ? '...' : (rewardsStock()[25] <= 0 ? 'Sin Stock' : 'VIX') }}
+                    </button>
+                  </div>
                 </td>
               </tr>
               <tr *ngIf="filteredUsers().length === 0">
@@ -94,7 +104,7 @@ import { environment } from '../../environments/environment';
             <div class="user-info">
               <p><strong>Usuario:</strong> {{ selectedUser().full_name }}</p>
               <p><strong>Email:</strong> {{ selectedUser().email }}</p>
-              <p><strong>Premio:</strong> BOLETO DE CINE 2X1 (ID 23)</p>
+              <p><strong>Premio:</strong> {{ selectedReward()?.name }} (ID {{ selectedReward()?.id }})</p>
             </div>
             <p class="warning-text">Se descontarán los puntos correspondientes y se generará el PDF en el servidor.</p>
           </div>
@@ -125,9 +135,11 @@ import { environment } from '../../environments/environment';
     .text-right { text-align: right; }
     .text-yellow { color: #F2E74B; }
     .font-bold { font-weight: bold; }
-    .action-btn { background: #6C1DDA; border: none; color: white; padding: 0.5rem 1rem; border-radius: 0.5rem; cursor: pointer; font-weight: bold; transition: 0.2s; }
+    .action-btn { background: #6C1DDA; border: none; color: white; padding: 0.5rem 0.8rem; border-radius: 0.5rem; cursor: pointer; font-weight: bold; transition: 0.2s; font-size: 0.8rem; }
     .action-btn:hover:not(:disabled) { background: #F2E74B; color: #1A0B2E; }
-    .action-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+    .action-btn:disabled { opacity: 0.3; cursor: not-allowed; }
+    .action-group { display: flex; gap: 0.5rem; justify-content: flex-end; }
+    .vix-btn { background: #ff5900; }
 
     .pagination-footer { padding: 1.5rem; display: flex; justify-content: space-between; align-items: center; }
     .pagination-controls { display: flex; align-items: center; gap: 0.75rem; }
@@ -155,10 +167,12 @@ export class AdminManualRedeemComponent implements OnInit {
   public layoutService = inject(AdminLayoutService);
 
   users = signal<any[]>([]);
+  rewardsStock = signal<any>({});
   searchTerm = signal('');
   currentPage = signal(1);
   pageSize = 10;
   selectedUser = signal<any>(null);
+  selectedReward = signal<{id: number, name: string} | null>(null);
   loadingIds = new Set<number>();
   isProcessing = signal(false);
   Math = Math;
@@ -177,8 +191,10 @@ export class AdminManualRedeemComponent implements OnInit {
 
   loadUsers() {
     this.http.get(`${environment.apiUrl}/admin/special-redeem-users`).subscribe({
-      next: (res: any) => this.users.set(res),
-      error: (e) => this.toast.show('Error al cargar usuarios', 'error')
+      next: (res: any) => {
+        this.users.set(res.users || []);
+        this.rewardsStock.set(res.stock || {});
+      },error: (e) => this.toast.show('Error al cargar usuarios', 'error')
     });
   }
 
@@ -196,8 +212,9 @@ export class AdminManualRedeemComponent implements OnInit {
     return this.sortDirection() === 'asc' ? '⬆️' : '⬇️';
   }
 
-  confirmRedeem(user: any) {
+  confirmRedeem(user: any, rewardId: number, rewardName: string) {
     this.selectedUser.set(user);
+    this.selectedReward.set({ id: rewardId, name: rewardName });
   }
 
   executeRedeem() {
@@ -207,19 +224,25 @@ export class AdminManualRedeemComponent implements OnInit {
     this.isProcessing.set(true);
     this.loadingIds.add(user.id);
 
-    this.http.post(`${environment.apiUrl}/admin/manual-redeem`, { user_id: user.id }).subscribe({
+    const reward = this.selectedReward();
+    this.http.post(`${environment.apiUrl}/admin/manual-redeem`, { 
+      user_id: user.id,
+      reward_id: reward?.id
+    }).subscribe({
       next: (res: any) => {
         this.toast.show('¡Canje realizado exitosamente!', 'success');
         this.loadUsers(); // Refresh list
         this.isProcessing.set(false);
         this.loadingIds.delete(user.id);
         this.selectedUser.set(null);
+        this.selectedReward.set(null);
       },
       error: (err) => {
         this.toast.show(err.error?.message || 'Error al procesar canje', 'error');
         this.isProcessing.set(false);
         this.loadingIds.delete(user.id);
         this.selectedUser.set(null);
+        this.selectedReward.set(null);
       }
     });
   }

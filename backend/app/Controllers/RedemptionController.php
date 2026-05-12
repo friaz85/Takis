@@ -476,14 +476,17 @@ class RedemptionController extends ResourceController
                 $redemptionModel->update($redemptionId, ['pdf_path' => $sourceFile]);
             } else {
                 // Regular digital reward with PDF Template
-                $pdfUrl = $this->generateAndSavePdf($user, $reward, $redemptionId, $codesList); // Pass array
+                $pdfUrl = $this->generateAndSavePdf($user, $reward, $redemptionId, $codesList); 
 
-                // Update redemption with PDF path if successful
                 if ($pdfUrl) {
-                    // Extract relative path or filename if needed, but saving specific path or just url logic
-                    // For DB 'pdf_path', let's save the filename relative to 'uploads/redeemed/'
                     $filename = basename($pdfUrl);
-                    $redemptionModel->update($redemptionId, ['pdf_path' => $filename]);
+                    if ($redemptionModel->update($redemptionId, ['pdf_path' => $filename])) {
+                        log_message('info', "PDF Path saved successfully for redemption {$redemptionId}: {$filename}");
+                    } else {
+                        log_message('error', "Failed to update pdf_path in DB for redemption {$redemptionId}. Errors: " . json_encode($redemptionModel->errors()));
+                    }
+                } else {
+                    log_message('error', "generateAndSavePdf returned NULL for redemption {$redemptionId}. Check previous logs.");
                 }
             }
         }
@@ -536,34 +539,38 @@ class RedemptionController extends ResourceController
     private function generateAndSavePdf($user, $reward, $redemptionId, $codes)
     {
         try {
-            if (empty($reward['pdf_template']))
+            if (empty($reward['pdf_template'])) {
+                log_message('error', "PDF Template name is EMPTY in DB for Reward ID: " . ($reward['id'] ?? 'unknown'));
                 return null;
+            }
 
             // Correct path for templates
             $templatePath = FCPATH . 'uploads/templates/' . $reward['pdf_template'];
+            log_message('debug', "Searching for PDF template at: " . $templatePath);
 
             if (!file_exists($templatePath)) {
-                log_message('error', 'PDF Template not found: ' . $templatePath);
+                log_message('error', "PDF Template file NOT FOUND on server: " . $templatePath);
                 return null;
             }
 
             $filename   = 'takis_reward_' . $redemptionId . '_' . time() . '.pdf';
             $outputPath = FCPATH . 'uploads/redeemed/' . $filename;
+            log_message('debug', "Generating PDF at: " . $outputPath);
 
-            if (!is_dir(dirname($outputPath)))
-                mkdir(dirname($outputPath), 0777, true);
+            if (!is_dir(dirname($outputPath))) {
+                if (!mkdir(dirname($outputPath), 0777, true)) {
+                    log_message('error', "COULD NOT CREATE PDF directory: " . dirname($outputPath));
+                }
+            }
 
-            $pdf       = new Fpdi();
-            $pageCount = $pdf->setSourceFile($templatePath);
-            $tplIdx    = $pdf->importPage(1);
-            $size      = $pdf->getTemplateSize($tplIdx);
-
+            $pdf = new Fpdi();
+            $pdf->setSourceFile($templatePath);
+            $tplIdx = $pdf->importPage(1);
+            $size = $pdf->getTemplateSize($tplIdx);
             $pdf->AddPage($size['orientation'], [$size['width'], $size['height']]);
             $pdf->useTemplate($tplIdx);
 
-            // Parse code_areas format
             $codeAreas = $reward['code_areas'] ?? '';
-
             // Normalize codes to array
             if (!is_array($codes)) {
                 $codes = explode(',', $codes);
@@ -571,78 +578,23 @@ class RedemptionController extends ResourceController
 
             if (!empty($codeAreas)) {
                 $areas = explode(';', $codeAreas);
-
                 foreach ($areas as $index => $areaStr) {
-                    $areaStr = trim($areaStr);
-                    if (empty($areaStr))
-                        continue;
-
-                    // Get Corresponding Code for this area
-                    // If we have fewer codes than areas, fallback to the first one (or last?)
-                    // Logic dictated: "Tomar el mismo número de códigos". So index should match.
-                    $currentCode = isset($codes[$index]) ? $codes[$index] : $codes[0];
-
-                    $parts = explode(',', $areaStr);
+                    $currentCode = $codes[$index] ?? $codes[0];
+                    $parts = explode(',', trim($areaStr));
                     if (count($parts) >= 4) {
-                        $xPct     = floatval($parts[0]);
-                        $yPct     = floatval($parts[1]);
-                        $wPct     = floatval($parts[2]);
-                        $hPct     = floatval($parts[3]);
+                        $x = (floatval($parts[0]) / 100) * $size['width'];
+                        $y = (floatval($parts[1]) / 100) * $size['height'];
+                        $w = (floatval($parts[2]) / 100) * $size['width'];
+                        $h = (floatval($parts[3]) / 100) * $size['height'];
                         $fontSize = isset($parts[4]) ? intval($parts[4]) : 14;
-
-                        // Convert percentages to template units
-                        $x = ($xPct / 100) * $size['width'];
-                        $y = ($yPct / 100) * $size['height'];
-                        $w = ($wPct / 100) * $size['width'];
-                        $h = ($hPct / 100) * $size['height'];
-
-                        // Set font with configured size
                         $pdf->SetFont('Arial', 'B', $fontSize);
-                        $pdf->SetTextColor(0, 0, 0);
-
-                        // Position and write code
                         $pdf->SetXY($x, $y);
-
+                        
                         if ($w > 0 && $h > 0) {
                             $pdf->Cell($w, $h, $currentCode, 0, 0, 'C');
                         } else {
                             $pdf->Text($x, $y, $currentCode);
                         }
-                    }
-                }
-            } else {
-                // Fallback for coordinates JSON or simple text
-                // Use the first code
-                $codeToPrint = $codes[0] ?? 'CODE';
-
-                $coords = json_decode($reward['coordinates'] ?? '[]', true);
-
-                if (isset($coords['x']) && !isset($coords[0])) {
-                    $coords = [$coords];
-                }
-                if (!is_array($coords))
-                    $coords = [];
-
-                $pdf->SetFont('Arial', 'B', 14);
-                $pdf->SetTextColor(0, 0, 0);
-
-                foreach ($coords as $box) {
-                    $xPct = isset($box['x']) ? floatval($box['x']) : 50;
-                    $yPct = isset($box['y']) ? floatval($box['y']) : 50;
-                    $wPct = isset($box['w']) ? floatval($box['w']) : 0;
-                    $hPct = isset($box['h']) ? floatval($box['h']) : 0;
-
-                    $x = ($xPct / 100) * $size['width'];
-                    $y = ($yPct / 100) * $size['height'];
-                    $w = ($wPct / 100) * $size['width'];
-                    $h = ($hPct / 100) * $size['height'];
-
-                    $pdf->SetXY($x, $y);
-
-                    if ($w > 0 && $h > 0) {
-                        $pdf->Cell($w, $h, $codeToPrint, 0, 0, 'C');
-                    } else {
-                        $pdf->Text($x, $y, $codeToPrint);
                     }
                 }
             }
@@ -651,7 +603,8 @@ class RedemptionController extends ResourceController
             return base_url('uploads/redeemed/' . $filename);
 
         } catch (\Exception $e) {
-            log_message('error', 'PDF Generation Error: ' . $e->getMessage());
+            log_message('error', "PDF Generation FATAL ERROR (Redemption ID: {$redemptionId}): " . $e->getMessage());
+            log_message('error', "Stack trace: " . $e->getTraceAsString());
             return null;
         }
     }

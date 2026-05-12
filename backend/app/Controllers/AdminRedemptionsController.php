@@ -28,13 +28,13 @@ class AdminRedemptionsController extends ResourceController
         $logModel        = new SecurityLogModel();
 
         $userId   = $this->request->getVar('user_id');
-        $rewardId = 23; // BOLETO DE CINE 2X1
+        $rewardId = $this->request->getVar('reward_id') ?: 23; // Default to BOLETO DE CINE 2X1
 
         $user   = $userModel->find($userId);
         $reward = $rewardModel->find($rewardId);
 
         if (!$user) return $this->failNotFound('Usuario no encontrado.');
-        if (!$reward) return $this->failNotFound('Recompensa ID 23 no encontrada.');
+        if (!$reward) return $this->failNotFound('Recompensa ID ' . $rewardId . ' no encontrada.');
         if ($reward['stock'] <= 0) return $this->fail('Recompensa sin stock.');
         if ($user['points'] < $reward['cost']) return $this->fail('El usuario no tiene puntos suficientes.');
 
@@ -92,7 +92,13 @@ class AdminRedemptionsController extends ResourceController
         $pdfUrl = $this->generateAndSavePdf($user, $reward, $redemptionId, $codesList);
         if ($pdfUrl) {
             $filename = basename($pdfUrl);
-            $redemptionModel->update($redemptionId, ['pdf_path' => $filename]);
+            if ($redemptionModel->update($redemptionId, ['pdf_path' => $filename])) {
+                log_message('info', "Manual PDF Path saved successfully for redemption {$redemptionId}: {$filename}");
+            } else {
+                log_message('error', "Failed to update manual pdf_path in DB for redemption {$redemptionId}. Errors: " . json_encode($redemptionModel->errors()));
+            }
+        } else {
+            log_message('error', "Manual generateAndSavePdf returned NULL for redemption {$redemptionId}. Check previous logs.");
         }
 
         $logModel->save([
@@ -118,13 +124,26 @@ class AdminRedemptionsController extends ResourceController
     private function generateAndSavePdf($user, $reward, $redemptionId, $codes)
     {
         try {
-            if (empty($reward['pdf_template'])) return null;
+            if (empty($reward['pdf_template'])) {
+                log_message('error', "Manual PDF Template name is EMPTY for Reward ID: " . $rewardId);
+                return null;
+            }
             $templatePath = FCPATH . 'uploads/templates/' . $reward['pdf_template'];
-            if (!file_exists($templatePath)) return null;
+            log_message('debug', "Searching for Manual PDF template at: " . $templatePath);
+            if (!file_exists($templatePath)) {
+                log_message('error', "Manual PDF Template NOT FOUND: " . $templatePath);
+                return null;
+            }
 
             $filename   = 'takis_manual_' . $redemptionId . '_' . time() . '.pdf';
             $outputPath = FCPATH . 'uploads/redeemed/' . $filename;
-            if (!is_dir(dirname($outputPath))) mkdir(dirname($outputPath), 0777, true);
+            log_message('debug', "Generating manual PDF at: " . $outputPath);
+
+            if (!is_dir(dirname($outputPath))) {
+                if (!mkdir(dirname($outputPath), 0777, true)) {
+                    log_message('error', "COULD NOT CREATE Manual PDF directory: " . dirname($outputPath));
+                }
+            }
 
             $pdf = new Fpdi();
             $pdf->setSourceFile($templatePath);
@@ -157,7 +176,8 @@ class AdminRedemptionsController extends ResourceController
             $pdf->Output($outputPath, 'F');
             return base_url('uploads/redeemed/' . $filename);
         } catch (\Exception $e) {
-            log_message('error', 'Manual PDF Error: ' . $e->getMessage());
+            log_message('error', "Manual PDF FATAL ERROR (Redemption ID: {$redemptionId}): " . $e->getMessage());
+            log_message('error', "Stack trace: " . $e->getTraceAsString());
             return null;
         }
     }

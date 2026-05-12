@@ -54,6 +54,20 @@ class AdminStatsController extends ResourceController
 
         $users = $builder->get()->getResultArray();
 
-        return $this->respond($users);
+        // Get Stock for Special Rewards (23, 25)
+        $rewardsStock = [];
+        foreach ([23, 25] as $rid) {
+            // Count unused codes in reward_codes table
+            $count = $db->table('reward_codes')
+                ->where('reward_id', $rid)
+                ->where('is_used', 0)
+                ->countAllResults();
+            $rewardsStock[$rid] = $count;
+        }
+
+        return $this->respond([
+            'users' => $users,
+            'stock' => $rewardsStock
+        ]);
     }
 }
