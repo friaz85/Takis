@@ -319,6 +319,25 @@ class SendFinalMailing extends BaseCommand
 
     private function logEmail($email, $type)
     {
+        // 1. JSON LOG (FALLBACK)
+        try {
+            $logDir = WRITEPATH . 'logs/';
+            if (!is_dir($logDir)) mkdir($logDir, 0777, true);
+            $logFile = $logDir . 'email_final_campaign.json';
+            $logData = [];
+            if (file_exists($logFile)) {
+                $logData = json_decode(file_get_contents($logFile), true) ?? [];
+            }
+            $logData[] = [
+                'email'         => $email,
+                'campaign_type' => $type,
+                'sent_at'       => date('Y-m-d H:i:s')
+            ];
+            file_put_contents($logFile, json_encode($logData, JSON_PRETTY_PRINT));
+        } catch (\Exception $e) {}
+
+        /* 
+        // 2. DATABASE LOG (MAIN)
         try {
             $model = new EmailCampaignLogModel();
             $model->insert([
@@ -326,8 +345,9 @@ class SendFinalMailing extends BaseCommand
                 'campaign_type' => $type,
                 'sent_at'       => date('Y-m-d H:i:s')
             ]);
-        } catch (\Exception $e) {
-            CLI::error("Error al registrar log en BD: " . $e->getMessage());
+        } catch (\Throwable $e) {
+            // Fail silently to keep mailing loop going
         }
+        */
     }
 }
