@@ -12,11 +12,8 @@ import { CampaignService } from '../services/campaign.service';
   imports: [CommonModule, FormsModule, RouterLink],
   template: `
     <div class="landing">
-      <a routerLink="/" class="back-link">← Volver</a>
-      
       <div class="hero">
         <div class="hero-flex">
-          <!-- Left Column: Banners -->
           <div class="hero-left">
             <div class="logo-wrapper">
               <img src="/assets/img/Banderin-completo.png" alt="Takis" class="takis-logo desktop-logo animate__animated animate__zoomIn">
@@ -24,24 +21,10 @@ import { CampaignService } from '../services/campaign.service';
             </div>
           </div>
 
-          <!-- Right Column: Login Form -->
           <div class="hero-right login-card">
-            <h2 class="form-title">INICIAR SESIÓN</h2>
-            
-            <form (submit)="onSubmit()" class="login-form">
-              <div class="field">
-                <label>CORREO ELECTRÓNICO</label>
-                <input type="email" [(ngModel)]="email" name="email" required class="input-flat" placeholder="tu@correo.com">
-              </div>
-
-              <button type="submit" class="submit-btn" [disabled]="loading()">
-                {{ loading() ? 'ENVIANDO...' : 'ENVIAR CÓDIGO DE ACCESO' }}
-              </button>
-            </form>
-
-            <div class="register-link" *ngIf="!campaign.isOver()">
-                ¿Aún no tienes cuenta? <a routerLink="/auth/register">Regístrate aquí</a>
-            </div>
+            <h2 class="form-title">PROMOCIÓN CONCLUIDA</h2>
+            <p style="color:#888; font-size:1.1rem; margin-bottom:1.5rem;">La promoción Takis La Afición Más Intensa ha finalizado.<br><br>¡Gracias por participar!<br><br>Te esperamos en: <a href="https://golacticosbarcel.com/" target="_blank" style="color: #560E8C; font-weight: bold;">golacticosbarcel.com</a></p>
+            <a routerLink="/" class="submit-btn" style="display:block; text-decoration:none; text-align:center;">VOLVER AL INICIO</a>
           </div>
         </div>
       </div>
@@ -245,9 +228,8 @@ export class LoginComponent implements OnInit {
   public campaign = inject(CampaignService);
 
   ngOnInit() {
-    if (this.auth.isLoggedIn()) {
-      this.router.navigate(['/home']);
-    }
+    // La promoción ha concluido, redirigir siempre al inicio
+    this.router.navigate(['/']);
   }
 
   onSubmit() {

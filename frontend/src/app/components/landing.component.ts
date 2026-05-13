@@ -1,13 +1,13 @@
 import { Component, inject, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { RouterLink, Router } from '@angular/router';
+import { Router } from '@angular/router';
 import { AuthService } from '../services/auth.service';
 import { CampaignService } from '../services/campaign.service';
 
 @Component({
   selector: 'app-landing',
   standalone: true,
-  imports: [CommonModule, RouterLink],
+  imports: [CommonModule],
   template: `
     <div class="landing">
       
@@ -24,12 +24,8 @@ import { CampaignService } from '../services/campaign.service';
           </div>
           
           <div class="hero-right login-card" [style.backgroundImage]="'linear-gradient(rgba(86, 14, 140, 0.85), rgba(86, 14, 140, 0.85)), url(/assets/img/BG_landing.jpg)'">
-            <h1 class="takis-title" style="color: #F2E74B">BIENVENIDO</h1>
-            <p class="desc">Inicia sesión para canjear tus puntos</p>
-            <div class="actions">
-              <a routerLink="/auth/login" class="takis-btn primary">INICIAR SESIÓN</a>
-              <a routerLink="/auth/register" class="takis-btn outline" *ngIf="!campaign.isOver()">REGISTRARME</a>
-            </div>
+            <h1 class="takis-title" style="color: #F2E74B">GRACIAS</h1>
+            <p class="desc">La promoción ha concluido.<br>¡Gracias por participar!<br><br>Te esperamos en: <a href="https://golacticosbarcel.com/" target="_blank" style="color: #F2E74B; font-weight: bold;">golacticosbarcel.com</a></p>
             <img src="/assets/img/Logo-Takis.png" class="corner-logo" alt="Takis Logo">
             <div class="vigencia-text">
               Vigencia 16 de febrero al 30 de abril 2026<br>
