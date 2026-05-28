@@ -27,6 +27,18 @@ export const adminGuard: CanActivateFn = (route, state) => {
             router.navigate(['/admin/dashboard']);
             return false;
         }
+
+        if (role === 'ventas') {
+            const url = state.url.toLowerCase();
+
+            // ventas role paths: dashboard/stats and orders only
+            if (url.includes('/admin/dashboard') || url.includes('/admin/stats') || url.includes('/admin/orders') || url === '/admin' || url === '/admin/') {
+                return true;
+            }
+
+            router.navigate(['/admin/dashboard']);
+            return false;
+        }
     }
 
     router.navigate(['/admin/login']);

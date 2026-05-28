@@ -35,19 +35,19 @@ import { AdminLayoutService } from '../services/admin-layout.service';
         <a *ngIf="getRole() !== 'takis' && getUsername() !== 'takis_admin'" routerLink="/admin/orders" routerLinkActive="active" class="nav-item" (click)="onNavItemClick()">
           <span class="icon">📦</span> Pedidos
         </a>
-        <a *ngIf="getRole() !== 'takis'" routerLink="/admin/users" routerLinkActive="active" class="nav-item" (click)="onNavItemClick()">
+        <a *ngIf="getRole() !== 'takis' && getRole() !== 'ventas'" routerLink="/admin/users" routerLinkActive="active" class="nav-item" (click)="onNavItemClick()">
           <span class="icon">👥</span> Usuarios
         </a>
-        <a *ngIf="getRole() !== 'takis'" routerLink="/admin/rewards" routerLinkActive="active" class="nav-item" (click)="onNavItemClick()">
+        <a *ngIf="getRole() !== 'takis' && getRole() !== 'ventas'" routerLink="/admin/rewards" routerLinkActive="active" class="nav-item" (click)="onNavItemClick()">
           <span class="icon">🎁</span> Recompensas
         </a>
-        <a *ngIf="getRole() !== 'takis' && getUsername() !== 'takis_admin'" routerLink="/admin/support" routerLinkActive="active" class="nav-item" (click)="onNavItemClick()">
+        <a *ngIf="getRole() !== 'takis' && getRole() !== 'ventas' && getUsername() !== 'takis_admin'" routerLink="/admin/support" routerLinkActive="active" class="nav-item" (click)="onNavItemClick()">
           <span class="icon">💬</span> Soporte
         </a>
-        <a *ngIf="getRole() !== 'takis'" routerLink="/admin/promo-codes" routerLinkActive="active" class="nav-item" (click)="onNavItemClick()">
+        <a *ngIf="getRole() !== 'takis' && getRole() !== 'ventas'" routerLink="/admin/promo-codes" routerLinkActive="active" class="nav-item" (click)="onNavItemClick()">
           <span class="icon">🎫</span> Códigos Registrados
         </a>
-        <a *ngIf="getRole() !== 'takis'" routerLink="/admin/entry-codes" routerLinkActive="active" class="nav-item" (click)="onNavItemClick()">
+        <a *ngIf="getRole() !== 'takis' && getRole() !== 'ventas'" routerLink="/admin/entry-codes" routerLinkActive="active" class="nav-item" (click)="onNavItemClick()">
           <span class="icon">🎟️</span> Canjes Realizados
         </a>
         <a *ngIf="getRole() === 'system_admin'" routerLink="/admin/blocked-domains" routerLinkActive="active" class="nav-item" (click)="onNavItemClick()">

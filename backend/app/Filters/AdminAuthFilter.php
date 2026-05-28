@@ -68,6 +68,23 @@ class AdminAuthFilter implements FilterInterface
                         'message' => 'Acceso restringido: El rol "' . $role . '" solo tiene permiso para el Dashboard.'
                     ])->setStatusCode(403);
                 }
+            } else if ($role === 'ventas') {
+                $uri = $request->getUri()->getPath();
+
+                // Strict limitations for 'ventas' role: Only Dashboard/Stats and Orders.
+                $isAllowed = (
+                    strpos($uri, 'admin/stats') !== false ||
+                    strpos($uri, 'admin/dashboard') !== false ||
+                    strpos($uri, 'admin/orders') !== false ||
+                    strpos($uri, 'analytics/stats') !== false
+                );
+
+                if (!$isAllowed) {
+                    return Services::response()->setJSON([
+                        'status'  => 403,
+                        'message' => 'Acceso restringido: El rol "' . $role . '" solo tiene permiso para el Dashboard y Pedidos.'
+                    ])->setStatusCode(403);
+                }
             } else if ($role !== 'admin' && $role !== 'system_admin') {
                 return Services::response()->setJSON([
                     'status'  => 403,
